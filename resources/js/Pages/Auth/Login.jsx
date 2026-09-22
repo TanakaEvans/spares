@@ -44,24 +44,24 @@ export default function Login({ status, canResetPassword }) {
                     className="absolute inset-0 bg-cover bg-center"
                     style={{ backgroundImage: 'url(/images/school-login-bg.png)' }}
                 ></div>
-                <div className="absolute inset-0 bg-blue-900/40"></div>
+                <div className="absolute inset-0 bg-slate-900/70"></div>
                 <div className="relative z-10 w-full h-full flex flex-col justify-between p-12 text-white">
                     <div>
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white/20 backdrop-blur rounded-lg flex items-center justify-center">
-                                <span className="text-2xl">🎓</span>
+                            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                                <span className="text-2xl">🔧</span>
                             </div>
-                            <span className="text-xl font-bold tracking-wider">EDU-MANAGER</span>
+                            <span className="text-xl font-bold tracking-wider">SPARESPRO</span>
                         </div>
                     </div>
                     <div className="max-w-md">
-                        <h1 className="text-4xl font-bold mb-6 leading-tight">Welcome to the Future of School Management</h1>
-                        <p className="text-lg text-blue-100/90 leading-relaxed">
-                            Streamline administration, enhance learning, and manage your institution with efficiency and ease.
+                        <h1 className="text-4xl font-bold mb-6 leading-tight">The Complete Motor Spares ERP</h1>
+                        <p className="text-lg text-slate-200/90 leading-relaxed">
+                            Parts, stock, sales, workshop and accounts — everything your spares business runs on, in one system.
                         </p>
                     </div>
-                    <div className="flex gap-4 text-sm text-blue-200/80">
-                        <span>© 2025 Education Systems</span>
+                    <div className="flex gap-4 text-sm text-slate-300/80">
+                        <span>© {new Date().getFullYear()} SparesPro</span>
                         <span>•</span>
                         <span>Privacy Policy</span>
                         <span>•</span>
@@ -99,7 +99,7 @@ export default function Login({ status, canResetPassword }) {
                                     className="block w-full pl-10 pr-3 py-3 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                     isFocused={true}
                                     onChange={(e) => setData('login', e.target.value)}
-                                    placeholder="admin or user@school.com"
+                                    placeholder="admin or user@company.com"
                                 />
                             </div>
                             <InputError message={errors.login} className="mt-2 text-sm text-red-600" />

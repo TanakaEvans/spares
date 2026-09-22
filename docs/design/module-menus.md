@@ -1,6 +1,8 @@
-# Module Sidebar Menus
+# Module Sidebar Menus (Level 2)
 
-> The definitive sidebar design for each module. **Rule: every module has its own sidebar; every sub-module is reachable from it.** Rendered by the shared `ModuleLayout` from a per-module `nav.js` config (see [navigation-and-layout.md](navigation-and-layout.md)); items are permission-filtered; icons are Lucide names.
+> The definitive **module-level** sidebar design for each module. **Rule: every module has its own sidebar; every sub-module is reachable from it.** Rendered by the shared `ModuleLayout` from a per-module `nav.js` config (see [navigation-and-layout.md](navigation-and-layout.md)); items are permission-filtered; icons are Lucide names.
+>
+> **Level 3 — inside a sub-module the sidebar switches to that sub-module's own contextual menu** (only its screens + curated quick links). Those layouts are in [sidebars/](sidebars/README.md), one design per sub-module (all 82).
 
 **Config shape** (`Modules/{X}/resources/js/nav.js`):
 ```js

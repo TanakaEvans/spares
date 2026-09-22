@@ -62,7 +62,8 @@ Each module has an overview doc, plus a folder of the same name containing one d
 | [design/page-guide.md](design/page-guide.md) | Collapsible in-app page guide (`F1` help) on every page |
 | [design/global-search-and-quick-actions.md](design/global-search-and-quick-actions.md) | `Ctrl+K` command palette: find & act on anything |
 | [design/navigation-and-layout.md](design/navigation-and-layout.md) | Dashboard → module sidebar → page archetypes |
-| [design/module-menus.md](design/module-menus.md) | The sidebar menu design for every module & sub-module |
+| [design/module-menus.md](design/module-menus.md) | Level-2 module sidebar menus |
+| [design/sidebars/README.md](design/sidebars/README.md) | Level-3: dedicated sidebar layout per sub-module (all 82) |
 | [design/screen-designs.md](design/screen-designs.md) | Wireframes: POS, GRN, job card, part detail, stock take… |
 
 ### Operations

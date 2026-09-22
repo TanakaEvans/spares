@@ -77,6 +77,7 @@
 
 ### Frontend
 - [ ] `ModuleLayout` + sidebar config system (per-module nav config consumed by layout, permission-filtered)
+- [ ] Sub-module contextual sidebar resolver: route-prefix → `nav.js` `subModules` entry (WORK/INSIGHTS/SETUP/QUICK LINKS sections, ↰ back to module menu, badges, auto-collapse flag) per [design/sidebars/README.md](../design/sidebars/README.md)
 - [ ] `DataTable` (server-side sort/filter/paginate, column config)
 - [ ] `FormField` (label, error, help-text wrapper for inputs/selects)
 - [ ] `StatusBadge` (status → colour map, used by every document list)

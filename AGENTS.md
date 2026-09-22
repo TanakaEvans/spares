@@ -67,7 +67,7 @@ implementation-plan.md  →  docs/tasks/NN-*.md  →  sub-module spec  →  code
 11. Seeders are idempotent (`updateOrCreate` on natural keys); reference data comes from the CSV seed packs.
 
 ### Frontend
-12. Every module has its own sidebar per [module-menus.md](docs/design/module-menus.md); every sub-module is reachable from it. Pages are one of the four archetypes (List/Form/Detail/Operational).
+12. Sidebars are three-level: module cards (dashboard) → module sidebar ([module-menus.md](docs/design/module-menus.md)) → **per-sub-module contextual sidebar** ([docs/design/sidebars/](docs/design/sidebars/README.md)) showing ONLY that sub-module's screens plus curated Quick Links. Every sub-module gets its own sidebar built from its entry there; mixing another sub-module's items into WORK/INSIGHTS/SETUP fails review. Pages are one of the four archetypes (List/Form/Detail/Operational).
 13. Follow [ui-rules.md](docs/design/ui-rules.md) — keyboard-first operational screens, scan-target focus management, disabled-with-reason over reject-after-click, drafts on operational documents, partial reloads, `useForm` for all forms, `route()` (Ziggy) for all URLs, shared components (`StatusBadge`, `DataTable`, `FormField`, `MoneyDisplay`, `ConfirmDialog`, `PageGuide`, `CommandPalette`) — never one-off variants.
 13a. **Every page ships with a Page Guide** ([spec](docs/design/page-guide.md)) — a collapsible `F1` help block written from the sub-module spec; behaviour changes update the guide in the same PR.
 13b. **Every rendered entity reference is a hyperlink** (UI-13): part numbers, customer names, document numbers, suppliers, technicians — all Inertia `<Link>`s with state-preserving Back. Plain-text entity references fail review.
