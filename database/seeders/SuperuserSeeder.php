@@ -59,17 +59,28 @@ class SuperuserSeeder extends Seeder
             ]);
         }
 
-        // Create default company
-        Company::firstOrCreate(
-            ['name' => 'My Canteen'],
+        // Create default company + main branch
+        $company = Company::firstOrCreate(
+            ['name' => 'SparesPro Motors'],
             [
-                'trading_name' => 'My Canteen',
-                'email' => 'info@canteen.com',
+                'trading_name' => 'SparesPro Motors',
+                'email' => 'info@sparespro.com',
                 'phone' => '+263 77 123 4567',
                 'address' => '123 Main Street',
                 'city' => 'Harare',
                 'country' => 'Zimbabwe',
                 'currency' => 'USD',
+                'status' => 'active',
+            ]
+        );
+
+        \App\Models\Branch::firstOrCreate(
+            ['code' => 'HRE-01'],
+            [
+                'company_id' => $company->id,
+                'name' => 'Harare Main',
+                'city' => 'Harare',
+                'is_main_branch' => true,
                 'status' => 'active',
             ]
         );

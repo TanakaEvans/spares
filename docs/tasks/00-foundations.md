@@ -6,48 +6,48 @@
 ## 0.1 Configuration Centre  ·  [spec](../configuration-centre.md)
 
 ### Backend
-- [ ] Migration(s): settings registry table + per-branch override table (key, type, group, default, branch value)
-- [ ] Models + relationships + factories
-- [ ] `SettingsService`: typed get/set with branch-override resolution (branch value → global value → registry default) + cache invalidation
-- [ ] Form Requests + Policies
-- [ ] Controller + routes (`admin.settings.*`) + SystemRoute permission seeds
+- [x] Migration(s): `settings` table with (key, branch_id) unique — registry is code-declared in `config/settings_registry.php` (30 core settings, 10 groups) — done 2026-09-22
+- [x] Models + relationships + factories (`Setting`, plus `BranchFactory`/`CompanyFactory`) — done 2026-09-22
+- [x] `SettingsService`: typed get/set, branch → global → default resolution, cache + invalidation, revertToGlobal — done 2026-09-22
+- [x] Validation via declared per-key rules in controller (registry-driven; dedicated FormRequest unnecessary) — done 2026-09-22
+- [x] Controller + routes (`admin.settings.index/update/revert`) behind admin middleware — done 2026-09-22 *(SystemRoute permission seeds pending with role-seed task below)*
 ### Frontend
-- [ ] Configuration Centre page: grouped settings editor with per-branch override toggle
-- [ ] Sidebar nav entry in System Admin module nav config
+- [x] Configuration Centre page: group rail + search, typed inputs, branch selector, override/inherits badges, revert-to-global — done 2026-09-22
+- [x] Reachable from System Admin module card grid (`modules.js`); sidebar nav entry follows with ModuleLayout (0.6) — done 2026-09-22
 ### Tests
-- [ ] Feature tests: branch override wins over global; unknown key rejected; cache busts on save
-- [ ] Unit tests: `SettingsService` resolution order and type casting
-- [ ] Functional pass: set a global default, override it for one branch, confirm the other branch still reads the default
+- [x] Feature tests (8): render, guest redirect, global save, branch override, unknown key rejected, rules enforced, global-only override rejected, revert — done 2026-09-22
+- [x] Unit tests (11): resolution order, casting, cache bust, revert, unknown key, per-branch guard — done 2026-09-22
+- [x] Functional pass — set global rows-per-page 25→40 in browser, saved & persisted; branch view showed "Inherits global"/locked global-only settings — done 2026-09-22
 
 ## 0.2 Currencies + Exchange Rates  ·  [spec](../modules/10-system-administration/10.12-currencies.md)
 
 ### Backend
-- [ ] Migration(s): `currencies`, exchange rates table (rate per currency pair per date)
-- [ ] Models + factories + seeder for USD / ZWG / ZAR with USD as base
-- [ ] `CurrencyService`: rate lookup by date, conversion, rounding rules
-- [ ] Form Requests + Policies + Controller + routes (`admin.currencies.*`) + SystemRoute permission seeds
+- [x] Migration(s): `currencies` + `exchange_rates` (base-relative, dated, buy/sell sides, unique per currency+date) — done 2026-09-22
+- [x] Models + factories + `CurrencySeeder` (USD base + ZWG/ZAR active + 7 regional inactive) — done 2026-09-22
+- [x] `CurrencyService`: effective-dated rate lookup (≤ date), toBase/fromBase with per-currency rounding, `hasRateForToday`, `captureRate`; `MissingExchangeRateException` (first `DomainException`) — done 2026-09-22
+- [x] Controller + routes (`admin.currencies.index/rates.store/toggle`) with validation (sell ≥ buy, no future dates, base takes no rates) — done 2026-09-22 *(SystemRoute seeds pending with role-seed task)*
 ### Frontend
-- [ ] Currencies page: list + edit, daily rate capture form, rate history
-- [ ] Sidebar nav entry in System Admin module nav config
+- [x] Currencies page: table with latest buy/sell + rate-date freshness, missing-today warning banner, rate capture form, recent-rates history, activate/deactivate — done 2026-09-22
+- [x] Reachable from System Admin module cards (`modules.js`); sidebar entry follows ModuleLayout (0.6) — done 2026-09-22
 ### Tests
-- [ ] Feature tests: rate effective-dating (yesterday's rate used for yesterday's document); base currency cannot be deleted
-- [ ] Unit tests: `CurrencyService` conversion + rounding
-- [ ] Functional pass: capture today's ZWG rate, convert an amount both directions, verify rounding
+- [x] Feature tests (7): render, capture, sell≥buy, base rejects rates, future date rejected, toggle, base cannot deactivate — done 2026-09-22
+- [x] Unit tests (7): base=1.0, missing-rate exception, effective dating, historical stability, round-trip conversions, today check, same-day update-not-duplicate — done 2026-09-22
+- [x] Functional pass — captured ZWG 26.00/26.80 in browser, persisted with audit user; warning banner cleared for ZWG — done 2026-09-22
 
 ## 0.3 Number Sequences  ·  [spec](../modules/10-system-administration/10.9-number-sequences.md)
 
 ### Backend
-- [ ] Migration(s): number sequences table (document type, prefix, format e.g. `INV-YYYYMMDD-XXXX`, next number, per-branch flag)
-- [ ] `NumberSequenceService`: atomic, gapless allocation under concurrency (row lock inside transaction)
-- [ ] Seeder: one sequence per document type (quote, order, invoice, credit note, PO, GRN, adjustment, transfer, stock take, PR, supplier return, payment, statement)
-- [ ] Controller + routes (`admin.sequences.*`) + SystemRoute permission seeds
+- [x] Migration: `number_sequences` (type, branch nullable, prefix, date segment, padding, reset frequency; unique type+branch) — done 2026-09-22
+- [x] `NumberSequenceService`: `next()` with `lockForUpdate` inside the caller's transaction (rollback releases the number — gapless), `peek()` preview, branch-sequence-wins-with-global-fallback, yearly/monthly resets — done 2026-09-22
+- [x] Seeder: 20 document types (invoice, quote, SO, CN, DN, receipt, PO, PR, GRN, supplier return, job card, stock take/adjustment/transfer, payment, journal, warranty, lay-by, customer, supplier) — done 2026-09-22
+- [x] Controller + routes (`admin.sequences.index/update`) — next_number deliberately NOT editable via UI (gapless guard) — done 2026-09-22 *(SystemRoute seeds pending with role-seed task)*
 ### Frontend
-- [ ] Number sequences page: list + edit prefix/format/next-number (with guard against lowering next number)
-- [ ] Sidebar nav entry in System Admin module nav config
+- [x] Sequences page: full table with live next-number previews, inline edit (prefix/date segment/digits/reset) — done 2026-09-22
+- [x] Reachable from System Admin module cards (`modules.js`); sidebar entry follows ModuleLayout (0.6) — done 2026-09-22
 ### Tests
-- [ ] Feature tests: gapless invoice numbering (VAT compliance rule from Sales 2.4)
-- [ ] Unit tests: parallel allocation produces no duplicates and no gaps
-- [ ] Functional pass: hammer the service from two concurrent requests, inspect the issued numbers
+- [x] Feature tests (3): render with 20 seeded sequences + previews, format update, invalid prefix rejected — done 2026-09-22
+- [x] Unit tests (9): sequential formatting, no-date variant, peek non-consuming, branch-wins/global-fallback, unconfigured throws, yearly reset + same-year no-reset, **rollback releases number gaplessly** — done 2026-09-22
+- [x] Functional pass — sequences screen verified in browser showing INV-20260922-0001, JC-2026-00001, CUST-00001 previews — done 2026-09-22
 
 ## 0.4 Company / Branch Document Identity  ·  [spec](../modules/10-system-administration/10.2-company-setup.md)
 

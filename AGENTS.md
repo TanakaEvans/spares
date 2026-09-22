@@ -100,6 +100,13 @@ database/data/               ← CSV seed packs (planned — see local-data-seed
 
 ## Current state (update this section as phases complete)
 
-- **Built:** System Administration core (users, roles, company, branches, departments, auth flows) — pre-existing.
-- **Docs:** complete for all 10 modules, workflows, design, operations, tasks.
-- **Next:** Phase 0 — [docs/tasks/00-foundations.md](docs/tasks/00-foundations.md).
+- **Built (pre-existing):** System Administration core (users, roles, company, branches, departments, auth flows).
+- **Built (Phase 0, 2026-09-22):**
+  - Dashboard with the 10 SparesPro module cards + sub-module card pages (`resources/js/modules.js`, `Pages/Modules/Show.jsx`) — 0.7 ✅
+  - 0.1 Configuration Centre ✅ — `config/settings_registry.php` (30 settings), `SettingsService` (branch→global→default), `admin.settings.*`, full UI
+  - 0.2 Currencies & Rates ✅ — `CurrencyService` (effective-dated buy/sell, base-relative), `CurrencySeeder`, `admin.currencies.*`, full UI
+  - 0.3 Number Sequences ✅ — `NumberSequenceService` (gapless, row-locked), 20 seeded types, `admin.sequences.*`, full UI
+  - Domain exception base: `app/Exceptions/DomainException.php` (+ `MissingExchangeRateException`)
+  - Test suite: 47 passing (sqlite :memory:)
+- **Docs:** complete — all modules/sub-modules, workflows, design (incl. per-sub-module sidebars), operations, tasks.
+- **Next:** 0.4 document identity → 0.5 posting engines → 0.6 shared UI kit — [docs/tasks/00-foundations.md](docs/tasks/00-foundations.md).

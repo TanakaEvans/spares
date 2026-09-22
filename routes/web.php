@@ -123,6 +123,36 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
     // Admin Routes (Company, Branches, Departments, Employees)
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+        // Configuration Centre
+        Route::get('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])
+            ->name('settings.index')
+            ->defaults('description', 'Configuration centre — all system settings');
+        Route::put('settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])
+            ->name('settings.update')
+            ->defaults('description', 'Save system settings');
+        Route::delete('settings/override', [\App\Http\Controllers\Admin\SettingsController::class, 'revert'])
+            ->name('settings.revert')
+            ->defaults('description', 'Revert a branch setting to the global value');
+
+        // Currencies & Exchange Rates
+        Route::get('currencies', [\App\Http\Controllers\Admin\CurrencyController::class, 'index'])
+            ->name('currencies.index')
+            ->defaults('description', 'Manage currencies and exchange rates');
+        Route::post('currencies/rates', [\App\Http\Controllers\Admin\CurrencyController::class, 'storeRate'])
+            ->name('currencies.rates.store')
+            ->defaults('description', 'Capture a daily exchange rate');
+        Route::patch('currencies/{currency}/toggle', [\App\Http\Controllers\Admin\CurrencyController::class, 'toggleActive'])
+            ->name('currencies.toggle')
+            ->defaults('description', 'Activate or deactivate a currency');
+
+        // Number Sequences
+        Route::get('sequences', [\App\Http\Controllers\Admin\NumberSequenceController::class, 'index'])
+            ->name('sequences.index')
+            ->defaults('description', 'Configure document number sequences');
+        Route::patch('sequences/{sequence}', [\App\Http\Controllers\Admin\NumberSequenceController::class, 'update'])
+            ->name('sequences.update')
+            ->defaults('description', 'Update a document number sequence');
+
         // Sections
         Route::resource('sections', \App\Http\Controllers\SectionController::class);
 
