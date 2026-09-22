@@ -1,0 +1,11 @@
+{
+    "name": "AuthenticationManagement",
+    "alias": "authenticationmanagement",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\AuthenticationManagement\\Providers\\AuthenticationManagementServiceProvider"
+    ],
+    "files": []
+}
