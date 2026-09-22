@@ -1,6 +1,6 @@
 # Data Sources: Car Brands, Part Numbers & Reference Data
 
-> Where to get the data that powers the Vehicle Reference and Inventory modules — vehicle makes/models, OEM part numbers, fitment data, barcodes, and cross-references.
+> Reference catalogue of where vehicle/parts data *can* come from. **The adopted v1 strategy is [integrations/local-data-seeding.md](integrations/local-data-seeding.md)** — free sources, bundled seed packs, supplier imports. Paid options below (TECDOC etc.) are documented for future reference only and are NOT part of the build.
 
 ---
 

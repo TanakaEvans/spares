@@ -1,6 +1,6 @@
-# Vehicle & Parts Data Strategy
+# Vehicle & Parts Data Strategy (optional paid path — NOT adopted)
 
-> The definitive answer to: "How will the system cater for the ever-increasing dataset of car brands, models, and spare part numbers?"
+> **Status: superseded for v1.** The adopted strategy is [local-data-seeding.md](local-data-seeding.md) — full local seeding and imports, zero recurring cost, zero runtime internet dependency. This document is retained as the reference for a *future* optional TECDOC upgrade if the business ever chooses to pay for it. The `ExternalCatalogSource` interface described below is still built — it just stays bound to `NullCatalogSource`.
 
 ---
 

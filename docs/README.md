@@ -6,13 +6,23 @@
 
 ## Documentation Index
 
+> **Start here → [AGENTS.md](../AGENTS.md)** (rules + doc navigation) → [implementation-plan.md](implementation-plan.md) (build order) → [tasks/](tasks/README.md) (living checklists).
+
 | Section | File | Description |
 |---------|------|-------------|
+| **Implementation Plan** | [implementation-plan.md](implementation-plan.md) | Build order (phases) + why; links every tasks file |
+| **Tasks** | [tasks/README.md](tasks/README.md) | Living checklists per module — update as work completes |
+| **Testing Strategy** | [testing-strategy.md](testing-strategy.md) | Definition of done: unit/feature/golden-flow/functional |
 | **Architecture** | [architecture.md](architecture.md) | System design, tech stack, module structure |
-| **Data Sources** | [data-sources.md](data-sources.md) | Car brands, part numbers, APIs, catalogues |
-| **Data Strategy** | [integrations/vehicle-parts-data-strategy.md](integrations/vehicle-parts-data-strategy.md) | How the ever-growing vehicle/parts dataset is handled (TECDOC etc.) |
+| **Configuration Centre** | [configuration-centre.md](configuration-centre.md) | No hardcoding: settings registry, per-branch overrides, document identity reuse |
+| **Data Strategy (adopted)** | [integrations/local-data-seeding.md](integrations/local-data-seeding.md) | Full local seeding & imports — zero paid integrations; SA/Zim car parc packs |
+| **Data Strategy (future option)** | [integrations/vehicle-parts-data-strategy.md](integrations/vehicle-parts-data-strategy.md) | Optional paid TECDOC path — not adopted for v1 |
+| **Data Sources** | [data-sources.md](data-sources.md) | Reference: catalogues, free APIs, barcode standards |
 | **Workflows** | [workflows/README.md](workflows/README.md) | End-to-end business processes (order-to-cash, procure-to-pay…) |
-| **Design** | [design/README.md](design/README.md) | Design system, navigation model, screen designs |
+| **Design** | [design/README.md](design/README.md) | Design system, UI/HCI rules, navigation, module menus, screen designs |
+| **Operations** | [operations/](operations/) | Multi-currency (USD/ZWG/ZAR), POS hardware & printing, backups & power resilience, data migration |
+| **System Health** ★ | [operations/system-health.md](operations/system-health.md) | The integrity dashboard: books balanced, stock true, queues flowing — proven daily |
+| **Glossary** | [glossary.md](glossary.md) | One vocabulary for docs, UI and code |
 | **Database Conventions** | [coding-standards/database.md](coding-standards/database.md) | Naming, migrations, schema patterns |
 
 ### Modules
@@ -40,6 +50,29 @@ Each module has an overview doc, plus a folder of the same name containing one d
 | [coding-standards/react-inertia.md](coding-standards/react-inertia.md) | Component patterns, hooks, Inertia usage |
 | [coding-standards/database.md](coding-standards/database.md) | Migrations, naming, relationships |
 | [coding-standards/git-workflow.md](coding-standards/git-workflow.md) | Branching strategy, commit messages |
+| [coding-standards/debugging-standards.md](coding-standards/debugging-standards.md) | Exceptions, logging, bug workflow, integrity self-checks |
+
+### Design & UX
+
+| File | Description |
+|------|-------------|
+| [design/design-system.md](design/design-system.md) | Colour tokens, typography, components |
+| [design/ui-rules.md](design/ui-rules.md) | Binding UI/HCI rules — speed budgets, keyboard-first, error prevention, linked navigation |
+| [design/component-standards.md](design/component-standards.md) | Systematic specs: buttons, modals, tables, forms, one sidebar theme |
+| [design/page-guide.md](design/page-guide.md) | Collapsible in-app page guide (`F1` help) on every page |
+| [design/global-search-and-quick-actions.md](design/global-search-and-quick-actions.md) | `Ctrl+K` command palette: find & act on anything |
+| [design/navigation-and-layout.md](design/navigation-and-layout.md) | Dashboard → module sidebar → page archetypes |
+| [design/module-menus.md](design/module-menus.md) | The sidebar menu design for every module & sub-module |
+| [design/screen-designs.md](design/screen-designs.md) | Wireframes: POS, GRN, job card, part detail, stock take… |
+
+### Operations
+
+| File | Description |
+|------|-------------|
+| [operations/multi-currency.md](operations/multi-currency.md) | USD/ZWG/ZAR: dual display, multi-currency tender, FX postings |
+| [operations/hardware-and-printing.md](operations/hardware-and-printing.md) | Scanners, thermal receipts, cash drawers, labels |
+| [operations/backup-and-resilience.md](operations/backup-and-resilience.md) | Backups (3-2-1), UPS/load-shedding, offline-first guarantees |
+| [operations/data-migration.md](operations/data-migration.md) | Onboarding an existing business: opening stock, balances, cutover |
 
 ---
 

@@ -20,6 +20,7 @@
 | 10.10 | Print Templates | 🆕 New | Invoice, PO, job card templates |
 | 10.11 | Email Configuration | 🆕 New | SMTP + email templates |
 | 10.12 | Currencies | 🆕 New | Currency setup and exchange rates |
+| 10.13 | Notifications Centre | 🆕 New | Alert routing (bell/email/SMS), event catalogue, delivery log — [spec](10-system-administration/10.13-notifications-centre.md) |
 
 ---
 
