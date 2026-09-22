@@ -46,7 +46,18 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
             'recent_users' => $recent_users,
         ]);
     })->name('dashboard')->defaults('description', 'Access main system dashboard');
-    
+
+    // Module landing pages (sub-module cards)
+    Route::get('/modules/{module}', function (string $module) {
+        $allowed = [
+            'inventory', 'sales', 'purchasing', 'workshop', 'customers',
+            'suppliers', 'finance', 'vehicle-reference', 'reports', 'system-admin',
+        ];
+        abort_unless(in_array($module, $allowed), 404);
+
+        return inertia('Modules/Show', ['moduleKey' => $module]);
+    })->name('modules.show')->defaults('description', 'View module sub-modules');
+
     // Force Change Password Routes
     Route::get('password/change', [ChangePasswordController::class, 'show'])->name('password.change');
     Route::put('password/change', [ChangePasswordController::class, 'update'])->name('password.update');

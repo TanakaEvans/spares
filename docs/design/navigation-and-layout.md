@@ -74,6 +74,7 @@ Entering a module swaps to a module-specific layout: the `AdminLayout` pattern (
 
 Rules:
 - Sidebar sections = the module's sub-modules, in doc order. Active item = accent-coloured left border + `bg-primary-light`.
+- **Level 3 context switch**: entering a sub-module swaps the sidebar to that sub-module's own menu — only its screens, insights and setup, plus a curated Quick Links section (↰ returns to the module menu). Full pattern + all 82 layouts: [sidebars/](sidebars/README.md). `ModuleLayout` resolves which sidebar to show from the current route-name prefix.
 - Sidebar items are permission-filtered like the cards.
 - Bottom of every sidebar: **Return Home** (dashboard) and **Logout** — as in the current `AdminLayout`.
 - Top bar: breadcrumb (`Module › Sub-module › Record`), global part-search (`F2` from anywhere in the module), notifications, profile menu, current branch badge.
