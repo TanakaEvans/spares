@@ -10,22 +10,27 @@
 |---------|------|-------------|
 | **Architecture** | [architecture.md](architecture.md) | System design, tech stack, module structure |
 | **Data Sources** | [data-sources.md](data-sources.md) | Car brands, part numbers, APIs, catalogues |
+| **Data Strategy** | [integrations/vehicle-parts-data-strategy.md](integrations/vehicle-parts-data-strategy.md) | How the ever-growing vehicle/parts dataset is handled (TECDOC etc.) |
+| **Workflows** | [workflows/README.md](workflows/README.md) | End-to-end business processes (order-to-cash, procure-to-pay…) |
+| **Design** | [design/README.md](design/README.md) | Design system, navigation model, screen designs |
 | **Database Conventions** | [coding-standards/database.md](coding-standards/database.md) | Naming, migrations, schema patterns |
 
 ### Modules
 
-| # | Module | File | Status |
-|---|--------|------|--------|
-| 1 | Inventory Management | [modules/01-inventory-management.md](modules/01-inventory-management.md) | Planned |
-| 2 | Sales & Point of Sale | [modules/02-sales-pos.md](modules/02-sales-pos.md) | Planned |
-| 3 | Purchasing & Procurement | [modules/03-purchasing-procurement.md](modules/03-purchasing-procurement.md) | Planned |
-| 4 | Workshop Management | [modules/04-workshop-management.md](modules/04-workshop-management.md) | Planned |
-| 5 | Customer Management | [modules/05-customer-management.md](modules/05-customer-management.md) | Planned |
-| 6 | Supplier Management | [modules/06-supplier-management.md](modules/06-supplier-management.md) | Planned |
-| 7 | Finance & Accounts | [modules/07-finance-accounts.md](modules/07-finance-accounts.md) | Planned |
-| 8 | Vehicle & Parts Reference | [modules/08-vehicle-parts-reference.md](modules/08-vehicle-parts-reference.md) | Planned |
-| 9 | Reports & Analytics | [modules/09-reports-analytics.md](modules/09-reports-analytics.md) | Planned |
-| 10 | System Administration | [modules/10-system-administration.md](modules/10-system-administration.md) | Existing |
+Each module has an overview doc, plus a folder of the same name containing one dedicated file **per sub-module** (workflow, screens, fields & validation, business rules, edge cases).
+
+| # | Module | Overview | Sub-module docs | Status |
+|---|--------|----------|-----------------|--------|
+| 1 | Inventory Management | [01-inventory-management.md](modules/01-inventory-management.md) | [8 files](modules/01-inventory-management/) | Planned |
+| 2 | Sales & Point of Sale | [02-sales-pos.md](modules/02-sales-pos.md) | [9 files](modules/02-sales-pos/) | Planned |
+| 3 | Purchasing & Procurement | [03-purchasing-procurement.md](modules/03-purchasing-procurement.md) | [8 files](modules/03-purchasing-procurement/) | Planned |
+| 4 | Workshop Management | [04-workshop-management.md](modules/04-workshop-management.md) | [8 files](modules/04-workshop-management/) | Planned |
+| 5 | Customer Management | [05-customer-management.md](modules/05-customer-management.md) | [8 files](modules/05-customer-management/) | Planned |
+| 6 | Supplier Management | [06-supplier-management.md](modules/06-supplier-management.md) | [5 files](modules/06-supplier-management/) | Planned |
+| 7 | Finance & Accounts | [07-finance-accounts.md](modules/07-finance-accounts.md) | [8 files](modules/07-finance-accounts/) | Planned |
+| 8 | Vehicle & Parts Reference | [08-vehicle-parts-reference.md](modules/08-vehicle-parts-reference.md) | [7 files](modules/08-vehicle-parts-reference/) | Planned |
+| 9 | Reports & Analytics | [09-reports-analytics.md](modules/09-reports-analytics.md) | [8 files](modules/09-reports-analytics/) | Planned |
+| 10 | System Administration | [10-system-administration.md](modules/10-system-administration.md) | [12 files](modules/10-system-administration/) | Existing |
 
 ### Coding Standards
 
