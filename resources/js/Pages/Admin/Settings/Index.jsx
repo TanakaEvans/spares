@@ -1,7 +1,8 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Globe, MapPin, RotateCcw, Save, Search, ShieldAlert } from 'lucide-react';
-import AppLayout from '@/Layouts/AppLayout';
+import ModuleLayout from '@/Layouts/ModuleLayout';
+import navConfig from '@/nav/system-admin';
 
 function SettingInput({ setting, value, onChange, disabled }) {
     const base =
@@ -123,18 +124,18 @@ export default function SettingsIndex({ auth, settings, branches, editingBranchI
     const dirtyCount = Object.keys(dirty).length;
 
     return (
-        <AppLayout title="Configuration Centre" auth={auth}>
+        <ModuleLayout
+            navConfig={navConfig}
+            title="Configuration Centre"
+            breadcrumbs={[
+                { label: 'System Administration', href: route('modules.show', 'system-admin') },
+                { label: 'Configuration Centre' },
+            ]}
+        >
             <Head title="Configuration Centre" />
 
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
-                    <Link
-                        href={route('modules.show', 'system-admin')}
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-600 transition-colors mb-4"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to System Administration
-                    </Link>
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900">Configuration Centre</h1>
@@ -289,6 +290,6 @@ export default function SettingsIndex({ auth, settings, branches, editingBranchI
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </ModuleLayout>
     );
 }

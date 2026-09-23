@@ -1,0 +1,49 @@
+code,name,parent_code,sort_order
+ENG,Engine Parts,,10
+ENG-FLT,Filters,ENG,11
+ENG-FLT-OIL,Oil Filters,ENG-FLT,12
+ENG-FLT-AIR,Air Filters,ENG-FLT,13
+ENG-FLT-FUE,Fuel Filters,ENG-FLT,14
+ENG-FLT-CAB,Cabin Filters,ENG-FLT,15
+ENG-GSK,Gaskets & Seals,ENG,16
+ENG-TIM,Timing Components,ENG,17
+ENG-PIS,Pistons & Rings,ENG,18
+ENG-MNT,Engine Mountings,ENG,19
+ENG-CLG,Cooling System,ENG,20
+ENG-CLG-RAD,Radiators,ENG-CLG,21
+ENG-CLG-WPP,Water Pumps,ENG-CLG,22
+ENG-CLG-THS,Thermostats,ENG-CLG,23
+BRK,Brakes,,30
+BRK-PAD,Brake Pads,BRK,31
+BRK-DSC,Brake Discs,BRK,32
+BRK-SHO,Brake Shoes,BRK,33
+BRK-CYL,Brake Cylinders & Calipers,BRK,34
+BRK-HYD,Brake Hydraulics,BRK,35
+SUS,Suspension & Steering,,40
+SUS-SHK,Shock Absorbers,SUS,41
+SUS-BJT,Ball Joints,SUS,42
+SUS-TRE,Tie Rod Ends,SUS,43
+SUS-BSH,Bushes & Arms,SUS,44
+SUS-WBR,Wheel Bearings,SUS,45
+SUS-CVJ,CV Joints & Driveshafts,SUS,46
+ELE,Electrical,,50
+ELE-BAT,Batteries,ELE,51
+ELE-ALT,Alternators,ELE,52
+ELE-STR,Starters,ELE,53
+ELE-PLG,Spark & Glow Plugs,ELE,54
+ELE-SEN,Sensors,ELE,55
+ELE-LMP,Bulbs & Lighting,ELE,56
+TRN,Transmission & Clutch,,60
+TRN-CLU,Clutch Kits,TRN,61
+TRN-GBX,Gearbox Parts,TRN,62
+BLT,Belts & Tensioners,,70
+BLT-FAN,Fan Belts,BLT,71
+BLT-TIM,Timing Belts & Kits,BLT,72
+OIL,Oils & Lubricants,,80
+OIL-ENG,Engine Oils,OIL,81
+OIL-GBX,Gear & Diff Oils,OIL,82
+OIL-GRS,Greases & Additives,OIL,83
+BOD,Body & Accessories,,90
+BOD-MIR,Mirrors,BOD,91
+BOD-WIP,Wiper Blades,BOD,92
+EXH,Exhaust Systems,,95

@@ -1,6 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Coins, Plus, TriangleAlert } from 'lucide-react';
-import AppLayout from '@/Layouts/AppLayout';
+import ModuleLayout from '@/Layouts/ModuleLayout';
+import navConfig from '@/nav/system-admin';
 
 function today() {
     return new Date().toISOString().slice(0, 10);
@@ -26,18 +27,18 @@ export default function CurrenciesIndex({ auth, currencies, rateHistory }) {
     }
 
     return (
-        <AppLayout title="Currencies & Rates" auth={auth}>
+        <ModuleLayout
+            navConfig={navConfig}
+            title="Currencies & Rates"
+            breadcrumbs={[
+                { label: 'System Administration', href: route('modules.show', 'system-admin') },
+                { label: 'Currencies & Rates' },
+            ]}
+        >
             <Head title="Currencies & Rates" />
 
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
-                    <Link
-                        href={route('modules.show', 'system-admin')}
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-600 transition-colors mb-4"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to System Administration
-                    </Link>
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center">
                             <Coins className="w-6 h-6 text-white" />
@@ -232,6 +233,6 @@ export default function CurrenciesIndex({ auth, currencies, rateHistory }) {
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </ModuleLayout>
     );
 }

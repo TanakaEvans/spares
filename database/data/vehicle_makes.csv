@@ -1,0 +1,33 @@
+name,code,country_of_origin,sort_order
+Toyota,TOY,Japan,1
+Volkswagen,VW,Germany,2
+Nissan,NIS,Japan,3
+Ford,FOR,USA,4
+Isuzu,ISU,Japan,5
+Hyundai,HYU,South Korea,6
+Kia,KIA,South Korea,7
+Mercedes-Benz,MB,Germany,8
+BMW,BMW,Germany,9
+Honda,HON,Japan,10
+Mazda,MAZ,Japan,11
+Mitsubishi,MIT,Japan,12
+Suzuki,SUZ,Japan,13
+Renault,REN,France,14
+Peugeot,PEU,France,15
+Opel,OPE,Germany,16
+Chevrolet,CHE,USA,17
+Land Rover,LR,United Kingdom,18
+Jeep,JEE,USA,19
+Subaru,SUB,Japan,20
+Audi,AUD,Germany,21
+Haval,HAV,China,22
+GWM,GWM,China,23
+Chery,CHY,China,24
+BAIC,BAI,China,25
+JAC,JAC,China,26
+Foton,FOT,China,27
+Mahindra,MAH,India,28
+Tata,TAT,India,29
+Datsun,DAT,Japan,30
+Daihatsu,DAI,Japan,31
+Fiat,FIA,Italy,32

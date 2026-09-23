@@ -14,6 +14,7 @@ class Company extends Model
         'trading_name',
         'registration_number',
         'tax_number',
+        'vat_number',
         'email',
         'phone',
         'website',
@@ -24,6 +25,10 @@ class Company extends Model
         'postal_code',
         'logo',
         'currency',
+        'bank_name',
+        'bank_branch_code',
+        'bank_account_name',
+        'bank_account_number',
         'status',
         'head_id',
     ];

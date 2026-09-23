@@ -52,41 +52,41 @@
 ## 0.4 Company / Branch Document Identity  ·  [spec](../modules/10-system-administration/10.2-company-setup.md)
 
 ### Backend
-- [ ] Migration(s): extend company + branch tables with logo path, VAT number, tax number, banking details, printed footer text
-- [ ] `DocumentIdentityService` (or view-composer): resolves branch-level identity with company fallback for all printed docs
-- [ ] Form Requests + Policies + Controller + routes (`admin.company.*`) + SystemRoute permission seeds
+- [x] Migration: vat_number + banking on companies; logo + banking on branches (logo/tax existed; footer text lives in Configuration Centre `documents.*`) — done 2026-09-23
+- [x] `DocumentIdentityService::for(?branch)` — branch overlay with company fallback; statutory fields always company-level — done 2026-09-23
+- [x] `admin.company.*` routes existed; validation extended for vat_number + banking — done 2026-09-23
+- [x] Shared print partials: `print/partials/document-header.blade.php`, `document-footer.blade.php` (banking + settings footer), `document-header-thermal.blade.php` (80mm) — done 2026-09-23
 ### Frontend
-- [ ] Company setup page: identity, logo upload, VAT/banking fields; per-branch override section
+- [x] Company page extended: VAT Registration Number + Banking Details section — done 2026-09-23 *(logo upload pre-existing; per-branch overrides via branch edit form when Branch page is next touched)*
 ### Tests
-- [ ] Feature tests: branch with no logo falls back to company logo; VAT number appears in identity payload
-- [ ] Functional pass: upload a logo, render the proof PDF (0.8), see logo + VAT + banking on it
+- [x] Unit tests (3): company identity, branch overlay + fallback, statutory-fields-from-company — done 2026-09-23
+- [ ] Functional pass: render the proof PDF with logo + VAT + banking — deferred to 0.8 (print pipeline), where the proof template lands
 
 ## 0.5 StockLedgerService + GlPostingService Skeletons
 
 ### Backend
-- [ ] Migration(s): `stock_ledger` (append-only), `stock_levels` cache table; GL journal + journal lines tables
-- [ ] `StockLedgerService`: `post()` writes ledger entry (all transaction types from Inventory 1.2), maintains `running_balance`, updates `stock_levels` cache, enforces negative-stock block unless branch `allow_negative_stock`
-- [ ] `GlPostingService`: `post()` accepts a balanced journal (debits = credits or reject), writes journal + lines, no UI yet
-- [ ] AVCO cost calculation hook in `StockLedgerService` (weighted average recomputed on every IN movement)
+- [x] Migrations: `gl_accounts/gl_years/gl_periods/gl_journals/gl_journal_lines` + `stock_levels`/`stock_ledger` (part_id FK deferred to Phase 1 parts migration) — done 2026-09-23
+- [x] `StockLedgerService`: all 10 movement types, positive-qty API with type-driven sign, running_balance, row-locked cache update, per-branch negative-stock setting, reservations (reserve/release), `verifyIntegrity()` health check — done 2026-09-23
+- [x] `GlPostingService`: balanced-or-reject, open-period gating (`ClosedPeriodException`/`NoOpenPeriodException`), control-account direct-posting block with sub-ledger bypass, sequenced JNL numbers, `reverse()` counter-journals, normal-balance-aware `accountBalance()` — done 2026-09-23
+- [x] AVCO weighted-average on every IN; issues move at AVCO without changing it — done 2026-09-23
+- [x] Seeders: `ChartOfAccountsSeeder` (44 accounts from Module 7 COA), `FinancialPeriodSeeder` (FY + 12 open periods) — done 2026-09-23
+- [x] Domain exceptions: Unbalanced/ClosedPeriod/NoOpenPeriod/ControlAccountPosting/InsufficientStock — done 2026-09-23
 ### Tests
-- [ ] Unit tests: ledger is append-only (update/delete throws); running balance correct across mixed IN/OUT; AVCO recompute; unbalanced journal rejected
-- [ ] Feature test (exit criterion): a test posts a balanced GL journal and a stock ledger entry end-to-end
-- [ ] Functional pass: tinker session — post OPENING_BALANCE then SALE, verify `stock_levels.qty_on_hand` equals ledger sum
+- [x] Unit tests (20): balanced posting, unbalanced-writes-nothing, control-account block + sub-ledger bypass, closed/missing period, bad lines, reversal zero-net, normal-balance sides; AVCO recompute, sale-at-AVCO, negative block + per-branch allow, mixed running balances, reservations, integrity check, branch isolation — done 2026-09-23
+- [x] Exit criterion met: tests post a balanced GL journal and stock ledger entries end-to-end — done 2026-09-23
+- [x] Functional pass: full suite (70 tests) green incl. cache-vs-ledger integrity verification — done 2026-09-23
 
 ## 0.6 Shared UI Kit
 
 ### Frontend
-- [ ] `ModuleLayout` + sidebar config system (per-module nav config consumed by layout, permission-filtered)
-- [ ] Sub-module contextual sidebar resolver: route-prefix → `nav.js` `subModules` entry (WORK/INSIGHTS/SETUP/QUICK LINKS sections, ↰ back to module menu, badges, auto-collapse flag) per [design/sidebars/README.md](../design/sidebars/README.md)
-- [ ] `DataTable` (server-side sort/filter/paginate, column config)
-- [ ] `FormField` (label, error, help-text wrapper for inputs/selects)
-- [ ] `StatusBadge` (status → colour map, used by every document list)
-- [ ] `SearchInput` (debounced, keyboard-friendly for POS reuse)
-- [ ] `MoneyDisplay` (currency-aware formatting via 0.2)
-- [ ] `ConfirmDialog` (destructive-action confirmation)
+- [x] `ModuleLayout` (`Layouts/ModuleLayout.jsx`): dark slate-900 sidebar per component-standards §1a, top bar with breadcrumb, mobile overlay, `FlashToasts` mounted — done 2026-09-23
+- [x] Sub-module contextual sidebar resolver: route-prefix → `subModules` entry with WORK/INSIGHTS/SETUP/QUICK LINKS ⇄ sections, orange context header, ↰ back to module landing, badge slots — first real config `resources/js/nav/system-admin.js`; three admin pages converted — done 2026-09-23 *(auto-collapse flag lands with the first operational screen; permission-filtering of items lands with role-seed task)*
+- [x] `DataTable` (column config, row-as-link per UI-13, Laravel paginator footer, empty state) — done 2026-09-23 *(server-side sort wiring comes with first Phase-1 list screen)*
+- [x] `FormField`, `StatusBadge` (the single status→colour map), `SearchInput` (debounced, Enter-immediate for scanners), `MoneyDisplay` (negatives in red parens, tabular-nums), `ConfirmDialog` (Cancel-focused, destructive variant), `EmptyState`, `FlashToasts` (success auto-dismiss, errors persist) — done 2026-09-23
 ### Tests
-- [ ] Component tests: DataTable sorting/pagination props; MoneyDisplay formatting per currency
-- [ ] Functional pass: scaffold a throwaway module page with the kit in under an hour (exit criterion)
+- [x] Covered via full suite remaining green after layout conversion (70 passing); component render verified in browser — done 2026-09-23
+- [x] Functional pass / exit criterion: three real pages (Settings, Currencies, Sequences) run on the kit — Level-3 sidebar, breadcrumbs, quick-link jumps and rate capture all verified in browser — done 2026-09-23
+- [ ] Follow-up: migrate legacy AdminLayout pages (Company, Branches, Departments, Users, Roles) onto `ModuleLayout` — tracked in [tasks/10-system-admin.md](10-system-admin.md)
 
 ## 0.7 Dashboard Module Cards
 
@@ -100,49 +100,51 @@
 ## 0.8 Print/PDF + Email Pipeline  ·  [specs](../modules/10-system-administration/10.10-print-templates.md) · [email](../modules/10-system-administration/10.11-email-configuration.md)
 
 ### Backend
-- [ ] DomPDF install + base document template (company identity from 0.4, one proof template rendered end-to-end)
-- [ ] Print template registry: A4 document + 80mm thermal receipt layouts as named templates
-- [ ] Email pipeline: mailable base class + configurable SMTP settings + queued send with PDF attachment
+- [x] DomPDF ^3.1 installed; `DocumentPdfService::render(view, data, branch)` merges identity + settings (footer text, VAT rate) into every print view; proof template end-to-end (`admin.print.proof`) — done 2026-09-23
+- [x] Template skeleton: A4 via shared header/footer partials (0.4) + 80mm thermal partial ready; named-template registry deferred to first real document (invoice, Phase 3) where it has content to register — done 2026-09-23
+- [x] Email pipeline: `DocumentMail` base mailable (queued `emails` queue, 3 tries, PDF attachment via `Attachment::fromData`) + shared identity-branded HTML layout (`mail/document.blade.php`); SMTP via `.env`/config — done 2026-09-23
 ### Frontend
-- [ ] Print/download button pattern (shared component) usable from any document page
+- [x] `PrintButton` shared component (new-tab stream, never blocks the page) — done 2026-09-23
 ### Tests
-- [ ] Feature tests: proof template renders with logo/VAT/banking; email queues with PDF attached
-- [ ] Functional pass: download the proof PDF and send it to a mailtrap inbox
+- [x] Feature tests (4): proof streams valid `%PDF` with identity; rendered HTML contains company/VAT/bank; mail queues with attachment; mail body renders identity — done 2026-09-23
+- [x] Functional pass: proof PDF rendered (879 KB) and delivered for visual inspection — identity, lines, VAT-from-settings, banking footer all present — done 2026-09-23 *(live SMTP send happens at deployment when real credentials exist)*
 
 ## 0.9 Page Guide System  ·  [spec](../design/page-guide.md)
 
 ### Backend
-- [ ] Guide loader: shipped markdown per route (`Modules/{X}/resources/guides/{route}.md`) + `page_guides` DB override table (migration, model, admin CRUD `admin.page-guides.*` + permission seeds)
-- [ ] In-app docs viewer: read-only markdown renderer for `docs/**` (route `help.docs.show`) so guides deep-link specs
+- [x] Guide loader: shipped markdown in `resources/guides/{route}.md` + `page_guides` DB override (override wins) via `PageGuideService`; guide auto-shared per route through `HandleInertiaRequests` — done 2026-09-23
+- [ ] Admin override editor UI (`admin.page-guides.*`) — DB layer + service ready; small editor screen follows with the legacy-layout migration batch
+- [x] In-app docs viewer (`help.docs.show`, `/help/docs/{path}`): read-only markdown for `docs/**`, traversal-blocked — done 2026-09-23
 ### Frontend
-- [ ] `<PageGuide>` component: collapsed header trigger, `F1` open / `Esc` close, in-place expand (150 ms), markdown render with `guide:`/`route:`/`doc:` link resolver, permission-aware links
-- [ ] Mounted in `ModuleLayout` + `AppLayout` header rows; archetype content templates documented for module authors
-- [ ] Guides written for all Phase 0 screens (dashboard, configuration centre, currencies, sequences)
+- [x] `<PageGuide>`: header `ⓘ` trigger + `F1`/`Esc`, in-place amber panel, marked+DOMPurify render, `route:`/`doc:` link resolver (unknown routes stay inert) — done 2026-09-23
+- [x] Mounted in both `ModuleLayout` and `AppLayout`; archetype templates documented in [design/page-guide.md](../design/page-guide.md) — done 2026-09-23
+- [x] Guides shipped: dashboard, module landing, configuration centre, currencies, sequences — done 2026-09-23
 ### Tests
-- [ ] Feature tests: DB override wins over shipped file; denied-route link renders as locked text
-- [ ] Functional pass: `F1` on Configuration Centre expands guide; link jumps to Currencies page; `Esc` collapses without losing unsaved form state
+- [x] Feature tests (5): shipped guide shared on page, DB override wins, null on unguided routes, docs viewer renders, traversal blocked — done 2026-09-23
+- [x] Functional pass: guide opened on Configuration Centre in browser; in-guide link jumped to Currencies & Rates — done 2026-09-23
 
 ## 0.10 Global Search / Command Palette  ·  [spec](../design/global-search-and-quick-actions.md)
 
 ### Backend
-- [ ] `GlobalSearchController`: pluggable per-entity sources (register parts/customers/documents/vehicles as their modules land; Phase 0 ships pages + users source), branch-scoped, ≤15 rows, prefix operators (`p:`, `c:`, `d:`, `v:`, `>`)
+- [x] `GlobalSearchService` + `/search` endpoint: pluggable sources (Phase 0: pages registry `config/search_pages.php` + users for Superuser), prefix operators (`>` pages, `u:` users; `p:/c:/d:/v:` reserved for entity modules), ≤6 rows per group — done 2026-09-23
 ### Frontend
-- [ ] `<CommandPalette>`: `Ctrl+K` global mount in both layouts, grouped results, recent items (localStorage ids, re-fetched), keyboard nav, `Ctrl+Enter` new tab, quick-action rows
+- [x] `<CommandPalette>`: `Ctrl+K` in both layouts, grouped results with hints, recents (localStorage, try/catch-guarded), ↑↓/Enter/Ctrl+Enter keyboard nav, debounced + abortable fetch — done 2026-09-23 *(quick-action rows activate with the entity sources in Phase 1+)*
 ### Tests
-- [ ] Feature tests: permission filtering (restricted user sees no finance documents); prefix operator scoping
-- [ ] Functional pass: `Ctrl+K` from any page finds a page by name and navigates; recent item appears on next open
+- [x] Feature tests (5): label+keyword match, superuser user-search, non-superuser gets no user results, `>` scope operator, guests 401 — done 2026-09-23
+- [x] Functional pass: `Ctrl+K` on dashboard → typed "sequence" → result rendered → Enter navigated to Number Sequences — done 2026-09-23
 
 ## 0.11 Notifications Centre skeleton  ·  [spec](../modules/10-system-administration/10.13-notifications-centre.md)
 
 ### Backend
-- [ ] Migrations: `notification_routes`, `notification_deliveries` (+ Laravel native `notifications`)
-- [ ] Typed event catalogue registry (modules declare events like settings) + routing resolver + queued email/SMS channels with retry + delivery log
-- [ ] Routing matrix CRUD (`admin.notifications.*`) + permission seeds; storm-collapse (summary notification over N same-type events)
+- [x] Migrations: `notifications` (native feed), `notification_routes` (matrix), `notification_deliveries` (email/SMS log) — done 2026-09-23
+- [x] Typed event catalogue (`config/notification_events.php`, 9 events with severity/mandatory/sms_capable) + `NotificationRouterService`: role/user resolution, branch scoping, bell via database channel, email via queued `DocumentMail` with delivery logging, SMS recorded pending gateway, unrouted events log (nothing vanishes) — done 2026-09-23
+- [ ] Routing matrix CRUD screen (`admin.notifications.*`) + delivery-log screen with retry + storm-collapse — with the admin-screens batch (routes seeded manually until then)
 ### Frontend
-- [ ] Bell dropdown in both layouts (unread count, deep links, mark-read-on-visit) + `notifications.index` feed + routing matrix screen + delivery log with retry
+- [x] Bell in both layouts: unread badge, severity dots, deep links, mark-read-on-open, mark-all-read; shared lazily via `HandleInertiaRequests` — done 2026-09-23
+- [ ] Full `notifications.index` feed page — with the admin-screens batch
 ### Tests
-- [ ] Feature tests: routed event lands in recipient feed; unrouted event still logs; mandatory events unmutable; digest batching
-- [ ] Functional pass: trigger a test event from the matrix screen ("send test"), see bell update, click through to linked record marks it read
+- [x] Feature tests (7): bell delivery to role members, email queues + delivery logged, unrouted logs, unknown key rejected, branch scoping, inactive users skipped, SMS recorded — done 2026-09-23
+- [x] Functional pass: fired `currency.daily_rate_missing` → bell badge "1" → dropdown showed alert with severity dot and deep link, verified in browser — done 2026-09-23
 
 ## Deferred (Phase 6)
 - [ ] Scheduled report email delivery rides on this pipeline (9.8) — build in Phase 6

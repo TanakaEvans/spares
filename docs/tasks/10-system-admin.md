@@ -66,6 +66,11 @@ Needed as their consuming features land (workshop flag by Phase 5, price list de
 - [ ] Feature tests: seeded imbalance turns check red + fires notification; discovery picks up a module-registered check
 - [ ] Functional pass: force a failed job and a stale draft, watch both go amber, click through, resolve, re-run to green
 
+## Legacy Layout Migration
+
+- [ ] Migrate pre-existing AdminLayout pages (Company, Branches, Departments, Sections, Employees, Users, Roles, Auth Management) onto the shared `ModuleLayout` + `nav/system-admin.js` config; delete `AdminLayout.jsx` and its school-era branding when the last page moves
+- [ ] Functional pass: every System Admin screen shows the same slate-900 sidebar and breadcrumb shell
+
 ## Permission Audit (Phase 7 — go-live hardening)
 
 ### Backend

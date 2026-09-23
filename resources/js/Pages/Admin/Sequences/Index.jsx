@@ -1,7 +1,8 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { ArrowLeft, Hash, Pencil, X } from 'lucide-react';
-import AppLayout from '@/Layouts/AppLayout';
+import ModuleLayout from '@/Layouts/ModuleLayout';
+import navConfig from '@/nav/system-admin';
 
 const TYPE_LABELS = {
     invoice: 'Tax Invoice',
@@ -120,18 +121,18 @@ export default function SequencesIndex({ auth, sequences }) {
     const [editingId, setEditingId] = useState(null);
 
     return (
-        <AppLayout title="Number Sequences" auth={auth}>
+        <ModuleLayout
+            navConfig={navConfig}
+            title="Number Sequences"
+            breadcrumbs={[
+                { label: 'System Administration', href: route('modules.show', 'system-admin') },
+                { label: 'Number Sequences' },
+            ]}
+        >
             <Head title="Number Sequences" />
 
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-100">
-                    <Link
-                        href={route('modules.show', 'system-admin')}
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-orange-600 transition-colors mb-4"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to System Administration
-                    </Link>
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gray-700 rounded-xl flex items-center justify-center">
                             <Hash className="w-6 h-6 text-white" />
@@ -198,6 +199,6 @@ export default function SequencesIndex({ auth, sequences }) {
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </ModuleLayout>
     );
 }

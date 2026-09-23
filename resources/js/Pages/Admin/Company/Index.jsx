@@ -10,6 +10,7 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
         trading_name: company?.trading_name || '',
         registration_number: company?.registration_number || '',
         tax_number: company?.tax_number || '',
+        vat_number: company?.vat_number || '',
         email: company?.email || '',
         phone: company?.phone || '',
         website: company?.website || '',
@@ -19,6 +20,10 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
         country: company?.country || 'Zimbabwe',
         postal_code: company?.postal_code || '',
         currency: company?.currency || 'USD',
+        bank_name: company?.bank_name || '',
+        bank_branch_code: company?.bank_branch_code || '',
+        bank_account_name: company?.bank_account_name || '',
+        bank_account_number: company?.bank_account_number || '',
         head_id: company?.head_id || '',
     });
 
@@ -152,6 +157,21 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
                                     value={data.tax_number}
                                     onChange={(e) => setData('tax_number', e.target.value)}
                                     disabled={!isEditing}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                                />
+                            </div>
+
+                            {/* VAT Number */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    VAT Registration Number
+                                </label>
+                                <input
+                                    type="text"
+                                    value={data.vat_number}
+                                    onChange={(e) => setData('vat_number', e.target.value)}
+                                    disabled={!isEditing}
+                                    placeholder="Printed on every tax invoice"
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
                                 />
                             </div>
@@ -306,6 +326,52 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
                                     type="text"
                                     value={data.postal_code}
                                     onChange={(e) => setData('postal_code', e.target.value)}
+                                    disabled={!isEditing}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Banking Details — printed on invoices and statements */}
+                        <h3 className="text-lg font-medium text-gray-900 mt-8 mb-4">Banking Details</h3>
+                        <p className="text-sm text-gray-500 -mt-3 mb-4">Shown on invoices and statements so customers can pay you.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                                <input
+                                    type="text"
+                                    value={data.bank_name}
+                                    onChange={(e) => setData('bank_name', e.target.value)}
+                                    disabled={!isEditing}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Branch Code</label>
+                                <input
+                                    type="text"
+                                    value={data.bank_branch_code}
+                                    onChange={(e) => setData('bank_branch_code', e.target.value)}
+                                    disabled={!isEditing}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                                <input
+                                    type="text"
+                                    value={data.bank_account_name}
+                                    onChange={(e) => setData('bank_account_name', e.target.value)}
+                                    disabled={!isEditing}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                                <input
+                                    type="text"
+                                    value={data.bank_account_number}
+                                    onChange={(e) => setData('bank_account_number', e.target.value)}
                                     disabled={!isEditing}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
                                 />

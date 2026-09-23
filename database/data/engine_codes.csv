@@ -1,0 +1,51 @@
+code,make_code,description,capacity_cc,fuel_type,aspiration,cylinders
+1GD-FTV,TOY,2.8L diesel turbo (Hilux/Fortuner/Prado 2015+),2755,diesel,turbo,4
+2GD-FTV,TOY,2.4L diesel turbo (Hilux/Fortuner 2015+),2393,diesel,turbo,4
+1KD-FTV,TOY,3.0L D-4D diesel turbo (Hilux/Fortuner 2005-2015),2982,diesel,turbo,4
+2KD-FTV,TOY,2.5L D-4D diesel turbo (Hilux 2005-2015),2494,diesel,turbo,4
+5L-E,TOY,3.0L diesel NA (Hilux/HiAce older),2986,diesel,naturally_aspirated,4
+2TR-FE,TOY,2.7L petrol (Hilux/Fortuner/HiAce),2694,petrol,naturally_aspirated,4
+1GR-FE,TOY,4.0L V6 petrol (Prado/FJ),3956,petrol,naturally_aspirated,6
+1HZ,TOY,4.2L diesel NA (Land Cruiser 70),4164,diesel,naturally_aspirated,6
+1NZ-FE,TOY,1.5L petrol (Vitz/Yaris/Probox),1497,petrol,naturally_aspirated,4
+2NZ-FE,TOY,1.3L petrol (Vitz/Yaris),1298,petrol,naturally_aspirated,4
+1KR-FE,TOY,1.0L petrol 3-cyl (Vitz/Aygo/Agya),996,petrol,naturally_aspirated,3
+1ZZ-FE,TOY,1.8L petrol (Corolla 2000-2007),1794,petrol,naturally_aspirated,4
+2ZR-FE,TOY,1.8L petrol (Corolla 2007+),1798,petrol,naturally_aspirated,4
+4A-FE,TOY,1.6L petrol (Corolla 90s),1587,petrol,naturally_aspirated,4
+1TR-FE,TOY,2.0L petrol (HiAce/Quantum),1998,petrol,naturally_aspirated,4
+YD25DDTi,NIS,2.5L diesel turbo (Navara/NP300),2488,diesel,turbo,4
+K9K,NIS,1.5 dCi diesel (Micra/Almera/Renault),1461,diesel,turbo,4
+HR15DE,NIS,1.5L petrol (Note/Tiida),1498,petrol,naturally_aspirated,4
+QG16DE,NIS,1.6L petrol (Almera/Sentra),1597,petrol,naturally_aspirated,4
+KA24E,NIS,2.4L petrol (Hardbody),2389,petrol,naturally_aspirated,4
+TD27,NIS,2.7L diesel (Hardbody/Terrano),2663,diesel,naturally_aspirated,4
+ZD30,NIS,3.0L diesel turbo (Patrol/Hardbody),2953,diesel,turbo,4
+HR16DE,NIS,1.6L petrol (NP200/Qashqai),1598,petrol,naturally_aspirated,4
+P4AT,FOR,2.2L Duratorq TDCi (Ranger T6),2198,diesel,turbo,4
+P5AT,FOR,3.2L Duratorq TDCi (Ranger T6),3198,diesel,turbo,5
+WLAT,FOR,2.5L diesel turbo (Ranger/BT-50 pre-2011),2499,diesel,turbo,4
+WEAT,FOR,3.0L diesel turbo (Ranger/BT-50 pre-2011),2953,diesel,turbo,4
+EcoBlue2.0,FOR,2.0L EcoBlue diesel (Ranger 2019+),1996,diesel,turbo,4
+Duratec1.6,FOR,1.6L petrol (Fiesta/Figo),1596,petrol,naturally_aspirated,4
+CAXA,VW,1.4 TSI petrol (Golf/Polo),1390,petrol,turbo,4
+CBZB,VW,1.2 TSI petrol (Polo 6R),1197,petrol,turbo,4
+CJZA,VW,1.2 TSI petrol (Polo/Golf 7),1197,petrol,turbo,4
+BTS,VW,1.6L petrol (Polo Vivo),1598,petrol,naturally_aspirated,4
+CFFB,VW,2.0 TDI diesel (Golf/Tiguan),1968,diesel,turbo,4
+CLLA,VW,2.0 BiTDI (Amarok),1968,diesel,turbo,4
+4JJ1,ISU,3.0L diesel turbo (D-Max/KB300),2999,diesel,turbo,4
+4JK1,ISU,2.5L diesel turbo (KB250/D-Max),2499,diesel,turbo,4
+4JA1,ISU,2.5L diesel NA (KB250 older),2499,diesel,naturally_aspirated,4
+4HK1,ISU,5.2L diesel turbo (NPR trucks),5193,diesel,turbo,4
+4D56,MIT,2.5L diesel turbo (Triton/Colt),2477,diesel,turbo,4
+4M40,MIT,2.8L diesel turbo (Pajero/Canter),2835,diesel,turbo,4
+4N15,MIT,2.4L diesel turbo (Triton 2015+),2442,diesel,turbo,4
+G4LA,HYU,1.2L petrol (i10/Picanto),1248,petrol,naturally_aspirated,4
+G4FC,HYU,1.6L petrol (Accent/i20/Rio),1591,petrol,naturally_aspirated,4
+D4CB,HYU,2.5 CRDi diesel (H-1/H-100),2497,diesel,turbo,4
+G4FA,HYU,1.4L petrol (i20/Rio),1396,petrol,naturally_aspirated,4
+L13A,HON,1.3L i-DSI petrol (Fit/Jazz),1339,petrol,naturally_aspirated,4
+L15A,HON,1.5L VTEC petrol (Fit/Jazz),1497,petrol,naturally_aspirated,4
+ZJ-VE,MAZ,1.3L petrol (Demio/Mazda2),1349,petrol,naturally_aspirated,4
+GW4D20,GWM,2.0L diesel turbo (Steed/H5),1996,diesel,turbo,4
