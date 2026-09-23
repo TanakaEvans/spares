@@ -24,6 +24,9 @@ const STATUS_STYLES = {
     dispatched: 'bg-blue-100 text-blue-800',
     in_transit: 'bg-blue-100 text-blue-800',
     partial: 'bg-blue-100 text-blue-800',
+    counting: 'bg-blue-100 text-blue-800',
+    review: 'bg-yellow-100 text-yellow-800',
+    converted: 'bg-indigo-100 text-indigo-800',
     // Warning / attention
     awaiting_parts: 'bg-yellow-100 text-yellow-800',
     awaiting_customer: 'bg-yellow-100 text-yellow-800',

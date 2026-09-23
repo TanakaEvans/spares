@@ -5,6 +5,17 @@
 
 The posting engine (`GlPostingService`) exists from Phase 0 and has journalised every invoice/GRN since; this phase builds the accountant's surface on the already-correct ledger.
 
+> **Phase 4 core delivered (2026-09-23).** The accountant's surface is live on the already-correct ledger; browser-verified: trial balance **balanced** off real dev-DB trading, balance sheet **balances** (Assets = Liabilities + Equity, incl. contra accounts), and a full AR loop — on-account invoice `INV-20260923-0002` ($82.80) → receipt `RCP-20260923-0001` (auto-settled) → Debtors (1210) back to 0, Bank +82.80, integrity clean.
+> - **7.1 Chart of Accounts + 7.8 Periods** ✅ — `Finance/COA/Index.jsx` (grouped, live balances, control-account badges, drill to GL), `Finance/Periods/Index.jsx` (open/close/reopen/lock; engine already gates postings to open periods). Deferred: accountant-only close policy, FY generation UI.
+> - **7.2 General Ledger + Manual Journals** ✅ — `LedgerReportService::accountMovements` (running balance), `Finance/GL/Index.jsx` enquiry, `Finance/Journals/{Index,Create,Show}.jsx` (balanced-only capture, **control accounts blocked** for manual journals via `fromSubLedger:false`, reverse = mirror journal). 
+> - **7.3 AR Receipts + Ageing** ✅ — `ArReceiptService` (post DR bank/till · CR 1210, allocate across invoices, oldest-first auto-settle, unapplied credits, current/30/60/90+ ageing), `Finance/Receipts/{Index,Create}.jsx`. `Customer::arBalance()` now nets receipts. **Deferred: 5.5 statement PDF + email.**
+> - **7.4 AP Payments + Payment Run** ✅ — `ApPaymentService` (post DR 2110 · CR bank, allocate, `runBatch` one-payment-per-supplier under a shared batch ref, aged creditors), `Finance/Payments/{Index,Create}.jsx` + `Finance/PaymentRun/Index.jsx`. `Supplier::apBalance()` now nets payments. Deferred: EFT CSV export file.
+> - **7.7 Trial Balance / P&L / Balance Sheet** ✅ — `LedgerReportService` (section-convention balances so contra accounts net correctly — fixed a balance-sheet imbalance found in browser), `Finance/Reports/{TrialBalance,IncomeStatement,BalanceSheet}.jsx` with date/branch filters. Deferred: Excel/PDF export.
+> - Sidebar migration ✅ — deprecated `FinanceSidebar.jsx` deleted; finance renders on the shared `ModuleLayout` via `nav/finance.js`. 8 page guides; Finance card + sub-cards Active.
+> - Tests: `ArReceiptFlowTest` (5), `ApPaymentFlowTest` (4), `FinancialReportsTest` (5, incl. contra-account balance sheet). Suite **154 green**.
+> - **7.6 VAT Returns** ✅ (2026-09-23) — `VatReturnService` computes Output (2210) − Input (2220) live from posted journals; `finance.vat.*` screen (period preview, generate → draft → submitted → paid). Browser-verified (Output 14.76 / Input 10.20 / Net 4.56). Tests: `VatReturnTest` (2).
+> - **Deferred to a Phase 4 follow-up:** 7.5 Bank accounts + statement import/reconciliation, 4.8 Month-end close screen, ~~4.9 System Health~~ (✅ delivered Phase 7), SystemRoute permission seeds, remittance print templates.
+
 ## 7.1 Chart of Accounts + 7.8 Period Management  ·  [spec 7.1](../modules/07-finance-accounts/7.1-chart-of-accounts.md) · [spec 7.8](../modules/07-finance-accounts/7.8-period-management.md)
 
 ### Backend

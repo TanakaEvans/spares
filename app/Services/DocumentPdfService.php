@@ -18,7 +18,7 @@ class DocumentPdfService
      * Render any print view with the shared identity + settings context merged in.
      * Every printed document goes through here — one pipeline, one identity block.
      */
-    public function render(string $view, array $data = [], Branch|int|null $branch = null): PdfDocument
+    public function render(string $view, array $data = [], Branch|int|null $branch = null, array|string $paper = 'a4'): PdfDocument
     {
         $branchId = $branch instanceof Branch ? $branch->id : $branch;
 
@@ -26,6 +26,6 @@ class DocumentPdfService
             'identity' => $this->identity->for($branch),
             'footerText' => $this->settings->get('documents.invoice_footer_text', $branchId),
             'vatRate' => $this->settings->get('tax.vat_rate_default'),
-        ], $data))->setPaper('a4');
+        ], $data))->setPaper($paper);
     }
 }

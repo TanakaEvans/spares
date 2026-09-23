@@ -62,11 +62,12 @@ class Supplier extends Model
         return $query->where('is_active', true);
     }
 
-    /** Posted, unsettled AP balance (payments land in Phase 4). */
+    /** Posted, unsettled AP balance: invoices − credited returns − payments. */
     public function apBalance(): float
     {
-        return (float) $this->invoices()->where('status', 'posted')->sum('total')
+        return round((float) $this->invoices()->where('status', 'posted')->sum('total')
             - (float) SupplierReturn::where('supplier_id', $this->id)
-                ->where('status', 'credited')->sum('credit_total');
+                ->where('status', 'credited')->sum('credit_total')
+            - (float) SupplierPayment::where('supplier_id', $this->id)->sum('amount'), 2);
     }
 }

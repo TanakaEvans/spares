@@ -1,7 +1,7 @@
 // Purchasing module nav — content only.
 import {
     Factory, FileInput, FileSpreadsheet, LayoutList, PackageCheck,
-    PackageX, Plus, RefreshCw, Truck,
+    PackageX, Plus, RefreshCw, Truck, FileMinus,
 } from 'lucide-react';
 
 const navConfig = {
@@ -26,6 +26,7 @@ const navConfig = {
             section: 'Bills',
             items: [
                 { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+                { label: 'Supplier Credits', route: 'purchasing.supplier-credits.index', icon: FileMinus },
             ],
         },
         {
@@ -37,6 +38,14 @@ const navConfig = {
     ],
 
     subModules: {
+        supplierCredits: {
+            label: 'Supplier Credit Notes', icon: FileMinus, routePrefix: 'purchasing.supplier-credits',
+            work: [{ label: 'All Credits', route: 'purchasing.supplier-credits.index', icon: LayoutList }],
+            quickLinks: [
+                { label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX },
+                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+            ],
+        },
         orders: {
             label: 'Purchase Orders',
             icon: FileInput,

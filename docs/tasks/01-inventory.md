@@ -132,6 +132,8 @@ Granular checklists below remain for the deferred items.
 
 ## 1.4 Stock Takes  ·  [spec](../modules/01-inventory-management/1.4-stock-takes.md)  ·  Phase 3.8
 
+> **Delivered (2026-09-23).** `stock_takes` + `stock_take_lines` (frozen `system_qty` snapshot), `StockTakeService` (start full/spot → snapshot, `recordCount`, `moveToReview`, `post` → net variance as ONE adjustment through `StockMovementService::postAdjustment` → ledger + write-off/surplus GL), `inventory.stock-takes.*` routes, `StockTakes/{Index,Create,Show}.jsx` (blind-friendly count grid, large-variance recount flag from `inventory.stock_take_variance_recount_value`, review→post with `ConfirmDialog`). Tests: `StockTakeVarianceTest` (3). **Deferred:** movement-freeze/blocking while a take is open, print count sheets, bin-barcode sheet loading, accepted-variance management notification.
+
 ### Backend
 - [ ] Migration(s): `stock_takes` (full/cycle/spot, freeze_movements), `stock_take_lines` (system_qty frozen, counted/recount/final, variance)
 - [ ] Models + relationships + factories

@@ -1,6 +1,6 @@
 // Vehicle Reference nav — content only (component-standards §1a).
 import {
-    Car, Cog, Factory, LayoutList, PackageSearch, Plus, Search, Shuffle,
+    Car, Cog, Factory, LayoutList, PackageSearch, Plus, Search, Shuffle, GitBranch,
 } from 'lucide-react';
 
 const navConfig = {
@@ -22,11 +22,20 @@ const navConfig = {
                 { label: 'Makes', route: 'vehicle-ref.makes.index', icon: Factory },
                 { label: 'Models & Variants', route: 'vehicle-ref.models.index', icon: Car },
                 { label: 'Engine Codes', route: 'vehicle-ref.engines.index', icon: Cog },
+                { label: 'Supersessions', route: 'vehicle-ref.supersessions.index', icon: GitBranch },
             ],
         },
     ],
 
     subModules: {
+        supersessions: {
+            label: 'Supersession Management', icon: GitBranch, routePrefix: 'vehicle-ref.supersessions',
+            work: [{ label: 'All Supersessions', route: 'vehicle-ref.supersessions.index', icon: LayoutList }],
+            quickLinks: [
+                { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
+                { label: 'Parts Catalogue', route: 'inventory.parts.index', icon: PackageSearch },
+            ],
+        },
         fitment: {
             label: 'Fitment Lookup',
             icon: Search,

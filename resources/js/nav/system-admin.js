@@ -3,7 +3,7 @@
 // Level-3 per-sub-module contextual sidebars (docs/design/sidebars/).
 import {
     Building2, Coins, FolderKanban, Hash, History, LayoutList,
-    MapPin, ScrollText, Settings, SlidersHorizontal, UserCog, Users,
+    MapPin, ScrollText, Settings, SlidersHorizontal, UserCog, Users, HeartPulse,
 } from 'lucide-react';
 
 const navConfig = {
@@ -38,12 +38,38 @@ const navConfig = {
         {
             section: 'Governance',
             items: [
+                { label: 'System Health', route: 'admin.health', icon: HeartPulse },
                 { label: 'Activity Logs', route: 'system.logs', icon: ScrollText },
             ],
         },
     ],
 
     subModules: {
+        logs: {
+            label: 'Activity Log',
+            icon: ScrollText,
+            routePrefix: 'system.logs',
+            work: [
+                { label: 'Activity Log', route: 'system.logs', icon: ScrollText },
+            ],
+            quickLinks: [
+                { label: 'System Health', route: 'admin.health', icon: HeartPulse },
+                { label: 'Journals', route: 'finance.journals.index', icon: LayoutList },
+            ],
+        },
+        health: {
+            label: 'System Health',
+            icon: HeartPulse,
+            routePrefix: 'admin.health',
+            work: [
+                { label: 'Integrity Dashboard', route: 'admin.health', icon: HeartPulse },
+            ],
+            quickLinks: [
+                { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: LayoutList },
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: LayoutList },
+                { label: 'Configuration Centre', route: 'admin.settings.index', icon: SlidersHorizontal },
+            ],
+        },
         settings: {
             label: 'Configuration Centre',
             icon: SlidersHorizontal,

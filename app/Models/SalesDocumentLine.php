@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SalesDocumentLine extends Model
 {
     protected $fillable = [
-        'document_id', 'part_id', 'description', 'qty', 'unit_price',
+        'document_id', 'part_id', 'line_type', 'labour_code', 'description', 'qty', 'unit_price',
         'discount_pct', 'vat_rate', 'vat_amount', 'line_total_excl',
         'line_total_incl', 'unit_cost', 'qty_credited', 'source_line_id',
     ];
