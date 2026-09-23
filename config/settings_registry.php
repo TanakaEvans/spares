@@ -339,4 +339,21 @@ return [
         'per_branch' => true,
         'help'       => 'Warning at 80%; customer SMS suspended at the cap.',
     ],
+
+    // ── Security (Password Policy) ─────────────────────────────────────
+    'security.password_min_length' => ['label' => 'Minimum password length', 'group' => 'Security', 'type' => 'int', 'default' => 8, 'rules' => ['integer', 'min:6', 'max:64'], 'per_branch' => false, 'help' => 'Shortest password a user may set.'],
+    'security.password_require_mixed_case' => ['label' => 'Require upper & lower case', 'group' => 'Security', 'type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'per_branch' => false, 'help' => 'Passwords must mix letter cases.'],
+    'security.password_require_number' => ['label' => 'Require a number', 'group' => 'Security', 'type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'per_branch' => false],
+    'security.password_expiry_days' => ['label' => 'Password expiry (days, 0 = never)', 'group' => 'Security', 'type' => 'int', 'default' => 90, 'rules' => ['integer', 'min:0', 'max:365'], 'per_branch' => false],
+    'security.max_failed_attempts' => ['label' => 'Max failed logins before lockout', 'group' => 'Security', 'type' => 'int', 'default' => 5, 'rules' => ['integer', 'min:3', 'max:20'], 'per_branch' => false],
+    'security.lockout_minutes' => ['label' => 'Lockout duration (minutes)', 'group' => 'Security', 'type' => 'int', 'default' => 15, 'rules' => ['integer', 'min:1', 'max:1440'], 'per_branch' => false],
+
+    // ── Communications (Email & SMS) ───────────────────────────────────
+    'comms.email_from_name' => ['label' => 'Email "from" name', 'group' => 'Communications', 'type' => 'string', 'default' => 'SparesPro', 'rules' => ['string', 'max:100'], 'per_branch' => true],
+    'comms.email_from_address' => ['label' => 'Email "from" address', 'group' => 'Communications', 'type' => 'string', 'default' => 'no-reply@sparespro.local', 'rules' => ['string', 'max:150'], 'per_branch' => true],
+    'comms.sms_enabled' => ['label' => 'SMS notifications enabled', 'group' => 'Communications', 'type' => 'bool', 'default' => false, 'rules' => ['boolean'], 'per_branch' => true, 'help' => 'Requires an SMS gateway to be configured.'],
+    'comms.sms_sender_id' => ['label' => 'SMS sender ID', 'group' => 'Communications', 'type' => 'string', 'default' => 'SPARES', 'rules' => ['string', 'max:11'], 'per_branch' => true],
+
+    // ── Loyalty ─────────────────────────────────────────────────────────
+    'loyalty.enabled' => ['label' => 'Loyalty programme enabled', 'group' => 'Sales', 'type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'per_branch' => false],
 ];

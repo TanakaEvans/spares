@@ -5,6 +5,13 @@
 
 > Note: 5.5 Statements are built in Phase 4 alongside AR receipts & ageing — tracked in [tasks/07-finance.md](07-finance.md) (4.3).
 
+> **Phase 3 go-live delivered (2026-09-23).** Shipped the customer spine the sales floor needs:
+> - **5.1 Customer Profiles** ✅ — `customers` table + `Customer` model (`walkIn()`, `arBalance()`, `effectivePriceList()`), `CUST` sequence, seeded walk-in **Cash Customer** (cannot go on account or on hold), CRUD controller + `customers.*` routes, `Customers/{Index,Create,Edit,Show}.jsx` (Show carries the AR view: balance, credit limit, available credit, activity log, hold toggle). Browser-verified.
+> - **5.7 Customer Groups** ✅ — `customer_groups` table + model, `Customers/Groups/Index.jsx` with inline create, group→price-list link drives `effectivePriceList()`.
+> - **5.2/5.3 Trade Accounts & Credit** ✅ (enforcement) — on-account sales gated in `SalesPostingService` by credit limit (`CreditLimitExceededException`) and hold (`CustomerOnHoldException`); walk-in cannot buy on account; hold toggle on the profile. Tests: `CreditSaleFlowTest`.
+> - **5.5 Statements** ✅ (2026-09-23) — `customers.statement` renders an account-statement PDF (on-account activity + running balance + current/30/60/90+ ageing) via the shared print pipeline; "Statement" action on the customer detail. Browser-verified.
+> - **Deferred (later phases):** `customer_addresses` / `customer_contacts` tables, blacklist workflow, `payment_terms` table + EOM due-date maths, group-default inheritance on create, account-manager assignment, POS reg lookup, statement email auto-send, loyalty, communication log. Per-branch active-branch switching (POS trades on the main branch until then). (5.4 Customer Vehicles is served by the Workshop vehicle registry.)
+
 ## 5.1 Customer Profiles  ·  [spec](../modules/05-customer-management/5.1-customer-profiles.md)  ·  Phase 3.1
 
 ### Backend

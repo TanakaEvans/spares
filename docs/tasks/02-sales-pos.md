@@ -3,6 +3,14 @@
 > Phase 3 of the [implementation plan](../implementation-plan.md) — ends with go-live for counter sales. Spec: [module doc](../modules/02-sales-pos.md).
 > Legend: `[ ]` todo · `[~]` in progress · `[x]` done — a task is only `[x]` when code is written, automated tests pass, AND the feature was functionally exercised per the [testing strategy](../testing-strategy.md). Update this file in the same commit as the completed work.
 
+> **Phase 3 go-live delivered (2026-09-23) — the counter is live.** End-to-end browser pass: cash sale `INV-20260923-0001` (Till DR 7.36 / Sales 6.40 / VAT 0.96 / COGS 3.27 at AVCO; stock 56→55) → credit note `CN-20260923-0001` (restock 55→56, Sales-Returns 6.40 DR, Till net 0); 0 stock-integrity mismatches throughout.
+> - **2.6 Price Lists** ✅ — `price_lists` + `price_list_items` (VAT-exclusive), default retail + trade seeded, `PricingService` (customer→group→default resolution, `UnpricedPartException`, `computeLine`), `Sales/PriceLists/{Index,Show}.jsx` with inline price edit + **unpriced-parts** guard. Deferred: effective/expiry dating, minimum_qty tiers, price-change audit trail, category-discount step.
+> - **2.1 Counter Sales (POS)** ✅ — `sales_documents`/`_lines`/`sales_payments`, `SalesPostingService::postInvoice` (server-resolved prices, split tender, discount-threshold gate, credit checks), keyboard-first `Sales/Pos/Terminal.jsx` (scan→cart→customer→tender, cash/card/eft/account + split, change calc). Deferred: suspend/recall, X/Z-read shift summaries, void-within-shift, concurrent-till lock test, vehicle-fitment filter.
+> - **2.4 Tax Invoices** ✅ — gapless `INV-…` posting = SALE stock + balanced GL (1110/1120/1210 · 4100 + 2210 · 5100/1310 at AVCO), immutable, A4 invoice + 80mm thermal receipt via the Phase 0.8 pipeline, `Sales/Invoices/{Index,Show}.jsx`. Deferred: proforma variant, mixed VAT rates, COPY-watermark reprint, closed-period UI messaging (engine already gates).
+> - **2.5 Credit Notes & Returns** ✅ — against a posted invoice only, `qty_credited` caps, `RETURN_IN` restock at original cost, VAT reversed at original rate, cash/account refund, GL 4900 + 2210 / 1110-or-1210, `Sales/CreditNotes/{Index,Create,Show}.jsx`. Deferred: cash-refund-same-day-manager-PIN rule, exchange flow, return-type taxonomy.
+> - **2.2/2.3 Quotations & Orders** ✅ — `SalesQuoteService` (create with expiry, reprice check, convert→order **reserves stock**, cancel releases), order **fulfil→invoice** releases the reservation, `Sales/{Quotes,Orders}/*.jsx`. Deferred: back-order/partial fulfilment, delivery scheduling.
+> - Tests: `CashSaleFlowTest`, `CreditSaleFlowTest`, `CustomerReturnFlowTest`, `QuoteToInvoiceFlowTest` (suite 140 green). Deferred sub-modules: **2.7 Promotions**, **2.8 Lay-by**, **2.9 Delivery Notes**, `payment_methods` table, SystemRoute permission seeds.
+
 ## 2.6 Price Lists  ·  [spec](../modules/02-sales-pos/2.6-price-lists.md)  ·  Phase 3.2
 
 ### Backend

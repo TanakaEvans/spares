@@ -15,6 +15,11 @@ class StockTakeLine extends Model
         'unit_cost' => 'decimal:4',
     ];
 
+    public function take(): BelongsTo
+    {
+        return $this->belongsTo(StockTake::class, 'take_id');
+    }
+
     public function part(): BelongsTo
     {
         return $this->belongsTo(Part::class);

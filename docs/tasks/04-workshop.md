@@ -5,6 +5,14 @@
 
 Skip this whole phase if the client has no workshop — nothing else depends on it.
 
+> **Phase 5 core delivered (2026-09-23).** The workshop runs end-to-end and ties into Sales + Finance; browser-verified: job `JC-2026-00001` on a registered Hilux → labour (ENG-OIL-01, 0.8h @ 25 = 20.00, cost 6.40) + issued part (Z762 billed 6.40, cost 3.27) → completed → invoiced `INV-20260923-0003` ($30.36) with revenue split (parts→4100, labour→4300), Highway AR +30.36, 0 stock-integrity mismatches.
+> - **4.5 Vehicle Registry** ✅ — `customer_vehicles` + `vehicle_service_history`, VIN-17 rule, unique active registration, `workshop.vehicles.*` (search/create/show-with-history); service-history row written on invoicing. Deferred: VIN checksum, per-branch plate uniqueness nuance.
+> - **4.2/4.3 Labour + Technicians** ✅ — `labour_codes` (+ `labour_code_rates` make-specific override, `resolveRate()` model→make→default), `technicians` (skill, cost rate, workload), `WorkshopSeeder` labour pack + 2 technicians + demo vehicle, `workshop.labour.*` / `workshop.technicians.*`.
+> - **4.1 Job Cards + Board** ✅ — `job_cards`/`job_card_labours`/`job_card_parts`, `JobCardService` (status machine `JobCard::FLOW`, open→…→invoiced→closed; customer+vehicle gate past open; labour add/remove), `workshop.jobs.*` detail hub (status actions, technician assign, labour, parts, costing) + `workshop.board` kanban. Deferred: promised-time alerts, clock-on/off KPI utilisation, authorisation-gate on scope change, supervisor-only cancel-after-issue.
+> - **4.4 Parts Requisition** ✅ — request → **issue** (`JOB_CARD_OUT` + COGS DR 5100/CR 1310 at AVCO) → **return** (`RETURN_IN` + reversal); warranty parts skip the cost posting. Deferred: auto purchase requisition when out of stock, bin-scan pick.
+> - **4.8 Workshop Invoicing + 4.6 Job Costing** ✅ — `WorkshopInvoiceService` converts a completed job to a tax invoice through Sales/AR: **revenue-only** GL (parts→4100, labour→4300, VAT→2210; COGS already booked at issue), warranty lines excluded, on-account/cash/card/eft, `sales_document_lines.part_id` made nullable + `line_type`; `JobCard` costing (`labourCost`/`partsCost`/`marginPct`). Tests: `JobCardFlowTest` (6). **Suite 160 green.**
+> - **Deferred to a Phase 5 follow-up:** 4.7 Warranty Claims (`warranty_claims` not yet built), workshop invoice/job-card print templates, SystemRoute permission seeds, technician efficiency reports (Phase 6).
+
 ## 4.5 Vehicle Registry  ·  [spec](../modules/04-workshop-management/4.5-vehicle-registry.md)
 
 ### Backend

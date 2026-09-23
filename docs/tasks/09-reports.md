@@ -5,6 +5,16 @@
 
 Architecture (applies to every report): Inertia controller action, server-side pagination for large sets, Excel export (`maatwebsite/laravel-excel`), PDF export (DomPDF), date range + branch filter, branch-level access control. Charts: Recharts with server-fetched props.
 
+> **Phase 6 core delivered (2026-09-23).** The reporting surface is live on real cross-phase data; browser-verified: executive dashboard (KPIs + charts) and inventory report render off the ledger. All figures reconcile to the sub-ledgers via `ReportServiceTest` (5).
+> - **9.1 Executive Dashboard** ✅ — `ReportService::kpis` (today/MTD net sales, outstanding + overdue AR, stock value at cost, open jobs), `salesTrend` (this vs last year), `arAgeingProfile`, `topPartsByValue`, `salesByCategory`; `Reports/Dashboard.jsx` with a lightweight inline-SVG chart kit (`Components/Charts.jsx` — StatTile/LineChart/Bars/HBarList, **no external dependency**), branch filter, live-on-load. Deferred: sales budget/target config + "MTD vs target" tile, branch-manager permission scoping.
+> - **9.2 Sales Reports** ✅ — `Reports/Sales/Index.jsx`: summary (count/gross/VAT/ATV, by payment method), sales by category, top parts, top customers, date+branch filter. Deferred: quote-conversion, back-order, returns-analysis, salesperson breakdown, Excel/PDF export.
+> - **9.3 Inventory Reports** ✅ — `Reports/Inventory/Index.jsx`: **stock value reconciled to the 1310 control account** (the check correctly flags demo opening stock that was never journalised), stock-on-hand with below-reorder/out/negative filters, stock ageing by value. Deferred: ABC analysis, dead-stock report, movement ledger per part.
+> - **9.5 Customer Reports** ✅ — `Reports/Customers/Index.jsx`: debtors ageing (reuses Phase 4 calc), top customers, dormant (configurable 60/90/180), credit review (≥80% of limit / on hold). Deferred: purchase-history drill, new-customer report.
+> - **9.6 Supplier Reports** ✅ — `Reports/Suppliers/Index.jsx`: spend by supplier, aged creditors (reuses Phase 4 calc), open POs with overdue flag. Deferred: price-list comparison.
+> - **9.7 Workshop Reports** ✅ — `Reports/Workshop/Index.jsx`: productivity (opened/completed/invoiced/revenue/avg), job profitability (cost/billed/margin per job). Deferred: technician efficiency (needs clock-on/off), comeback rate.
+> - Reports module card + sub-cards Active; `nav/reports.js`; 2 page guides. Tests: `ReportServiceTest` (5). **Suite 165 green.**
+> - **Deferred to a Phase 6 follow-up:** 9.4 extra financial reports (cash flow, gross-margin-by-category, sales-vs-budget), 9.8 Scheduled reports (needs `scheduled_reports` + scheduler + email), Excel/PDF export pipeline, ABC/dead-stock, and the cross-phase deferred features (bank rec, VAT-returns UI, warranty claims, promotions/lay-by/loyalty, requisitions, import shipments, serial/batch, supplier performance).
+
 ## 9.1 Executive Dashboard  ·  [spec](../modules/09-reports-analytics/9.1-executive-dashboard.md)
 
 ### Backend

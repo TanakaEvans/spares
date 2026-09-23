@@ -1,6 +1,6 @@
 // Inventory Management nav — content only (component-standards §1a).
 import {
-    ArrowLeftRight, Car, FolderTree, Layers, LayoutList, MapPin,
+    ArrowLeftRight, Car, ClipboardCheck, FolderTree, Layers, LayoutList, MapPin,
     PackageSearch, Plus, RefreshCw, Search, Shuffle, SlidersHorizontal, Tags,
 } from 'lucide-react';
 
@@ -24,6 +24,7 @@ const navConfig = {
                 { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
                 { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
                 { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
+                { label: 'Stock Takes', route: 'inventory.stock-takes.index', icon: ClipboardCheck },
                 { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
             ],
         },
@@ -78,10 +79,25 @@ const navConfig = {
                 { label: 'Categories', route: 'inventory.categories.index', icon: FolderTree },
             ],
         },
+        // NOTE: dot-terminated prefix so 'inventory.stock-takes' does not resolve here.
+        stockTakes: {
+            label: 'Stock Takes',
+            icon: ClipboardCheck,
+            routePrefix: 'inventory.stock-takes',
+            work: [
+                { label: 'All Stock Takes', route: 'inventory.stock-takes.index', icon: LayoutList },
+                { label: 'New Stock Take', route: 'inventory.stock-takes.create', icon: Plus },
+            ],
+            quickLinks: [
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
+                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
+            ],
+        },
         stock: {
             label: 'Stock Control',
             icon: Layers,
-            routePrefix: 'inventory.stock',
+            routePrefix: 'inventory.stock.',
             work: [
                 { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
                 { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },

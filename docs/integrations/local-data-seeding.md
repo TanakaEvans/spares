@@ -35,7 +35,10 @@ database/data/
 
 ```bash
 php artisan db:seed --class=ReferenceDataSeeder   # loads/refreshes all packs
+php artisan db:seed --class=CatalogueSeeder        # DEV: generates the large brand-guide catalogue
 ```
+
+> **CatalogueSeeder (dev/demo, 2026-09-23):** implements inflow ② — generates a large local catalogue (~10,000+ SKUs) across the seeded car parc: for every model × common part type it creates the OEM part plus its aftermarket equivalents (GUD/Fram/Mann/Bosch/NGK/Gates/Bendix/Ferodo/Gabriel/Monroe/KYB/GMB/Koyo/SKF/Exedy…), fully **cross-referenced** (OEM ↔ aftermarket) and **fitted** (`source = brand_guide`), each with a retail price, plus vehicle-independent consumables (engine/gear oils, batteries by group size, bulbs, wiper blades). Fast bulk inserts; idempotent (heavy model loop seeds once via a count guard, consumables refresh on every run). Blocked in production. Parts seed as **master data with zero stock** — stock arrives the real way, via procure-to-pay (PO → GRN) or the opening-stock migration.
 
 Seeders use `updateOrCreate` keyed on natural codes — safe to re-run after editing a CSV. **How the CSVs are produced:** once, by the developer, from free sources (NHTSA/CarQuery pulls, manufacturer public catalogues, distributor lists) — the *results* are committed; production never calls any API.
 

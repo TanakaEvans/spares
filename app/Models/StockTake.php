@@ -20,6 +20,11 @@ class StockTake extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    public function startedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'started_by');
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(StockTakeLine::class, 'take_id');

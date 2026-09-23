@@ -150,6 +150,25 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
             ->name('print.proof')
             ->defaults('description', 'Render the document pipeline proof PDF');
 
+        // System Health & Integrity dashboard
+        Route::get('health', [\App\Http\Controllers\Admin\HealthController::class, 'index'])
+            ->name('health')
+            ->defaults('description', 'System health & integrity dashboard');
+        Route::post('health/post-opening-stock', [\App\Http\Controllers\Admin\HealthController::class, 'postOpeningStock'])
+            ->name('health.post-opening-stock')
+            ->defaults('description', 'Post the opening inventory balance to the GL');
+
+        // Password policy, comms, print templates, notifications, backups
+        Route::get('password-policy', [\App\Http\Controllers\Admin\PasswordPolicyController::class, 'index'])->name('password-policy.index')->defaults('description', 'Password policy');
+        Route::put('password-policy', [\App\Http\Controllers\Admin\PasswordPolicyController::class, 'update'])->name('password-policy.update')->defaults('description', 'Update password policy');
+        Route::get('comms', [\App\Http\Controllers\Admin\CommsController::class, 'index'])->name('comms.index')->defaults('description', 'Email & SMS settings');
+        Route::put('comms', [\App\Http\Controllers\Admin\CommsController::class, 'update'])->name('comms.update')->defaults('description', 'Update comms settings');
+        Route::get('print-templates', [\App\Http\Controllers\Admin\PrintTemplateController::class, 'index'])->name('print-templates.index')->defaults('description', 'Print templates');
+        Route::put('print-templates', [\App\Http\Controllers\Admin\PrintTemplateController::class, 'update'])->name('print-templates.update')->defaults('description', 'Update print templates');
+        Route::get('notifications-centre', [\App\Http\Controllers\Admin\NotificationsController::class, 'index'])->name('notifications-centre.index')->defaults('description', 'Notifications centre');
+        Route::get('backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('backups.index')->defaults('description', 'Backup management');
+        Route::post('backups', [\App\Http\Controllers\Admin\BackupController::class, 'store'])->name('backups.store')->defaults('description', 'Create a backup');
+
         // Number Sequences
         Route::get('sequences', [\App\Http\Controllers\Admin\NumberSequenceController::class, 'index'])
             ->name('sequences.index')
@@ -257,18 +276,14 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
             ->defaults('description', 'Save user account for employee');
     });
 
-    Route::get('/settings', function () {
-        return inertia('System/Settings');
-    })->name('settings.index');
+    // Legacy settings routes → the real Configuration Centre.
+    Route::get('/settings', fn () => redirect()->route('admin.settings.index'))->name('settings.index');
+    Route::get('/system/settings', fn () => redirect()->route('admin.settings.index'))
+        ->name('system.settings')->defaults('description', 'System settings');
 
-    // System routes
-    Route::get('/system/settings', function () {
-        return inertia('System/Settings');
-    })->name('system.settings')->defaults('description', 'System settings');
-
-    Route::get('/system/logs', function () {
-        return inertia('System/Logs');
-    })->name('system.logs')->defaults('description', 'View system logs');
+    // Activity log — audited trail of posted financial events.
+    Route::get('/system/logs', [\App\Http\Controllers\SystemController::class, 'logs'])
+        ->name('system.logs')->defaults('description', 'Activity log');
 
     // ── Vehicle Reference module ─────────────────────────────────────────
     Route::prefix('vehicle-ref')->name('vehicle-ref.')->group(function () {
@@ -288,6 +303,10 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         Route::get('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'index'])->name('engines.index');
         Route::post('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'store'])->name('engines.store');
+
+        Route::get('supersessions', [\App\Http\Controllers\VehicleRef\SupersessionController::class, 'index'])->name('supersessions.index')->defaults('description', 'Part supersessions');
+        Route::get('bulletins', [\App\Http\Controllers\VehicleRef\BulletinController::class, 'index'])->name('bulletins.index')->defaults('description', 'Technical bulletins');
+        Route::post('bulletins', [\App\Http\Controllers\VehicleRef\BulletinController::class, 'store'])->name('bulletins.store')->defaults('description', 'Publish a bulletin');
     });
 
     // ── Inventory module ─────────────────────────────────────────────────
@@ -329,6 +348,18 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('reorder', [\App\Http\Controllers\Inventory\StockMovementController::class, 'reorder'])->name('reorder.index');
         Route::post('reorder/create-pos', [\App\Http\Controllers\Inventory\StockMovementController::class, 'createReorderPos'])->name('reorder.create-pos');
         Route::post('reorder/preferred-supplier', [\App\Http\Controllers\Inventory\StockMovementController::class, 'setPreferredSupplier'])->name('reorder.preferred-supplier');
+
+        Route::get('stock-takes', [\App\Http\Controllers\Inventory\StockTakeController::class, 'index'])->name('stock-takes.index')->defaults('description', 'Stock takes — full and spot counts');
+        Route::get('stock-takes/create', [\App\Http\Controllers\Inventory\StockTakeController::class, 'create'])->name('stock-takes.create')->defaults('description', 'Start a new stock take');
+        Route::post('stock-takes', [\App\Http\Controllers\Inventory\StockTakeController::class, 'store'])->name('stock-takes.store')->defaults('description', 'Snapshot stock and begin counting');
+        Route::get('stock-takes/{stockTake}', [\App\Http\Controllers\Inventory\StockTakeController::class, 'show'])->name('stock-takes.show')->defaults('description', 'Count and review a stock take');
+        Route::patch('stock-takes/{stockTake}/lines/{line}', [\App\Http\Controllers\Inventory\StockTakeController::class, 'recordCount'])->name('stock-takes.count')->defaults('description', 'Record a counted quantity');
+        Route::post('stock-takes/{stockTake}/review', [\App\Http\Controllers\Inventory\StockTakeController::class, 'review'])->name('stock-takes.review')->defaults('description', 'Lock counts for review');
+        Route::post('stock-takes/{stockTake}/post', [\App\Http\Controllers\Inventory\StockTakeController::class, 'post'])->name('stock-takes.post')->defaults('description', 'Post the variance as an adjustment');
+
+        Route::get('serials', [\App\Http\Controllers\Inventory\SerialNumberController::class, 'index'])->name('serials.index')->defaults('description', 'Serial & batch tracking');
+        Route::get('serials/part-lookup', [\App\Http\Controllers\Inventory\SerialNumberController::class, 'partLookup'])->name('serials.part-lookup')->defaults('description', 'Part lookup for serials');
+        Route::post('serials', [\App\Http\Controllers\Inventory\SerialNumberController::class, 'store'])->name('serials.store')->defaults('description', 'Record a serial number');
     });
 
     // ── Suppliers module ─────────────────────────────────────────────────
@@ -345,6 +376,10 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('{supplier}/price-lists/preview', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'preview'])->name('pricelists.preview');
         Route::post('{supplier}/price-lists', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'store'])->name('pricelists.store');
         Route::post('{supplier}/price-lists/{priceList}/activate', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'activate'])->name('pricelists.activate');
+
+        Route::get('lists/approved', [\App\Http\Controllers\Suppliers\ApprovedSupplierController::class, 'index'])->name('approved.index')->defaults('description', 'Approved supplier list');
+        Route::get('lists/contacts', [\App\Http\Controllers\Suppliers\SupplierContactController::class, 'index'])->name('contacts.index')->defaults('description', 'All supplier contacts');
+        Route::get('lists/performance', [\App\Http\Controllers\Suppliers\SupplierPerformanceController::class, 'index'])->name('performance.index')->defaults('description', 'Supplier performance');
     });
 
     // ── Purchasing module ────────────────────────────────────────────────
@@ -371,6 +406,192 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'store'])->name('returns.store');
         Route::post('returns/{return}/ship', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'ship'])->name('returns.ship');
         Route::post('returns/{return}/credit', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'credit'])->name('returns.credit');
+
+        Route::get('supplier-credits', [\App\Http\Controllers\Purchasing\SupplierCreditController::class, 'index'])->name('supplier-credits.index')->defaults('description', 'Supplier credit notes');
+
+        Route::get('imports', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'index'])->name('imports.index')->defaults('description', 'Import shipments');
+        Route::post('imports', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'store'])->name('imports.store')->defaults('description', 'Create an import shipment');
+        Route::post('imports/{shipment}/transition', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'transition'])->name('imports.transition')->defaults('description', 'Update shipment status');
+        Route::get('price-comparison', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'index'])->name('price-comparison.index')->defaults('description', 'Supplier price comparison');
+    });
+
+    // ── Customers module ─────────────────────────────────────────────────
+    Route::prefix('customers')->name('customers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Customers\CustomerController::class, 'index'])->name('index')->defaults('description', 'Customer directory');
+        Route::get('groups', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'index'])->name('groups.index')->defaults('description', 'Customer groups and their price lists');
+        Route::post('groups', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'store'])->name('groups.store')->defaults('description', 'Create a customer group');
+        Route::patch('groups/{group}', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'update'])->name('groups.update')->defaults('description', 'Update a customer group');
+        Route::get('create', [\App\Http\Controllers\Customers\CustomerController::class, 'create'])->name('create')->defaults('description', 'Add a customer');
+        Route::post('/', [\App\Http\Controllers\Customers\CustomerController::class, 'store'])->name('store')->defaults('description', 'Save a new customer');
+        Route::get('{customer}', [\App\Http\Controllers\Customers\CustomerController::class, 'show'])->name('show')->defaults('description', 'Customer detail and account');
+        Route::get('{customer}/statement', [\App\Http\Controllers\Customers\CustomerController::class, 'statement'])->name('statement')->defaults('description', 'Print a customer account statement');
+        Route::get('{customer}/edit', [\App\Http\Controllers\Customers\CustomerController::class, 'edit'])->name('edit')->defaults('description', 'Edit a customer');
+        Route::patch('{customer}', [\App\Http\Controllers\Customers\CustomerController::class, 'update'])->name('update')->defaults('description', 'Update a customer');
+        Route::post('{customer}/hold', [\App\Http\Controllers\Customers\CustomerController::class, 'toggleHold'])->name('hold')->defaults('description', 'Place or release a credit hold');
+
+        Route::get('comms/log', [\App\Http\Controllers\Customers\CustomerNoteController::class, 'index'])->name('comms.index')->defaults('description', 'Communication log');
+        Route::post('comms/log', [\App\Http\Controllers\Customers\CustomerNoteController::class, 'store'])->name('comms.store')->defaults('description', 'Log a communication');
+        Route::get('loyalty/programme', [\App\Http\Controllers\Customers\LoyaltyController::class, 'index'])->name('loyalty.index')->defaults('description', 'Loyalty programme');
+    });
+
+    // ── Sales & POS module ───────────────────────────────────────────────
+    Route::prefix('sales')->name('sales.')->group(function () {
+        // Point of sale
+        Route::get('pos', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'create'])->name('pos')->defaults('description', 'Counter sales till');
+        Route::get('pos/part-lookup', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'partLookup'])->name('pos.part-lookup')->defaults('description', 'Till part search');
+        Route::get('pos/customer-lookup', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'customerLookup'])->name('pos.customer-lookup')->defaults('description', 'Till customer search');
+        Route::post('pos', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'store'])->name('pos.store')->defaults('description', 'Post a counter sale');
+
+        // Invoices
+        Route::get('invoices', [\App\Http\Controllers\Sales\InvoiceController::class, 'index'])->name('invoices.index')->defaults('description', 'Tax invoices');
+        Route::get('invoices/{invoice}', [\App\Http\Controllers\Sales\InvoiceController::class, 'show'])->name('invoices.show')->defaults('description', 'Invoice detail');
+        Route::get('invoices/{invoice}/print', [\App\Http\Controllers\Sales\InvoiceController::class, 'print'])->name('invoices.print')->defaults('description', 'Print an A4 tax invoice');
+        Route::get('invoices/{invoice}/receipt', [\App\Http\Controllers\Sales\InvoiceController::class, 'receipt'])->name('invoices.receipt')->defaults('description', 'Print an 80mm receipt');
+
+        // Credit notes
+        Route::get('credit-notes', [\App\Http\Controllers\Sales\CreditNoteController::class, 'index'])->name('credit-notes.index')->defaults('description', 'Credit notes and returns');
+        Route::get('invoices/{invoice}/credit', [\App\Http\Controllers\Sales\CreditNoteController::class, 'create'])->name('credit-notes.create')->defaults('description', 'Raise a credit note');
+        Route::post('invoices/{invoice}/credit', [\App\Http\Controllers\Sales\CreditNoteController::class, 'store'])->name('credit-notes.store')->defaults('description', 'Post a credit note');
+        Route::get('credit-notes/{creditNote}', [\App\Http\Controllers\Sales\CreditNoteController::class, 'show'])->name('credit-notes.show')->defaults('description', 'Credit note detail');
+        Route::get('credit-notes/{creditNote}/print', [\App\Http\Controllers\Sales\CreditNoteController::class, 'print'])->name('credit-notes.print')->defaults('description', 'Print a credit note');
+
+        // Quotations
+        Route::get('quotes', [\App\Http\Controllers\Sales\QuoteController::class, 'index'])->name('quotes.index')->defaults('description', 'Quotations');
+        Route::get('quotes/create', [\App\Http\Controllers\Sales\QuoteController::class, 'create'])->name('quotes.create')->defaults('description', 'New quotation');
+        Route::post('quotes', [\App\Http\Controllers\Sales\QuoteController::class, 'store'])->name('quotes.store')->defaults('description', 'Save a quotation');
+        Route::get('quotes/{quote}', [\App\Http\Controllers\Sales\QuoteController::class, 'show'])->name('quotes.show')->defaults('description', 'Quotation detail');
+        Route::post('quotes/{quote}/convert', [\App\Http\Controllers\Sales\QuoteController::class, 'convert'])->name('quotes.convert')->defaults('description', 'Convert a quote to an order');
+        Route::get('quotes/{quote}/print', [\App\Http\Controllers\Sales\QuoteController::class, 'print'])->name('quotes.print')->defaults('description', 'Print a quotation');
+
+        // Sales orders
+        Route::get('orders', [\App\Http\Controllers\Sales\OrderController::class, 'index'])->name('orders.index')->defaults('description', 'Sales orders');
+        Route::get('orders/{order}', [\App\Http\Controllers\Sales\OrderController::class, 'show'])->name('orders.show')->defaults('description', 'Sales order detail');
+        Route::post('orders/{order}/fulfil', [\App\Http\Controllers\Sales\OrderController::class, 'fulfil'])->name('orders.fulfil')->defaults('description', 'Fulfil an order and invoice it');
+        Route::post('orders/{order}/cancel', [\App\Http\Controllers\Sales\OrderController::class, 'cancel'])->name('orders.cancel')->defaults('description', 'Cancel an order');
+
+        // Price lists
+        Route::get('price-lists', [\App\Http\Controllers\Sales\PriceListController::class, 'index'])->name('price-lists.index')->defaults('description', 'Selling price lists');
+        Route::post('price-lists', [\App\Http\Controllers\Sales\PriceListController::class, 'store'])->name('price-lists.store')->defaults('description', 'Create a price list');
+        Route::get('price-lists/{priceList}', [\App\Http\Controllers\Sales\PriceListController::class, 'show'])->name('price-lists.show')->defaults('description', 'Price list detail');
+        Route::post('price-lists/{priceList}/items', [\App\Http\Controllers\Sales\PriceListController::class, 'storeItem'])->name('price-lists.items.store')->defaults('description', 'Set a part price');
+        Route::patch('price-lists/{priceList}/items/{item}', [\App\Http\Controllers\Sales\PriceListController::class, 'updateItem'])->name('price-lists.items.update')->defaults('description', 'Update a part price');
+        Route::delete('price-lists/{priceList}/items/{item}', [\App\Http\Controllers\Sales\PriceListController::class, 'destroyItem'])->name('price-lists.items.destroy')->defaults('description', 'Remove a part price');
+
+        // Promotions
+        Route::get('promotions', [\App\Http\Controllers\Sales\PromotionController::class, 'index'])->name('promotions.index')->defaults('description', 'Promotions & discounts');
+        Route::post('promotions', [\App\Http\Controllers\Sales\PromotionController::class, 'store'])->name('promotions.store')->defaults('description', 'Create a promotion');
+        Route::post('promotions/{promotion}/toggle', [\App\Http\Controllers\Sales\PromotionController::class, 'toggle'])->name('promotions.toggle')->defaults('description', 'Activate/deactivate a promotion');
+        // Lay-bys
+        Route::get('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'index'])->name('laybys.index')->defaults('description', 'Lay-by management');
+        Route::post('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'store'])->name('laybys.store')->defaults('description', 'Create a lay-by');
+        Route::post('laybys/{layby}/payment', [\App\Http\Controllers\Sales\LaybyController::class, 'addPayment'])->name('laybys.payment')->defaults('description', 'Record a lay-by payment');
+        // Delivery notes
+        Route::get('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'index'])->name('delivery-notes.index')->defaults('description', 'Delivery notes');
+        Route::post('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'store'])->name('delivery-notes.store')->defaults('description', 'Create a delivery note');
+        Route::post('delivery-notes/{deliveryNote}/transition', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'transition'])->name('delivery-notes.transition')->defaults('description', 'Update delivery status');
+    });
+
+    // ── Finance & Accounts module ────────────────────────────────────────
+    Route::prefix('finance')->name('finance.')->group(function () {
+        // Chart of accounts + periods
+        Route::get('coa', [\App\Http\Controllers\Finance\ChartOfAccountsController::class, 'index'])->name('coa.index')->defaults('description', 'Chart of accounts');
+        Route::get('periods', [\App\Http\Controllers\Finance\PeriodController::class, 'index'])->name('periods.index')->defaults('description', 'Financial periods');
+        Route::post('periods/{period}/transition', [\App\Http\Controllers\Finance\PeriodController::class, 'transition'])->name('periods.transition')->defaults('description', 'Open, close or lock a period');
+
+        // General ledger + journals
+        Route::get('gl', [\App\Http\Controllers\Finance\GeneralLedgerController::class, 'index'])->name('gl.index')->defaults('description', 'General ledger enquiry');
+        Route::get('journals', [\App\Http\Controllers\Finance\JournalController::class, 'index'])->name('journals.index')->defaults('description', 'Journal register');
+        Route::get('journals/create', [\App\Http\Controllers\Finance\JournalController::class, 'create'])->name('journals.create')->defaults('description', 'Capture a manual journal');
+        Route::post('journals', [\App\Http\Controllers\Finance\JournalController::class, 'store'])->name('journals.store')->defaults('description', 'Post a manual journal');
+        Route::get('journals/{journal}', [\App\Http\Controllers\Finance\JournalController::class, 'show'])->name('journals.show')->defaults('description', 'Journal detail');
+        Route::post('journals/{journal}/reverse', [\App\Http\Controllers\Finance\JournalController::class, 'reverse'])->name('journals.reverse')->defaults('description', 'Reverse a manual journal');
+
+        // Accounts receivable
+        Route::get('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'index'])->name('receipts.index')->defaults('description', 'Customer receipts & AR ageing');
+        Route::get('receipts/create', [\App\Http\Controllers\Finance\ReceiptController::class, 'create'])->name('receipts.create')->defaults('description', 'Capture a customer receipt');
+        Route::get('receipts/customer-lookup', [\App\Http\Controllers\Finance\ReceiptController::class, 'customerLookup'])->name('receipts.customer-lookup')->defaults('description', 'Customer & open-invoice lookup');
+        Route::post('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'store'])->name('receipts.store')->defaults('description', 'Post a customer receipt');
+
+        // Accounts payable + payment run
+        Route::get('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'index'])->name('payments.index')->defaults('description', 'Supplier payments & AP ageing');
+        Route::get('payments/create', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('payments.create')->defaults('description', 'Capture a supplier payment');
+        Route::get('payments/supplier-lookup', [\App\Http\Controllers\Finance\PaymentController::class, 'supplierLookup'])->name('payments.supplier-lookup')->defaults('description', 'Supplier & open-invoice lookup');
+        Route::post('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('payments.store')->defaults('description', 'Post a supplier payment');
+        Route::get('payment-run', [\App\Http\Controllers\Finance\PaymentController::class, 'runIndex'])->name('payment-run.index')->defaults('description', 'Batch payment run');
+        Route::post('payment-run', [\App\Http\Controllers\Finance\PaymentController::class, 'runExecute'])->name('payment-run.execute')->defaults('description', 'Execute a batch payment run');
+
+        // VAT returns
+        Route::get('vat', [\App\Http\Controllers\Finance\VatController::class, 'index'])->name('vat.index')->defaults('description', 'VAT returns');
+        Route::post('vat/generate', [\App\Http\Controllers\Finance\VatController::class, 'generate'])->name('vat.generate')->defaults('description', 'Generate a VAT return');
+        Route::post('vat/{vatReturn}/transition', [\App\Http\Controllers\Finance\VatController::class, 'transition'])->name('vat.transition')->defaults('description', 'Submit or pay a VAT return');
+
+        // Financial reports
+        Route::get('reports/trial-balance', [\App\Http\Controllers\Finance\ReportController::class, 'trialBalance'])->name('reports.trial-balance')->defaults('description', 'Trial balance');
+        Route::get('reports/income-statement', [\App\Http\Controllers\Finance\ReportController::class, 'incomeStatement'])->name('reports.income-statement')->defaults('description', 'Income statement (P&L)');
+        Route::get('reports/balance-sheet', [\App\Http\Controllers\Finance\ReportController::class, 'balanceSheet'])->name('reports.balance-sheet')->defaults('description', 'Balance sheet');
+
+        // Cash & bank
+        Route::get('bank', [\App\Http\Controllers\Finance\BankController::class, 'index'])->name('bank.index')->defaults('description', 'Cash & bank management');
+        Route::post('bank', [\App\Http\Controllers\Finance\BankController::class, 'store'])->name('bank.store')->defaults('description', 'Add a bank account');
+        Route::post('bank/{bankAccount}/lines', [\App\Http\Controllers\Finance\BankController::class, 'addLine'])->name('bank.lines.store')->defaults('description', 'Add a statement line');
+        Route::post('bank/lines/{line}/reconcile', [\App\Http\Controllers\Finance\BankController::class, 'reconcile'])->name('bank.reconcile')->defaults('description', 'Toggle reconciled');
+    });
+
+    // ── Workshop module ──────────────────────────────────────────────────
+    Route::prefix('workshop')->name('workshop.')->group(function () {
+        // Technician board
+        Route::get('board', [\App\Http\Controllers\Workshop\BoardController::class, 'index'])->name('board')->defaults('description', 'Technician job board');
+
+        // Vehicles
+        Route::get('vehicles', [\App\Http\Controllers\Workshop\VehicleController::class, 'index'])->name('vehicles.index')->defaults('description', 'Vehicle registry');
+        Route::get('vehicles/create', [\App\Http\Controllers\Workshop\VehicleController::class, 'create'])->name('vehicles.create')->defaults('description', 'Register a vehicle');
+        Route::get('vehicles/customer-lookup', [\App\Http\Controllers\Workshop\VehicleController::class, 'customerLookup'])->name('vehicles.customer-lookup')->defaults('description', 'Customer lookup');
+        Route::post('vehicles', [\App\Http\Controllers\Workshop\VehicleController::class, 'store'])->name('vehicles.store')->defaults('description', 'Save a vehicle');
+        Route::get('vehicles/{vehicle}', [\App\Http\Controllers\Workshop\VehicleController::class, 'show'])->name('vehicles.show')->defaults('description', 'Vehicle & service history');
+
+        // Labour codes + technicians
+        Route::get('labour', [\App\Http\Controllers\Workshop\LabourCodeController::class, 'index'])->name('labour.index')->defaults('description', 'Labour codes & rates');
+        Route::post('labour', [\App\Http\Controllers\Workshop\LabourCodeController::class, 'store'])->name('labour.store')->defaults('description', 'Create a labour code');
+        Route::patch('labour/{labourCode}', [\App\Http\Controllers\Workshop\LabourCodeController::class, 'update'])->name('labour.update')->defaults('description', 'Update a labour code');
+        Route::post('labour/{labourCode}/rates', [\App\Http\Controllers\Workshop\LabourCodeController::class, 'storeRate'])->name('labour.rates.store')->defaults('description', 'Set a make-specific rate');
+
+        Route::get('technicians', [\App\Http\Controllers\Workshop\TechnicianController::class, 'index'])->name('technicians.index')->defaults('description', 'Technicians');
+        Route::post('technicians', [\App\Http\Controllers\Workshop\TechnicianController::class, 'store'])->name('technicians.store')->defaults('description', 'Add a technician');
+        Route::patch('technicians/{technician}', [\App\Http\Controllers\Workshop\TechnicianController::class, 'update'])->name('technicians.update')->defaults('description', 'Update a technician');
+
+        // Job cards
+        Route::get('jobs', [\App\Http\Controllers\Workshop\JobCardController::class, 'index'])->name('jobs.index')->defaults('description', 'Job cards');
+        Route::get('jobs/create', [\App\Http\Controllers\Workshop\JobCardController::class, 'create'])->name('jobs.create')->defaults('description', 'Open a job card');
+        Route::get('jobs/vehicle-lookup', [\App\Http\Controllers\Workshop\JobCardController::class, 'vehicleLookup'])->name('jobs.vehicle-lookup')->defaults('description', 'Vehicle lookup');
+        Route::get('jobs/part-lookup', [\App\Http\Controllers\Workshop\JobCardController::class, 'partLookup'])->name('jobs.part-lookup')->defaults('description', 'Part lookup');
+        Route::post('jobs', [\App\Http\Controllers\Workshop\JobCardController::class, 'store'])->name('jobs.store')->defaults('description', 'Save a job card');
+        Route::get('jobs/{job}', [\App\Http\Controllers\Workshop\JobCardController::class, 'show'])->name('jobs.show')->defaults('description', 'Job card detail');
+        Route::patch('jobs/{job}', [\App\Http\Controllers\Workshop\JobCardController::class, 'update'])->name('jobs.update')->defaults('description', 'Update a job card');
+        Route::post('jobs/{job}/transition', [\App\Http\Controllers\Workshop\JobCardController::class, 'transition'])->name('jobs.transition')->defaults('description', 'Move a job through its lifecycle');
+        Route::post('jobs/{job}/labour', [\App\Http\Controllers\Workshop\JobCardController::class, 'addLabour'])->name('jobs.labour.store')->defaults('description', 'Add labour to a job');
+        Route::delete('jobs/{job}/labour/{labour}', [\App\Http\Controllers\Workshop\JobCardController::class, 'removeLabour'])->name('jobs.labour.destroy')->defaults('description', 'Remove labour');
+        Route::post('jobs/{job}/parts', [\App\Http\Controllers\Workshop\JobCardController::class, 'requestPart'])->name('jobs.parts.store')->defaults('description', 'Add a part to a job');
+        Route::post('jobs/{job}/parts/{part}/issue', [\App\Http\Controllers\Workshop\JobCardController::class, 'issuePart'])->name('jobs.parts.issue')->defaults('description', 'Issue a part from stock');
+        Route::post('jobs/{job}/parts/{part}/return', [\App\Http\Controllers\Workshop\JobCardController::class, 'returnPart'])->name('jobs.parts.return')->defaults('description', 'Return a part to stock');
+        Route::post('jobs/{job}/invoice', [\App\Http\Controllers\Workshop\JobCardController::class, 'invoice'])->name('jobs.invoice')->defaults('description', 'Invoice a completed job');
+
+        Route::get('warranty', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'index'])->name('warranty.index')->defaults('description', 'Warranty claims');
+        Route::post('warranty', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'store'])->name('warranty.store')->defaults('description', 'Raise a warranty claim');
+        Route::post('warranty/{warrantyClaim}/transition', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'transition'])->name('warranty.transition')->defaults('description', 'Progress a warranty claim');
+    });
+
+    // ── Reports & Analytics module ───────────────────────────────────────
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('dashboard', [\App\Http\Controllers\Reports\DashboardController::class, 'index'])->name('dashboard')->defaults('description', 'Executive dashboard');
+        Route::get('sales', [\App\Http\Controllers\Reports\SalesReportController::class, 'index'])->name('sales.index')->defaults('description', 'Sales reports');
+        Route::get('inventory', [\App\Http\Controllers\Reports\InventoryReportController::class, 'index'])->name('inventory.index')->defaults('description', 'Inventory reports');
+        Route::get('customers', [\App\Http\Controllers\Reports\CustomerReportController::class, 'index'])->name('customers.index')->defaults('description', 'Customer reports');
+        Route::get('suppliers', [\App\Http\Controllers\Reports\SupplierReportController::class, 'index'])->name('suppliers.index')->defaults('description', 'Supplier reports');
+        Route::get('workshop', [\App\Http\Controllers\Reports\WorkshopReportController::class, 'index'])->name('workshop.index')->defaults('description', 'Workshop reports');
+
+        Route::get('scheduled', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'index'])->name('scheduled.index')->defaults('description', 'Scheduled reports');
+        Route::post('scheduled', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'store'])->name('scheduled.store')->defaults('description', 'Create a scheduled report');
+        Route::post('scheduled/{scheduledReport}/toggle', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'toggle'])->name('scheduled.toggle')->defaults('description', 'Activate/deactivate a schedule');
     });
 
     // Notification bell actions

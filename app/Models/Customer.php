@@ -41,6 +41,11 @@ class Customer extends Model
         return $this->hasMany(SalesDocument::class);
     }
 
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(CustomerReceipt::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
@@ -52,8 +57,9 @@ class Customer extends Model
     }
 
     /**
-     * Outstanding account balance: on-account sale portions minus
-     * account-mode credit notes. (AR receipts subtract here in Phase 4.)
+     * Outstanding account balance = on-account sale portions − account-mode
+     * credit notes − receipts. Mirrors this customer's slice of the Trade
+     * Debtors control (1210).
      */
     public function arBalance(): float
     {
@@ -70,7 +76,9 @@ class Customer extends Model
             ->where('credit_mode', 'account')
             ->sum('total_incl');
 
-        return round($charged - $credited, 2);
+        $received = (float) CustomerReceipt::where('customer_id', $this->id)->sum('amount');
+
+        return round($charged - $credited - $received, 2);
     }
 
     /** Resolve the customer's effective price list: own → group's → default retail. */

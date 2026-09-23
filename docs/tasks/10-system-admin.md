@@ -56,6 +56,12 @@ Needed as their consuming features land (workshop flag by Phase 5, price list de
 
 ## System Health & Integrity Dashboard (Phase 4 assembly)  ·  [spec](../operations/system-health.md)
 
+> **Phase 7 core delivered (2026-09-23) ★.** The go-live integrity gate is live and browser-verified: 9 invariants recomputed live from the ledger, grouped Financial/Stock/Hygiene, with a one-click **Fix** that posted the opening-inventory journal (DR 1310 / CR 3300) and flipped the dashboard from "Integrity failure" → **"All systems healthy"**; the Phase 6 inventory report then read "Reconciled to GL".
+> - `HealthResult` + `HealthCheckRunner` (`app/Services/Health/`) — checks: every posted journal balances, trial balance balances, AR sub-ledger = Debtors (1210), AP sub-ledger = Creditors (2110), stock value = Inventory (1310), current period open, stock levels = ledger sums, no negative stock, no stale draft POs. Each result carries a `fix`/`link` route.
+> - `OpeningBalanceService` (go-live migration, `operations/data-migration.md`): `postOpeningInventory()` closes the Inventory-vs-GL gap left by opening stock loaded through the ledger; idempotent.
+> - `admin.health` screen (grouped ✓/⚠/✗ rows, deep links, one-click fix, "Run all checks", live overall dot), System-Admin card + Governance nav entry Active, page guide. Tests: `SystemHealthTest` (4). **Suite 169 green.**
+> - **Deferred:** `health_check_runs`/`health_check_results` persistence + history/trend, nightly schedule + run-after-outage hook, red-check → Notifications Centre event, operations checks (queue/failed jobs, scheduler heartbeat, backup age, disk, exchange-rate-today), per-branch section, module-registered check discovery. Other Phase 7 go-live items (backup+restore drill, hardware/printer setup, role setup + **SystemRoute permission seeds** + permission audit, full user-training pass) remain on the go-live checklist.
+
 ### Backend
 - [ ] `HealthCheck` interface + discovery runner + `health_check_runs`/`health_check_results` persistence + nightly schedule + run-after-outage hook
 - [ ] Core checks: journals balanced, AR/AP = control, stock levels = ledger sums, gapless sequences, queue/failed jobs, scheduler heartbeat, backup age, disk, today's exchange rate, stale drafts, stale reservations
