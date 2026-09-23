@@ -316,6 +316,61 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'store'])->name('bins.store');
 
         Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
+        Route::patch('stock/{level}/reorder-levels', [\App\Http\Controllers\Inventory\StockMovementController::class, 'updateReorderLevels'])->name('stock.reorder-levels');
+
+        Route::get('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'adjustments'])->name('adjustments.index');
+        Route::post('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeAdjustment'])->name('adjustments.store');
+
+        Route::get('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'transfers'])->name('transfers.index');
+        Route::post('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeTransfer'])->name('transfers.store');
+        Route::post('transfers/{transfer}/dispatch', [\App\Http\Controllers\Inventory\StockMovementController::class, 'dispatchTransfer'])->name('transfers.dispatch');
+        Route::post('transfers/{transfer}/receive', [\App\Http\Controllers\Inventory\StockMovementController::class, 'receiveTransfer'])->name('transfers.receive');
+
+        Route::get('reorder', [\App\Http\Controllers\Inventory\StockMovementController::class, 'reorder'])->name('reorder.index');
+        Route::post('reorder/create-pos', [\App\Http\Controllers\Inventory\StockMovementController::class, 'createReorderPos'])->name('reorder.create-pos');
+        Route::post('reorder/preferred-supplier', [\App\Http\Controllers\Inventory\StockMovementController::class, 'setPreferredSupplier'])->name('reorder.preferred-supplier');
+    });
+
+    // ── Suppliers module ─────────────────────────────────────────────────
+    Route::prefix('suppliers')->name('suppliers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Suppliers\SupplierController::class, 'index'])->name('index');
+        Route::get('create', [\App\Http\Controllers\Suppliers\SupplierController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Suppliers\SupplierController::class, 'store'])->name('store');
+        Route::get('{supplier}', [\App\Http\Controllers\Suppliers\SupplierController::class, 'show'])->name('show');
+        Route::get('{supplier}/edit', [\App\Http\Controllers\Suppliers\SupplierController::class, 'edit'])->name('edit');
+        Route::patch('{supplier}', [\App\Http\Controllers\Suppliers\SupplierController::class, 'update'])->name('update');
+        Route::post('{supplier}/contacts', [\App\Http\Controllers\Suppliers\SupplierController::class, 'storeContact'])->name('contacts.store');
+
+        Route::get('{supplier}/price-lists/import', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'import'])->name('pricelists.import');
+        Route::post('{supplier}/price-lists/preview', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'preview'])->name('pricelists.preview');
+        Route::post('{supplier}/price-lists', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'store'])->name('pricelists.store');
+        Route::post('{supplier}/price-lists/{priceList}/activate', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'activate'])->name('pricelists.activate');
+    });
+
+    // ── Purchasing module ────────────────────────────────────────────────
+    Route::prefix('purchasing')->name('purchasing.')->group(function () {
+        Route::get('orders', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/create', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'create'])->name('orders.create');
+        Route::get('orders/part-lookup', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'partLookup'])->name('orders.part-lookup');
+        Route::post('orders', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'store'])->name('orders.store');
+        Route::get('orders/{order}', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{order}/transition', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'transition'])->name('orders.transition');
+        Route::get('orders/{order}/print', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'print'])->name('orders.print');
+
+        Route::get('grns', [\App\Http\Controllers\Purchasing\GrnController::class, 'index'])->name('grns.index');
+        Route::get('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'create'])->name('grns.create');
+        Route::post('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'store'])->name('grns.store');
+
+        Route::get('invoices', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'create'])->name('invoices.create');
+        Route::post('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'store'])->name('invoices.store');
+        Route::post('invoices/{invoice}/post', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'post'])->name('invoices.post');
+
+        Route::get('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'index'])->name('returns.index');
+        Route::get('returns/create', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'create'])->name('returns.create');
+        Route::post('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'store'])->name('returns.store');
+        Route::post('returns/{return}/ship', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'ship'])->name('returns.ship');
+        Route::post('returns/{return}/credit', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'credit'])->name('returns.credit');
     });
 
     // Notification bell actions

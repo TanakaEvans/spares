@@ -3,6 +3,25 @@
 > Phases 1–3 of the [implementation plan](../implementation-plan.md) (master data in Phase 1, adjustments/transfers/reorder in Phase 2, stock takes in Phase 3). Spec: [module doc](../modules/01-inventory-management.md).
 > Legend: `[ ]` todo · `[~]` in progress · `[x]` done — a task is only `[x]` when code is written, automated tests pass, AND the feature was functionally exercised per the [testing strategy](../testing-strategy.md). Update this file in the same commit as the completed work.
 
+## ✅ Phase 1 delivery status — 2026-09-23
+
+Delivered (code + tests + browser functional pass; suite at 106 green):
+- [x] 1.8 Categories/Brands/Units — migrations, 48-category tree + 34 brands + 8 UoM seed packs, tree screen + brands screen with inline add
+- [x] 1.1 Parts Catalogue — `parts` migration (soft deletes, barcodes, indexes), `Part` model with cross-ref-aware `scopeSearch` + supersession `resolveCurrent()`, full CRUD + tabbed detail (Stock/Fitments/Cross-refs/Supersession), stock tables FK-retrofitted to parts
+- [x] 1.6 Fitment records — `part_fitments` with `scopeForVehicle` (null-model/variant = all; year-range matching), managed on part detail; drives Fitment Lookup
+- [x] Cross-references + supersessions — tables, add/remove UI, duplicate guard, supersede-marks-discontinued rule
+- [x] 1.3 Bin Locations (v1) — `bin_locations` + primary bin on stock_levels (multi-bin `part_bin_assignments` deferred to stock-take work, per pragmatic deviation noted here), bins screen
+- [x] 1.2 Stock read-side — Stock Levels screen (on hand/reserved/available/AVCO/value, branch + below-reorder filters, total value); opening stock posted via `StockLedgerService` (DemoPartsSeeder)
+- [x] Module sidebar (`nav/inventory.js`), page guides (parts index, stock), module card Active, palette parts source
+- Deferred as planned: 1.4 stock takes (Phase 3), 1.5 reorder mgmt & 1.2 adjustments/transfers (Phase 2), 1.7 serial/batch (Phase 6), part images, Excel import wizards (next in Phase 1 backlog)
+
+**Phase 2 additions — 2026-09-23:**
+- [x] 1.2 Stock adjustments — reason codes, IN/OUT lines, `StockMovementService.postAdjustment` (stock + 5300/1310 write-off journal), UI list + inline create (browser-verified ADJ-20260923-0001)
+- [x] 1.2 Inter-branch transfers — draft→dispatch (TRANSFER_OUT at source AVCO)→receive (TRANSFER_IN at captured cost), UI with one-click dispatch/receive
+- [x] 1.5 Reorder management — inline reorder-point editing on Stock Levels, below-reorder report with suggested qty + preferred supplier, one-click draft PO per supplier (browser-verified PO-20260923-0002)
+
+Granular checklists below remain for the deferred items.
+
 ## 1.8 Category Management (+ brands, units of measure)  ·  [spec](../modules/01-inventory-management/1.8-category-management.md)
 
 ### Backend

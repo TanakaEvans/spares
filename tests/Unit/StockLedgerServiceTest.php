@@ -18,7 +18,7 @@ class StockLedgerServiceTest extends TestCase
 
     private Branch $branch;
 
-    private int $partId = 101;
+    private int $partId;
 
     protected function setUp(): void
     {
@@ -26,6 +26,7 @@ class StockLedgerServiceTest extends TestCase
 
         $this->stock = app(StockLedgerService::class);
         $this->branch = Branch::factory()->create();
+        $this->partId = \App\Models\Part::factory()->create()->id;
     }
 
     private function level(): StockLevel
