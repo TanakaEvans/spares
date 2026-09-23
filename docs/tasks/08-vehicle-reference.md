@@ -5,6 +5,20 @@
 
 Runs alongside [tasks/01-inventory.md](01-inventory.md) — the cross-reference, supersession and fitment *tables* (`part_cross_references`, `part_supersessions`, `part_fitments`) belong to Module 1; this file owns the vehicle master data and the reference/search screens. Seeding detail: [local-data-seeding](../integrations/local-data-seeding.md).
 
+## ✅ Phase 1 delivery status — 2026-09-23
+
+Delivered (code + 15 feature tests + browser functional pass; suite at 106 green):
+- [x] 8.1 Makes — migration, model+factory, 32-make CSV seed pack, `vehicle-ref.makes.*` + screen with inline add
+- [x] 8.2 Models & Variants — migrations, relations, 108-model + 38-variant SA/Zim seed packs, models index + model detail with variant add
+- [x] 8.5 Engine Codes — migration, 50-engine seed pack (1GD-FTV…GW4D20), `vehicle-ref.engines.*` + screen
+- [x] 8.3 Cross-Reference search — `vehicle-ref.cross-ref`: matches part/OEM/barcode/description/cross-refs, live stock, supersession banner
+- [x] 8.6 Supersessions — chain-following `Part::resolveCurrent()`, auto-redirect notice verified (90915-YZZD2 → YZZD4)
+- [x] 8.4 Fitment Lookup — cascading make→model→variant(+year), category-grouped results with live stock (verified: Hilux 2.8 GD-6 → 7 parts)
+- [x] Module sidebar (`nav/vehicle-reference.js`), page guides (fitment, cross-ref), module card Active
+- Deferred as planned: 8.7 technical bulletins (Phase 6); logo upload on makes; SystemRoute permission seeds (tracked in 00-foundations)
+
+Granular checklists below remain for the deferred/remaining polish items.
+
 ## 8.1 Vehicle Makes  ·  [spec](../modules/08-vehicle-parts-reference/8.1-vehicle-makes.md)
 
 ### Backend

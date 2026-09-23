@@ -1,7 +1,7 @@
 // Inventory Management nav — content only (component-standards §1a).
 import {
-    Car, FolderTree, Layers, LayoutList, MapPin, PackageSearch,
-    Plus, Search, Shuffle, Tags,
+    ArrowLeftRight, Car, FolderTree, Layers, LayoutList, MapPin,
+    PackageSearch, Plus, RefreshCw, Search, Shuffle, SlidersHorizontal, Tags,
 } from 'lucide-react';
 
 const navConfig = {
@@ -22,7 +22,15 @@ const navConfig = {
             section: 'Stock',
             items: [
                 { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
+                { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
                 { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+            ],
+        },
+        {
+            section: 'Replenishment',
+            items: [
+                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
             ],
         },
     ],
@@ -71,15 +79,54 @@ const navConfig = {
             ],
         },
         stock: {
-            label: 'Stock Levels',
+            label: 'Stock Control',
             icon: Layers,
             routePrefix: 'inventory.stock',
             work: [
                 { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
+                { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
             ],
             quickLinks: [
+                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
                 { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
                 { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+            ],
+        },
+        adjustments: {
+            label: 'Adjustments',
+            icon: SlidersHorizontal,
+            routePrefix: 'inventory.adjustments',
+            work: [
+                { label: 'All Adjustments', route: 'inventory.adjustments.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
+            ],
+        },
+        transfers: {
+            label: 'Transfers',
+            icon: ArrowLeftRight,
+            routePrefix: 'inventory.transfers',
+            work: [
+                { label: 'All Transfers', route: 'inventory.transfers.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+            ],
+        },
+        reorder: {
+            label: 'Reorder Management',
+            icon: RefreshCw,
+            routePrefix: 'inventory.reorder',
+            work: [
+                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
+            ],
+            quickLinks: [
+                { label: 'Purchasing: Orders', route: 'purchasing.orders.index', icon: LayoutList },
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
             ],
         },
         bins: {

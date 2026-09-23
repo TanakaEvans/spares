@@ -5,6 +5,17 @@
 
 > Note: 3.1 Purchase Requisitions are skipped for v1 (manual POs suffice) — see Deferred below.
 
+## ✅ Phase 2 delivery status — 2026-09-23
+
+Delivered (13 golden-flow tests + full-suite 119 green + end-to-end browser pass):
+- [x] 3.2 Purchase Orders — sequenced PO numbers, draft→submitted→confirmed→partial/received→closed lifecycle, part picker with supplier-price-list cost pre-fill, printable PO PDF via the shared document pipeline
+- [x] 3.3 GRN — receive screen (count/reject-with-reason/bin putaway), over-receipt tolerance from Configuration Centre with supervisor approval, partial receipts, `GrnPostingService`: PURCHASE_RECEIPT stock + AVCO + DR 1310 / CR 2120 accrual, rejected qty never enters stock (browser-verified: 36→56 @ AVCO 3.20→3.2714)
+- [x] 3.4 Supplier Invoices — 3-way match with max(2%, $10) tolerance, matched→posted (DR 2120+2220 / CR 2110), disputed state with resolve-and-post (browser-verified: AP 78.20)
+- [x] 3.5/3.6 Returns + supplier credits — RMA-gated shipping (RETURN_OUT at AVCO), credit capture (DR 2110 / CR 1310, variance → 5300)
+- Deferred as planned (Phase 6): 3.1 requisitions, 3.7 import shipments, 3.8 price comparison
+
+Granular checklists below remain for the deferred items.
+
 ## 3.2 Purchase Orders  ·  [spec](../modules/03-purchasing-procurement/3.2-purchase-orders.md)  ·  Phase 2.3
 
 ### Backend

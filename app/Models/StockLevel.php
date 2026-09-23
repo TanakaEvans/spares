@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StockLevel extends Model
 {
     protected $fillable = [
-        'part_id', 'branch_id', 'qty_on_hand', 'qty_reserved', 'qty_on_order',
+        'part_id', 'branch_id', 'bin_location_id', 'qty_on_hand', 'qty_reserved', 'qty_on_order',
         'qty_in_transit', 'average_cost', 'reorder_point', 'reorder_qty',
         'max_level', 'last_movement_at', 'last_counted_at',
     ];
@@ -28,6 +28,16 @@ class StockLevel extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function part(): BelongsTo
+    {
+        return $this->belongsTo(Part::class);
+    }
+
+    public function binLocation(): BelongsTo
+    {
+        return $this->belongsTo(BinLocation::class);
     }
 
     public function getQtyAvailableAttribute(): float

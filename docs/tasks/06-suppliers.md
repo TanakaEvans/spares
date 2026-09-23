@@ -3,6 +3,16 @@
 > Phase 2 of the [implementation plan](../implementation-plan.md). Spec: [module doc](../modules/06-supplier-management.md).
 > Legend: `[ ]` todo · `[~]` in progress · `[x]` done — a task is only `[x]` when code is written, automated tests pass, AND the feature was functionally exercised per the [testing strategy](../testing-strategy.md). Update this file in the same commit as the completed work.
 
+## ✅ Phase 2 delivery status — 2026-09-23
+
+Delivered (tests + browser pass):
+- [x] 6.1/6.5 Supplier profiles + contacts — sequenced SUPP numbers, full CRUD, detail page with Orders/Invoices/Price Lists/Contacts tabs, live AP balance
+- [x] 6.2 Price lists + import wizard — CSV upload → preview with column-mapping guesses → import with part matching (part_number → OEM → cross-references) → one-active-per-supplier activation; costs pre-fill PO lines
+- [x] 6.3 Approved suppliers — per-part preferred supplier feeding PO cost lookup and the reorder report; inline set-supplier control on the reorder screen
+- Deferred as planned (Phase 6): 6.4 supplier performance; XLSX (in addition to CSV) import
+
+Granular checklists below remain for the deferred items.
+
 ## 6.1 Supplier Profiles  ·  [spec](../modules/06-supplier-management/6.1-supplier-profiles.md)  ·  Phase 2.1
 
 ### Backend

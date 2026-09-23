@@ -116,5 +116,19 @@ database/data/               ← CSV seed packs (planned — see local-data-seed
   - Domain exceptions: `DomainException` base + MissingExchangeRate/UnbalancedJournal/ClosedPeriod/NoOpenPeriod/ControlAccountPosting/InsufficientStock
   - Test suite: 91 passing (sqlite :memory:)
 - **Docs:** complete — all modules/sub-modules, workflows, design (incl. per-sub-module sidebars), operations, tasks.
-- **PHASE 0 COMPLETE** (remaining stragglers tracked in tasks: SystemRoute permission seeds, page-guide/notification admin screens, legacy AdminLayout migration).
-- **Next: Phase 1** — Vehicle Reference + Inventory master data: [docs/tasks/08-vehicle-reference.md](docs/tasks/08-vehicle-reference.md) then [docs/tasks/01-inventory.md](docs/tasks/01-inventory.md) per the [implementation plan](docs/implementation-plan.md).
+- **PHASE 0 COMPLETE** (stragglers tracked in tasks: SystemRoute permission seeds, page-guide/notification admin screens, legacy AdminLayout migration).
+- **PHASE 1 CORE COMPLETE (2026-09-23):** Vehicle Reference + Inventory master data live end-to-end — exit flow verified in browser (Hilux 2.8 GD-6 → 7 fitting parts → part detail → 24 in stock @ Harare Main, bin A-01-01):
+  - Migrations: vehicle makes/models/variants/engine_codes; part categories/brands/units; parts (+FK retrofit to stock tables); cross-refs; supersessions; fitments; bin_locations (+primary bin on stock_levels)
+  - Seed packs (`database/data/*.csv`, `ReferenceDataSeeder`): 32 makes · 108 models · 38 variants · 50 engines · 48 categories · 34 brands · 8 units — SA/Zim car parc per local-data-seeding.md; `DemoPartsSeeder` (12 real parts, fitments, cross-refs, opening stock via StockLedgerService)
+  - `Part::scopeSearch` (number/OEM/barcode/description/cross-ref) + `resolveCurrent()` supersession chain; `PartFitment::scopeForVehicle`
+  - Controllers: `VehicleRef/*` (makes, models+variants, engines, FitmentLookup, CrossReference), `Inventory/*` (Part CRUD+relations, categories, brands, bins, stock levels) — 30 routes
+  - 13 screens on ModuleLayout with per-sub-module sidebars (`nav/inventory.js`, `nav/vehicle-reference.js`); cards Active; 4 new page guides; palette parts source
+  - Tests: suite at 106 passing (15 new Phase 1 feature tests incl. fitment year-ranges, supersession chains, cross-ref search)
+- **PHASE 2 COMPLETE (2026-09-23):** the full procure-to-pay chain, browser-verified end-to-end (supplier created → PO-20260923-0001 → GRN posted: stock 36→56, AVCO 3.20→3.2714, DR 1310/CR 2120 = 68 → invoice GUD-INV-4471 3-way matched → AP 78.20 → reorder report → draft PO-20260923-0002; stock-integrity check: 0 mismatches):
+  - Suppliers module: profiles/contacts (SUPP sequence), CSV price-list **import wizard** (preview → column map → part matching via number/OEM/cross-refs → one-active-per-supplier), approved suppliers with inline preferred-supplier control
+  - Purchasing module: PO lifecycle + printable PDF, GRN receiving (`GrnPostingService`: tolerance/over-receipt approval, rejects never enter stock, AVCO + GL accrual), supplier invoices (`SupplierInvoiceService`: 3-way match max(2%,$10), disputed state), returns (`StockMovementService`: RMA gate, credits with variance→5300)
+  - Inventory additions: adjustments (write-off journals), transfers (source-AVCO valuation, dispatch/receive), reorder report (`ReorderService`) with inline reorder-point editing + one-click draft POs
+  - 16 new tables/models, 6 services, 15 screens on contextual sidebars, 5 page guides; cards Active
+  - Test suite: **119 passing** incl. `ProcureToPayFlowTest` (13 golden-flow tests)
+  - Deferred per plan (Phase 6): requisitions, import shipments, price comparison, supplier performance, XLSX import
+- **Next: Phase 3** — Customers + Sales & POS (the go-live milestone): [docs/tasks/05-customers.md](docs/tasks/05-customers.md) → [docs/tasks/02-sales-pos.md](docs/tasks/02-sales-pos.md) per the [implementation plan](docs/implementation-plan.md).

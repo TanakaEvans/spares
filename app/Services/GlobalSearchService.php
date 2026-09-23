@@ -28,6 +28,13 @@ class GlobalSearchService
 
         $groups = [];
 
+        if ($scope === null || $scope === 'parts') {
+            $parts = $this->searchParts($query);
+            if ($parts !== []) {
+                $groups[] = ['group' => 'Parts', 'items' => $parts];
+            }
+        }
+
         if ($scope === null || $scope === 'pages') {
             $pages = $this->searchPages($query);
             if ($pages !== []) {
@@ -43,6 +50,28 @@ class GlobalSearchService
         }
 
         return $groups;
+    }
+
+    private function searchParts(string $query): array
+    {
+        if (mb_strlen($query) < 2) {
+            return [];
+        }
+
+        return \App\Models\Part::search($query)
+            ->with('stockLevels')
+            ->limit(6)
+            ->get()
+            ->map(fn (\App\Models\Part $p) => [
+                'type' => 'part',
+                'label' => "{$p->part_number} — {$p->description}",
+                'icon' => 'package',
+                'url' => route('inventory.parts.show', $p->id),
+                'hint' => ($avail = (float) $p->stockLevels->sum(
+                    fn ($l) => (float) $l->qty_on_hand - (float) $l->qty_reserved
+                )) > 0 ? "{$avail} in stock" : 'out of stock',
+            ])
+            ->all();
     }
 
     private function searchPages(string $query): array
