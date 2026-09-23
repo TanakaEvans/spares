@@ -16,17 +16,18 @@ class SupplierPerformanceController extends Controller
     {
         $rows = Supplier::orderBy('name')->get()->map(function (Supplier $s) {
             $pos = PurchaseOrder::where('supplier_id', $s->id)->get(['id', 'order_date', 'expected_date', 'status']);
-            $grns = GoodsReceivedNote::where('supplier_id', $s->id)->with('po:id,expected_date,order_date')->get();
+            $grns = GoodsReceivedNote::where('supplier_id', $s->id)->with('purchaseOrder:id,expected_date,order_date')->get();
 
             $onTime = 0;
             $leadDays = [];
             foreach ($grns as $grn) {
-                $expected = $grn->po?->expected_date;
+                $po = $grn->purchaseOrder;
+                $expected = $po?->expected_date;
                 if ($expected && $grn->received_date && $grn->received_date->lte($expected)) {
                     $onTime++;
                 }
-                if ($grn->po?->order_date && $grn->received_date) {
-                    $leadDays[] = $grn->po->order_date->diffInDays($grn->received_date);
+                if ($po?->order_date && $grn->received_date) {
+                    $leadDays[] = $po->order_date->diffInDays($grn->received_date);
                 }
             }
 

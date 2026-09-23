@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Pencil, PauseCircle, PlayCircle, Receipt, Undo2 } from 'lucide-react';
+import { Pencil, PauseCircle, PlayCircle, Receipt, Undo2, Download } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
 import MoneyDisplay from '@/Components/MoneyDisplay';
@@ -58,6 +58,15 @@ export default function CustomerShow({ customer, documents }) {
                     <div className="flex gap-2">
                         {!customer.is_walk_in && (
                             <PrintButton href={route('customers.statement', customer.id)} label="Statement" />
+                        )}
+                        {!customer.is_walk_in && (
+                            <a
+                                href={route('customers.statement.csv', customer.id)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                                <Download className="w-4 h-4" />
+                                Statement CSV
+                            </a>
                         )}
                         {!customer.is_walk_in && (
                             <button

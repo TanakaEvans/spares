@@ -20,6 +20,7 @@
     <table class="line">
         <tr><td>{{ $invoice->document_number }}</td><td class="num">{{ $invoice->document_date->format('d/m/Y') }}</td></tr>
         <tr><td colspan="2">Customer: {{ $invoice->customer?->name ?? 'Cash' }}</td></tr>
+        <tr><td colspan="2">Cashier: {{ $invoice->salesperson?->name ?? '—' }}</td></tr>
     </table>
     <div class="rule"></div>
 
@@ -54,6 +55,11 @@
             <tr><td>CHANGE</td><td class="num">{{ number_format((float) $invoice->payments->sum('change_given'), 2) }}</td></tr>
         @endif
     </table>
+    <div class="rule"></div>
+
+    @include('print.partials.document-stamp-thermal', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forSalesDocument($invoice),
+    ])
     <div class="rule"></div>
 
     <div class="center">

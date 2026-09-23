@@ -24,6 +24,9 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Public document verification (QR-code target — no login required)
+Route::get('/verify/document', [\App\Http\Controllers\VerifyController::class, 'show'])->name('verify.document');
+
 // Protected Routes
 Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class])->group(function () {
     // Main Dashboard Route
@@ -312,6 +315,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     // ── Inventory module ─────────────────────────────────────────────────
     Route::prefix('inventory')->name('inventory.')->group(function () {
         Route::get('parts', [\App\Http\Controllers\Inventory\PartController::class, 'index'])->name('parts.index');
+        Route::get('parts/export', [\App\Http\Controllers\Inventory\PartController::class, 'export'])->name('parts.export')->defaults('description', 'Export parts to CSV');
         Route::get('parts/create', [\App\Http\Controllers\Inventory\PartController::class, 'create'])->name('parts.create');
         Route::post('parts', [\App\Http\Controllers\Inventory\PartController::class, 'store'])->name('parts.store');
         Route::get('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'show'])->name('parts.show');
@@ -335,6 +339,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'store'])->name('bins.store');
 
         Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
+        Route::get('stock/export', [\App\Http\Controllers\Inventory\StockLevelController::class, 'export'])->name('stock.export')->defaults('description', 'Export stock on hand to CSV');
         Route::patch('stock/{level}/reorder-levels', [\App\Http\Controllers\Inventory\StockMovementController::class, 'updateReorderLevels'])->name('stock.reorder-levels');
 
         Route::get('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'adjustments'])->name('adjustments.index');
@@ -365,6 +370,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     // ── Suppliers module ─────────────────────────────────────────────────
     Route::prefix('suppliers')->name('suppliers.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Suppliers\SupplierController::class, 'index'])->name('index');
+        Route::get('export', [\App\Http\Controllers\Suppliers\SupplierController::class, 'export'])->name('export')->defaults('description', 'Export suppliers to CSV');
         Route::get('create', [\App\Http\Controllers\Suppliers\SupplierController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Suppliers\SupplierController::class, 'store'])->name('store');
         Route::get('{supplier}', [\App\Http\Controllers\Suppliers\SupplierController::class, 'show'])->name('show');
@@ -418,6 +424,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     // ── Customers module ─────────────────────────────────────────────────
     Route::prefix('customers')->name('customers.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Customers\CustomerController::class, 'index'])->name('index')->defaults('description', 'Customer directory');
+        Route::get('export', [\App\Http\Controllers\Customers\CustomerController::class, 'export'])->name('export')->defaults('description', 'Export customers to CSV');
         Route::get('groups', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'index'])->name('groups.index')->defaults('description', 'Customer groups and their price lists');
         Route::post('groups', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'store'])->name('groups.store')->defaults('description', 'Create a customer group');
         Route::patch('groups/{group}', [\App\Http\Controllers\Customers\CustomerGroupController::class, 'update'])->name('groups.update')->defaults('description', 'Update a customer group');
@@ -425,6 +432,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('/', [\App\Http\Controllers\Customers\CustomerController::class, 'store'])->name('store')->defaults('description', 'Save a new customer');
         Route::get('{customer}', [\App\Http\Controllers\Customers\CustomerController::class, 'show'])->name('show')->defaults('description', 'Customer detail and account');
         Route::get('{customer}/statement', [\App\Http\Controllers\Customers\CustomerController::class, 'statement'])->name('statement')->defaults('description', 'Print a customer account statement');
+        Route::get('{customer}/statement.csv', [\App\Http\Controllers\Customers\CustomerController::class, 'statementCsv'])->name('statement.csv')->defaults('description', 'Export a customer statement to CSV');
         Route::get('{customer}/edit', [\App\Http\Controllers\Customers\CustomerController::class, 'edit'])->name('edit')->defaults('description', 'Edit a customer');
         Route::patch('{customer}', [\App\Http\Controllers\Customers\CustomerController::class, 'update'])->name('update')->defaults('description', 'Update a customer');
         Route::post('{customer}/hold', [\App\Http\Controllers\Customers\CustomerController::class, 'toggleHold'])->name('hold')->defaults('description', 'Place or release a credit hold');
@@ -589,9 +597,19 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('suppliers', [\App\Http\Controllers\Reports\SupplierReportController::class, 'index'])->name('suppliers.index')->defaults('description', 'Supplier reports');
         Route::get('workshop', [\App\Http\Controllers\Reports\WorkshopReportController::class, 'index'])->name('workshop.index')->defaults('description', 'Workshop reports');
 
+        Route::get('cashup', [\App\Http\Controllers\Reports\CashupController::class, 'index'])->name('cashup')->defaults('description', 'Daily cash-up by method and cashier');
+        Route::get('cashup/print', [\App\Http\Controllers\Reports\CashupController::class, 'print'])->name('cashup.print')->defaults('description', 'Print the daily cash-up');
+
         Route::get('scheduled', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'index'])->name('scheduled.index')->defaults('description', 'Scheduled reports');
         Route::post('scheduled', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'store'])->name('scheduled.store')->defaults('description', 'Create a scheduled report');
         Route::post('scheduled/{scheduledReport}/toggle', [\App\Http\Controllers\Reports\ScheduledReportController::class, 'toggle'])->name('scheduled.toggle')->defaults('description', 'Activate/deactivate a schedule');
+    });
+
+    // ── Master-data CSV import wizard ────────────────────────────────────
+    Route::prefix('imports')->name('imports.')->group(function () {
+        Route::get('{entity}', [\App\Http\Controllers\DataImportController::class, 'show'])->name('show')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Import data from CSV');
+        Route::post('{entity}/preview', [\App\Http\Controllers\DataImportController::class, 'preview'])->name('preview')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Preview a CSV import');
+        Route::post('{entity}', [\App\Http\Controllers\DataImportController::class, 'store'])->name('store')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Commit a CSV import');
     });
 
     // Notification bell actions

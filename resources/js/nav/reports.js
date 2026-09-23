@@ -1,6 +1,6 @@
 // Reports & Analytics nav — content only (styling lives in ModuleLayout).
 import {
-    BarChart3, LayoutDashboard, ShoppingCart, Package, Users, Truck, Wrench,
+    BarChart3, LayoutDashboard, ShoppingCart, Package, Users, Truck, Wrench, Banknote,
 } from 'lucide-react';
 
 const navConfig = {
@@ -23,6 +23,12 @@ const navConfig = {
                 { label: 'Customers', route: 'reports.customers.index', icon: Users },
                 { label: 'Suppliers', route: 'reports.suppliers.index', icon: Truck },
                 { label: 'Workshop', route: 'reports.workshop.index', icon: Wrench },
+            ],
+        },
+        {
+            section: 'Receipting',
+            items: [
+                { label: 'Daily Cash-up', route: 'reports.cashup', icon: Banknote },
             ],
         },
     ],
@@ -74,6 +80,15 @@ const navConfig = {
             quickLinks: [
                 { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
                 { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
+            ],
+        },
+        cashup: {
+            label: 'Daily Cash-up', icon: Banknote, routePrefix: 'reports.cashup',
+            work: [{ label: 'Cash-up', route: 'reports.cashup', icon: Banknote }],
+            quickLinks: [
+                { label: 'Point of Sale', route: 'sales.pos', icon: ShoppingCart },
+                { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
+                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
             ],
         },
     },

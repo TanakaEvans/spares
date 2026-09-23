@@ -63,6 +63,10 @@
         <tr class="grand"><td>TOTAL</td><td class="num">{{ number_format((float) $quote->total_incl, 2) }}</td></tr>
     </table>
 
+    @include('print.partials.document-stamp', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forSalesDocument($quote),
+    ])
+
     @include('print.partials.document-footer', [
         'identity' => $identity,
         'footerText' => 'Prices are subject to stock availability and valid until the expiry date shown.',

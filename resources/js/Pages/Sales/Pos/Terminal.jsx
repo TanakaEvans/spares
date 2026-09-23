@@ -258,6 +258,26 @@ function CustomerPicker({ customer, walkIn, onChange }) {
                 )}
             </div>
 
+            {!customer.is_walk_in && (
+                <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-slate-500">Account balance</span>
+                        <span className="tabular-nums font-semibold text-slate-800">{money(customer.ar_balance ?? 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-slate-500">Available credit</span>
+                        <span className={`tabular-nums font-semibold ${(customer.available_credit ?? 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}>{money(customer.available_credit ?? 0)}</span>
+                    </div>
+                    {customer.on_hold && <div className="mt-1 text-xs font-medium text-amber-600">On credit hold — account sales blocked.</div>}
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium">
+                        <a href={route('customers.statement', customer.id)} target="_blank" rel="noreferrer" className="text-orange-600 hover:text-orange-700">Statement PDF</a>
+                        <a href={route('customers.statement.csv', customer.id)} className="text-orange-600 hover:text-orange-700">Statement CSV</a>
+                        <a href={route('finance.receipts.index')} className="text-orange-600 hover:text-orange-700">Take a payment</a>
+                        <a href={route('sales.laybys.index')} className="text-orange-600 hover:text-orange-700">Start lay-by</a>
+                    </div>
+                </div>
+            )}
+
             {open ? (
                 <div className="mt-3">
                     <div className="relative">
@@ -310,9 +330,13 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
     const needsApproval = lines.some((l) => (l.discount_pct || 0) > maxDiscount);
     const accountBlocked = payments.some((p) => p.method === 'account') && (customer.is_walk_in || customer.on_hold);
 
-    const setP = (i, field, value) => setPayments((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+    const setP = (i, field, value) => {
+        setError(null);
+        setPayments((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+    };
 
     function submit() {
+        if (payments.some((p) => Number(p.amount || 0) <= 0)) { setError('Every payment line needs an amount greater than 0 — remove any blank line.'); return; }
         if (Math.abs(balance) > 0.001) { setError('Payments must equal the total.'); return; }
         setProcessing(true);
         router.post(route('sales.pos.store'), {
@@ -330,63 +354,100 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
         });
     }
 
-    const method = 'w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm';
+    const method = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Take payment">
             <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
-            <div className="relative w-full max-w-lg rounded-xl bg-white shadow-xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Take payment</h2>
-                    <span className="text-2xl font-bold tabular-nums text-slate-900">{money(total)}</span>
+            <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl p-8 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold text-slate-900">Take payment</h2>
+                        <p className="text-sm text-slate-500 mt-0.5">{customer.name}</p>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-xs uppercase tracking-wide text-slate-400">Total due</div>
+                        <div className="text-4xl font-bold tabular-nums text-slate-900">{money(total)}</div>
+                    </div>
                 </div>
 
                 {customer.on_hold && (
-                    <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 text-xs text-yellow-800">
+                    <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-800">
                         {customer.name} is on hold — account payment is blocked. Take cash or card.
                     </p>
                 )}
 
-                <div className="space-y-2">
+                {!customer.is_walk_in && !customer.on_hold && (
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-orange-50 border border-orange-100 px-3 py-2.5">
+                        <span className="text-sm font-medium text-orange-800">Credit customer:</span>
+                        <button type="button"
+                            onClick={() => { setError(null); setPayments([{ method: 'account', amount: total, reference: '' }]); }}
+                            className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100">
+                            Full amount on account
+                        </button>
+                        <button type="button"
+                            disabled={balance <= 0.001 || payments.some((p) => p.method === 'account')}
+                            onClick={() => { setError(null); setPayments((prev) => [...prev, { method: 'account', amount: Math.max(0, balance), reference: '' }]); }}
+                            className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Take a deposit above, then put the remaining balance on the account">
+                            Put balance ({money(Math.max(0, balance))}) on account
+                        </button>
+                        <span className="w-full text-xs text-orange-700/80">Available credit {money(customer.available_credit ?? 0)}.</span>
+                    </div>
+                )}
+
+                <div className="space-y-4">
                     {payments.map((p, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <select value={p.method} onChange={(e) => setP(i, 'method', e.target.value)} className={`${method} w-28`}>
-                                <option value="cash">Cash</option>
-                                <option value="card">Card</option>
-                                <option value="eft">EFT</option>
-                                <option value="account" disabled={customer.is_walk_in || customer.on_hold}>Account</option>
-                            </select>
-                            <input type="number" step="0.01" min="0" value={p.amount}
-                                aria-label="Amount" onChange={(e) => setP(i, 'amount', e.target.value)}
-                                className={`${method} flex-1 text-right tabular-nums`} />
+                        <div key={i} className="flex items-end gap-3">
+                            <label className="w-40">
+                                <span className="block text-xs font-medium text-slate-500 mb-1">How they're paying</span>
+                                <select value={p.method} onChange={(e) => setP(i, 'method', e.target.value)} className={method}>
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Card</option>
+                                    <option value="eft">EFT</option>
+                                    <option value="account" disabled={customer.is_walk_in || customer.on_hold}>Account</option>
+                                </select>
+                            </label>
+                            <label className="flex-1">
+                                <span className="block text-xs font-medium text-slate-500 mb-1">Amount on this method</span>
+                                <input type="number" step="0.01" min="0" value={p.amount} placeholder="0.00"
+                                    aria-label="Amount" onChange={(e) => setP(i, 'amount', e.target.value)}
+                                    className={`${method} text-right tabular-nums font-semibold`} />
+                            </label>
                             {p.method === 'cash' ? (
-                                <input type="number" step="0.01" min="0" value={p.tendered}
-                                    aria-label="Cash tendered" placeholder="Tendered"
-                                    onChange={(e) => setP(i, 'tendered', e.target.value)}
-                                    className={`${method} w-28 text-right tabular-nums`} />
+                                <label className="w-44">
+                                    <span className="block text-xs font-medium text-slate-500 mb-1">Cash handed over</span>
+                                    <input type="number" step="0.01" min="0" value={p.tendered} placeholder="0.00"
+                                        aria-label="Cash tendered"
+                                        onChange={(e) => setP(i, 'tendered', e.target.value)}
+                                        className={`${method} text-right tabular-nums`} />
+                                </label>
                             ) : (
-                                <input value={p.reference} aria-label="Reference" placeholder="Ref"
-                                    onChange={(e) => setP(i, 'reference', e.target.value)}
-                                    className={`${method} w-28`} />
+                                <label className="w-44">
+                                    <span className="block text-xs font-medium text-slate-500 mb-1">Reference (optional)</span>
+                                    <input value={p.reference} aria-label="Reference" placeholder="Card / EFT ref"
+                                        onChange={(e) => setP(i, 'reference', e.target.value)}
+                                        className={method} />
+                                </label>
                             )}
                             {payments.length > 1 && (
-                                <button onClick={() => setPayments((prev) => prev.filter((_, idx) => idx !== i))} aria-label="Remove payment" className="p-1 text-slate-300 hover:text-red-600">
-                                    <X className="w-4 h-4" />
+                                <button onClick={() => { setError(null); setPayments((prev) => prev.filter((_, idx) => idx !== i)); }} aria-label="Remove payment" className="mb-2 flex justify-center p-1 text-slate-300 hover:text-red-600">
+                                    <X className="w-5 h-5" />
                                 </button>
                             )}
                         </div>
                     ))}
                     <button
-                        onClick={() => setPayments((prev) => [...prev, { method: 'card', amount: Math.max(0, balance), reference: '' }])}
-                        className="text-xs font-medium text-orange-600 hover:text-orange-700"
+                        onClick={() => { setError(null); setPayments((prev) => [...prev, { method: 'card', amount: Math.max(0, balance) || '', reference: '' }]); }}
+                        className="text-sm font-medium text-orange-600 hover:text-orange-700"
                     >
                         + Split payment
                     </button>
                 </div>
 
-                <div className="rounded-lg bg-slate-50 px-4 py-3 text-sm space-y-1">
+                <div className="rounded-xl bg-slate-50 px-5 py-4 text-base space-y-2">
                     <div className="flex justify-between text-slate-500"><span>Paid</span><span className="tabular-nums">{money(paid)}</span></div>
-                    <div className={`flex justify-between font-medium ${Math.abs(balance) > 0.001 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    <div className={`flex justify-between text-lg font-semibold ${Math.abs(balance) > 0.001 ? 'text-amber-600' : 'text-emerald-600'}`}>
                         <span>{balance > 0 ? 'Balance due' : balance < 0 ? 'Over-tender' : 'Settled'}</span>
                         <span className="tabular-nums">{money(Math.abs(balance))}</span>
                     </div>
@@ -394,16 +455,16 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
                 </div>
 
                 {needsApproval && (
-                    <p className="text-xs text-amber-600">A line discount exceeds {maxDiscount}% — posting records a supervisor override.</p>
+                    <p className="text-sm text-amber-600">A line discount exceeds {maxDiscount}% — posting records a supervisor override.</p>
                 )}
-                {error && <p className="text-sm text-red-600">{error}</p>}
+                {error && <p className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-                <div className="flex justify-end gap-3 pt-1">
-                    <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
+                <div className="flex justify-end gap-3 pt-2">
+                    <button onClick={onClose} className="rounded-lg px-5 py-3 text-base font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
                     <button
                         onClick={submit}
                         disabled={processing || Math.abs(balance) > 0.001 || accountBlocked}
-                        className="rounded-lg bg-orange-600 px-6 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded-lg bg-orange-600 px-8 py-3 text-base font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {processing ? 'Posting…' : 'Complete sale'}
                     </button>

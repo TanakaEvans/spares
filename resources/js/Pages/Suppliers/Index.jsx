@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Plus, Download, Upload } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/suppliers';
 import DataTable from '@/Components/DataTable';
@@ -29,8 +29,29 @@ export default function SuppliersIndex({ suppliers, filters }) {
                         className="w-72"
                     />
                     <Link
+                        href={route('imports.show', 'suppliers')}
+                        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Upload className="w-4 h-4" />
+                        Import CSV
+                    </Link>
+                    <a
+                        href={route('suppliers.export', filters?.search ? { search: filters.search } : {})}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Download className="w-4 h-4" />
+                        CSV
+                    </a>
+                    <a
+                        href={route('suppliers.export', { ...(filters?.search ? { search: filters.search } : {}), format: 'pdf' })}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Download className="w-4 h-4" />
+                        PDF
+                    </a>
+                    <Link
                         href={route('suppliers.create')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+                        className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                     >
                         <Plus className="w-4 h-4" />
                         New Supplier
