@@ -45,6 +45,24 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'warning' => fn () => $request->session()->get('warning'),
             ],
+            // Every page's collapsible guide (docs/design/page-guide.md) —
+            // resolved automatically from the current route name.
+            'pageGuide' => fn () => app(\App\Services\PageGuideService::class)
+                ->contentFor($request->route()?->getName()),
+            // The bell (10.13): unread count + latest few, on every page.
+            'notifications' => fn () => $request->user() ? [
+                'unread' => $request->user()->unreadNotifications()->count(),
+                'latest' => $request->user()->notifications()->latest()->limit(7)->get()
+                    ->map(fn ($n) => [
+                        'id' => $n->id,
+                        'title' => $n->data['title'] ?? 'Notification',
+                        'message' => $n->data['message'] ?? null,
+                        'url' => $n->data['url'] ?? null,
+                        'severity' => $n->data['severity'] ?? 'info',
+                        'read' => $n->read_at !== null,
+                        'when' => $n->created_at->diffForHumans(short: true),
+                    ]),
+            ] : null,
         ];
     }
 }

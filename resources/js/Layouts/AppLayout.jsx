@@ -1,7 +1,12 @@
 import { Head, router } from '@inertiajs/react';
 import { Wrench } from 'lucide-react';
+import FlashToasts from '@/Components/FlashToasts';
+import { PageGuidePanel, PageGuideTrigger, usePageGuide } from '@/Components/PageGuide';
+import CommandPalette from '@/Components/CommandPalette';
+import NotificationBell from '@/Components/NotificationBell';
 
 export default function AppLayout({ children, title = 'Dashboard', auth }) {
+    const guide = usePageGuide();
     const logout = () => {
         router.post(route('logout'));
     };
@@ -23,6 +28,8 @@ export default function AppLayout({ children, title = 'Dashboard', auth }) {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            <PageGuideTrigger open={guide.open} onToggle={guide.toggle} />
+                            <NotificationBell dark />
                             <div className="text-sm text-slate-300">
                                 Welcome, <span className="font-semibold text-white">{auth?.user?.name}</span>
                             </div>
@@ -37,8 +44,11 @@ export default function AppLayout({ children, title = 'Dashboard', auth }) {
                 </header>
 
                 <main className="max-w-7xl mx-auto p-6">
+                    <PageGuidePanel open={guide.open} onClose={guide.close} />
                     {children}
                 </main>
+                <FlashToasts />
+            <CommandPalette />
             </div>
         </>
     );

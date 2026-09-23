@@ -27,6 +27,7 @@ class CompanyController extends Controller
             'trading_name' => 'nullable|string|max:255',
             'registration_number' => 'nullable|string|max:100',
             'tax_number' => 'nullable|string|max:100',
+            'vat_number' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'website' => 'nullable|url|max:255',
@@ -36,6 +37,10 @@ class CompanyController extends Controller
             'country' => 'nullable|string|max:100',
             'postal_code' => 'nullable|string|max:20',
             'currency' => 'nullable|string|max:10',
+            'bank_name' => 'nullable|string|max:100',
+            'bank_branch_code' => 'nullable|string|max:20',
+            'bank_account_name' => 'nullable|string|max:100',
+            'bank_account_number' => 'nullable|string|max:30',
             'head_id' => 'nullable|exists:employees,id',
         ]);
 

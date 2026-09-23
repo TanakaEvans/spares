@@ -145,6 +145,11 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
             ->name('currencies.toggle')
             ->defaults('description', 'Activate or deactivate a currency');
 
+        // Document proof (print pipeline verification)
+        Route::get('print/proof', \App\Http\Controllers\Admin\PrintProofController::class)
+            ->name('print.proof')
+            ->defaults('description', 'Render the document pipeline proof PDF');
+
         // Number Sequences
         Route::get('sequences', [\App\Http\Controllers\Admin\NumberSequenceController::class, 'index'])
             ->name('sequences.index')
@@ -264,4 +269,78 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     Route::get('/system/logs', function () {
         return inertia('System/Logs');
     })->name('system.logs')->defaults('description', 'View system logs');
+
+    // ── Vehicle Reference module ─────────────────────────────────────────
+    Route::prefix('vehicle-ref')->name('vehicle-ref.')->group(function () {
+        Route::get('fitment', \App\Http\Controllers\VehicleRef\FitmentLookupController::class)
+            ->name('fitment')->defaults('description', 'Find every part that fits a vehicle');
+        Route::get('cross-ref', \App\Http\Controllers\VehicleRef\CrossReferenceController::class)
+            ->name('cross-ref')->defaults('description', 'Search any part number across all references');
+
+        Route::get('makes', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'index'])->name('makes.index');
+        Route::post('makes', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'store'])->name('makes.store');
+        Route::patch('makes/{make}', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'update'])->name('makes.update');
+
+        Route::get('models', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'index'])->name('models.index');
+        Route::post('models', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'store'])->name('models.store');
+        Route::get('models/{model}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'show'])->name('models.show');
+        Route::post('models/{model}/variants', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'storeVariant'])->name('models.variants.store');
+
+        Route::get('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'index'])->name('engines.index');
+        Route::post('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'store'])->name('engines.store');
+    });
+
+    // ── Inventory module ─────────────────────────────────────────────────
+    Route::prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('parts', [\App\Http\Controllers\Inventory\PartController::class, 'index'])->name('parts.index');
+        Route::get('parts/create', [\App\Http\Controllers\Inventory\PartController::class, 'create'])->name('parts.create');
+        Route::post('parts', [\App\Http\Controllers\Inventory\PartController::class, 'store'])->name('parts.store');
+        Route::get('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'show'])->name('parts.show');
+        Route::get('parts/{part}/edit', [\App\Http\Controllers\Inventory\PartController::class, 'edit'])->name('parts.edit');
+        Route::patch('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'update'])->name('parts.update');
+
+        Route::post('parts/{part}/cross-references', [\App\Http\Controllers\Inventory\PartRelationController::class, 'storeCrossReference'])->name('parts.crossrefs.store');
+        Route::delete('parts/{part}/cross-references/{crossReference}', [\App\Http\Controllers\Inventory\PartRelationController::class, 'destroyCrossReference'])->name('parts.crossrefs.destroy');
+        Route::post('parts/{part}/fitments', [\App\Http\Controllers\Inventory\PartRelationController::class, 'storeFitment'])->name('parts.fitments.store');
+        Route::delete('parts/{part}/fitments/{fitment}', [\App\Http\Controllers\Inventory\PartRelationController::class, 'destroyFitment'])->name('parts.fitments.destroy');
+        Route::post('parts/{part}/supersession', [\App\Http\Controllers\Inventory\PartRelationController::class, 'storeSupersession'])->name('parts.supersession.store');
+
+        Route::get('categories', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'index'])->name('categories.index');
+        Route::post('categories', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'store'])->name('categories.store');
+        Route::patch('categories/{category}', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'update'])->name('categories.update');
+
+        Route::get('brands', [\App\Http\Controllers\Inventory\PartBrandController::class, 'index'])->name('brands.index');
+        Route::post('brands', [\App\Http\Controllers\Inventory\PartBrandController::class, 'store'])->name('brands.store');
+
+        Route::get('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'index'])->name('bins.index');
+        Route::post('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'store'])->name('bins.store');
+
+        Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
+    });
+
+    // Notification bell actions
+    Route::post('/notifications/{id}/read', function (\Illuminate\Http\Request $request, string $id) {
+        $request->user()->notifications()->where('id', $id)->first()?->markAsRead();
+
+        return back();
+    })->name('notifications.read')->defaults('description', 'Mark a notification as read');
+
+    Route::post('/notifications/read-all', function (\Illuminate\Http\Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+
+        return back();
+    })->name('notifications.read-all')->defaults('description', 'Mark all notifications as read');
+
+    // Command palette (Ctrl+K) search endpoint
+    Route::get('/search', function (\Illuminate\Http\Request $request, \App\Services\GlobalSearchService $search) {
+        return response()->json([
+            'groups' => $search->search((string) $request->query('q', ''), $request->user()),
+        ]);
+    })->name('search.global')->defaults('description', 'Global command palette search');
+
+    // In-app documentation viewer (page guides deep-link into the spec)
+    Route::get('/help/docs/{path?}', [\App\Http\Controllers\HelpDocsController::class, 'show'])
+        ->where('path', '.*')
+        ->name('help.docs.show')
+        ->defaults('description', 'Read system documentation');
 });

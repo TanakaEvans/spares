@@ -1,0 +1,35 @@
+name,code,country_of_origin,is_oem_brand
+Toyota Genuine,TOYG,Japan,1
+Nissan Genuine,NISG,Japan,1
+Ford Genuine,FORG,USA,1
+VW Genuine,VWG,Germany,1
+Isuzu Genuine,ISUG,Japan,1
+GUD,GUD,South Africa,0
+Fram,FRAM,South Africa,0
+Mann Filter,MANN,Germany,0
+NGK,NGK,Japan,0
+Denso,DENSO,Japan,0
+Bosch,BOSCH,Germany,0
+Champion,CHAMP,USA,0
+Gates,GATES,USA,0
+Dayco,DAYCO,Italy,0
+Monroe,MONRO,USA,0
+Gabriel,GABR,South Africa,0
+KYB,KYB,Japan,0
+Ferodo,FERO,United Kingdom,0
+TRW,TRW,Germany,0
+ATE,ATE,Germany,0
+Bendix,BENDX,Australia,0
+GMB,GMB,Japan,0
+Koyo,KOYO,Japan,0
+NSK,NSK,Japan,0
+SKF,SKF,Sweden,0
+Exide,EXIDE,South Africa,0
+Willard,WILL,South Africa,0
+Castrol,CAST,United Kingdom,0
+Engen,ENGEN,South Africa,0
+Total,TOTAL,France,0
+Shell,SHELL,Netherlands,0
+Luk,LUK,Germany,0
+Exedy,EXEDY,Japan,0
+Doe,DOE,South Africa,0

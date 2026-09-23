@@ -106,7 +106,15 @@ database/data/               ← CSV seed packs (planned — see local-data-seed
   - 0.1 Configuration Centre ✅ — `config/settings_registry.php` (30 settings), `SettingsService` (branch→global→default), `admin.settings.*`, full UI
   - 0.2 Currencies & Rates ✅ — `CurrencyService` (effective-dated buy/sell, base-relative), `CurrencySeeder`, `admin.currencies.*`, full UI
   - 0.3 Number Sequences ✅ — `NumberSequenceService` (gapless, row-locked), 20 seeded types, `admin.sequences.*`, full UI
-  - Domain exception base: `app/Exceptions/DomainException.php` (+ `MissingExchangeRateException`)
-  - Test suite: 47 passing (sqlite :memory:)
+  - 0.4 Document Identity ✅ — vat/banking fields, `DocumentIdentityService` (branch overlay), shared print partials (`resources/views/print/partials/`)
+  - 0.5 Posting Engines ✅ — `GlPostingService` (balanced-only, period gating, control-account block, reversals) + `StockLedgerService` (AVCO, negative-stock setting, reservations, `verifyIntegrity()`); COA (44 accounts) + FY periods seeded; GL/stock tables migrated (parts FK deferred to Phase 1)
+  - 0.6 Shared UI Kit ✅ — `ModuleLayout` with Level-2/Level-3 sidebar resolver (`resources/js/nav/system-admin.js` is the reference config); `DataTable`, `FormField`, `StatusBadge`, `SearchInput`, `MoneyDisplay`, `ConfirmDialog`, `EmptyState`, `FlashToasts` in `resources/js/Components/`
+  - 0.8 Print/Email ✅ — DomPDF, `DocumentPdfService` (identity+settings into every print view), proof template, `DocumentMail` queued base mailable, `PrintButton`
+  - 0.9 Page Guides ✅ — `resources/guides/{route}.md` + DB overrides via `PageGuideService`, shared automatically per route, `<PageGuide>` (`F1`), in-app docs viewer `/help/docs/{path}`
+  - 0.10 Command Palette ✅ — `Ctrl+K` `<CommandPalette>`, `/search` endpoint, `config/search_pages.php` registry (entity sources plug in per module)
+  - 0.11 Notifications ✅ core — `config/notification_events.php` catalogue, `NotificationRouterService` (bell/email/SMS-logged, branch-scoped, unrouted-logs), `<NotificationBell>` in both layouts; matrix/feed/delivery-log screens pending with admin-screens batch
+  - Domain exceptions: `DomainException` base + MissingExchangeRate/UnbalancedJournal/ClosedPeriod/NoOpenPeriod/ControlAccountPosting/InsufficientStock
+  - Test suite: 91 passing (sqlite :memory:)
 - **Docs:** complete — all modules/sub-modules, workflows, design (incl. per-sub-module sidebars), operations, tasks.
-- **Next:** 0.4 document identity → 0.5 posting engines → 0.6 shared UI kit — [docs/tasks/00-foundations.md](docs/tasks/00-foundations.md).
+- **PHASE 0 COMPLETE** (remaining stragglers tracked in tasks: SystemRoute permission seeds, page-guide/notification admin screens, legacy AdminLayout migration).
+- **Next: Phase 1** — Vehicle Reference + Inventory master data: [docs/tasks/08-vehicle-reference.md](docs/tasks/08-vehicle-reference.md) then [docs/tasks/01-inventory.md](docs/tasks/01-inventory.md) per the [implementation plan](docs/implementation-plan.md).
