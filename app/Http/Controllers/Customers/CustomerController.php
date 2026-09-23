@@ -12,8 +12,11 @@ use App\Models\SalesPayment;
 use App\Services\ArReceiptService;
 use App\Services\DocumentPdfService;
 use App\Services\NumberSequenceService;
+use App\Support\CsvExport;
+use App\Support\ListExport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -157,6 +160,65 @@ class CustomerController extends Controller
     /** Account statement PDF (Module 5.5): on-account activity + running balance + ageing. */
     public function statement(Customer $customer, DocumentPdfService $pdf, ArReceiptService $ar): HttpResponse
     {
+        $lines = $this->statementRows($customer);
+        $closing = $lines->last()['balance'] ?? 0.0;
+
+        $ageing = collect($ar->ageing(now()->toDateString())['rows'])->firstWhere('customer_id', $customer->id)
+            ?? ['current' => 0, 'b30' => 0, 'b60' => 0, 'b90' => 0, 'total' => $customer->arBalance()];
+
+        return $pdf->render('print.customer-statement', [
+            'customer' => $customer,
+            'lines' => $lines,
+            'closing' => round((float) $closing, 2),
+            'ageing' => $ageing,
+        ])->stream("statement-{$customer->customer_number}.pdf");
+    }
+
+    /** Same account statement as a CSV (Module 5.5 export). */
+    public function statementCsv(Customer $customer): HttpResponse
+    {
+        $rows = $this->statementRows($customer)->map(fn ($r) => [
+            $r['date'], $r['ref'], $r['detail'],
+            number_format($r['debit'], 2, '.', ''),
+            number_format($r['credit'], 2, '.', ''),
+            number_format($r['balance'], 2, '.', ''),
+        ]);
+
+        return CsvExport::download(
+            "statement-{$customer->customer_number}",
+            ['Date', 'Reference', 'Detail', 'Debit', 'Credit', 'Balance'],
+            $rows,
+        );
+    }
+
+    /** The customer directory as a CSV or PDF export (honours the same filters). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = Customer::query()
+            ->with('group:id,name')
+            ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('type', $t))
+            ->when($request->boolean('on_hold'), fn ($q) => $q->where('on_hold', true))
+            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                fn ($x) => $x->where('name', 'like', "%{$s}%")
+                    ->orWhere('customer_number', 'like', "%{$s}%")
+                    ->orWhere('phone', 'like', "%{$s}%")
+            ))
+            ->orderBy('name')->get()
+            ->map(fn (Customer $c) => [
+                $c->customer_number, $c->name, $c->type, $c->group?->name, $c->phone, $c->email, $c->city,
+                number_format((float) $c->credit_limit, 2, '.', ''),
+                number_format($c->arBalance(), 2, '.', ''),
+                $c->on_hold ? 'yes' : 'no',
+            ]);
+
+        return ListExport::respond($request, 'customers', 'Customer Directory', [
+            'Customer #', 'Name', 'Type', 'Group', 'Phone', 'Email', 'City', 'Credit limit', 'Account balance', 'On hold',
+        ], $rows);
+    }
+
+    /** @return Collection<int,array<string,mixed>> */
+    private function statementRows(Customer $customer): Collection
+    {
         // On-account charges (debits).
         $charges = SalesPayment::where('method', 'account')
             ->whereHas('document', fn ($q) => $q->where('customer_id', $customer->id)
@@ -191,21 +253,12 @@ class CustomerController extends Controller
             ->sortBy(fn ($r) => $r['date']->timestamp)->values();
 
         $balance = 0.0;
-        $lines = $rows->map(function ($r) use (&$balance) {
+
+        return $rows->map(function ($r) use (&$balance) {
             $balance = round($balance + $r['debit'] - $r['credit'], 2);
 
             return array_merge($r, ['date' => $r['date']->format('d M Y'), 'balance' => $balance]);
         });
-
-        $ageing = collect($ar->ageing(now()->toDateString())['rows'])->firstWhere('customer_id', $customer->id)
-            ?? ['current' => 0, 'b30' => 0, 'b60' => 0, 'b90' => 0, 'total' => $customer->arBalance()];
-
-        return $pdf->render('print.customer-statement', [
-            'customer' => $customer,
-            'lines' => $lines,
-            'closing' => round($balance, 2),
-            'ageing' => $ageing,
-        ])->stream("statement-{$customer->customer_number}.pdf");
     }
 
     private function formOptions(): array

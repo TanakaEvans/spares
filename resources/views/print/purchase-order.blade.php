@@ -69,6 +69,10 @@
         <div class="block" style="margin-top:12px;"><strong>Notes:</strong> {{ $order->notes }}</div>
     @endif
 
+    @include('print.partials.document-stamp', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forPurchaseOrder($order),
+    ])
+
     @include('print.partials.document-footer', [
         'identity' => $identity,
         'footerText' => 'Please quote the PO number on your delivery note and invoice.',

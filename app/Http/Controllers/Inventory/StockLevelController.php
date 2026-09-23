@@ -5,12 +5,43 @@ namespace App\Http\Controllers\Inventory;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\StockLevel;
+use App\Support\ListExport;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class StockLevelController extends Controller
 {
+    /** Stock-on-hand valuation as a CSV or PDF export (honours branch/search/reorder filters). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = StockLevel::with(['branch:id,name', 'binLocation:id,code'])
+            ->join('parts', 'parts.id', '=', 'stock_levels.part_id')
+            ->select('stock_levels.*', 'parts.part_number', 'parts.description')
+            ->when($request->integer('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
+            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                fn ($x) => $x->where('parts.part_number', 'like', "%{$s}%")
+                    ->orWhere('parts.description', 'like', "%{$s}%")
+            ))
+            ->when($request->boolean('below_reorder'), fn ($q) => $q
+                ->whereColumn('qty_on_hand', '<=', 'reorder_point')->where('reorder_point', '>', 0))
+            ->orderBy('parts.part_number')->get()
+            ->map(fn ($l) => [
+                $l->part_number, $l->description, $l->branch?->name, $l->binLocation?->code,
+                number_format((float) $l->qty_on_hand, 2, '.', ''),
+                number_format((float) $l->qty_reserved, 2, '.', ''),
+                number_format((float) $l->qty_on_hand - (float) $l->qty_reserved, 2, '.', ''),
+                number_format((float) $l->average_cost, 2, '.', ''),
+                number_format((float) $l->qty_on_hand * (float) $l->average_cost, 2, '.', ''),
+                number_format((float) $l->reorder_point, 2, '.', ''),
+            ]);
+
+        return ListExport::respond($request, 'stock-on-hand', 'Stock on Hand', [
+            'Part #', 'Description', 'Branch', 'Bin', 'On hand', 'Reserved', 'Available', 'Avg cost', 'Stock value', 'Reorder point',
+        ], $rows);
+    }
+
     public function index(Request $request): Response
     {
         $levels = StockLevel::with(['branch:id,name', 'binLocation:id,code'])

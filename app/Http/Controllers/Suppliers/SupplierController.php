@@ -6,13 +6,34 @@ use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\Supplier;
 use App\Services\NumberSequenceService;
+use App\Support\ListExport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class SupplierController extends Controller
 {
+    /** Supplier directory as a CSV or PDF export (honours the search filter). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = Supplier::when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+            fn ($x) => $x->where('name', 'like', "%{$s}%")->orWhere('supplier_number', 'like', "%{$s}%")
+        ))
+            ->orderBy('name')->get()
+            ->map(fn (Supplier $s) => [
+                $s->supplier_number, $s->name, $s->type, $s->phone, $s->email, $s->city,
+                $s->lead_time_days, $s->payment_terms_days,
+                number_format($s->apBalance(), 2, '.', ''),
+                $s->is_active ? 'active' : 'inactive',
+            ]);
+
+        return ListExport::respond($request, 'suppliers', 'Supplier Directory', [
+            'Supplier #', 'Name', 'Type', 'Phone', 'Email', 'City', 'Lead time (days)', 'Terms (days)', 'Account balance', 'Status',
+        ], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Suppliers/Index', [

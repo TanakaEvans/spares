@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Download, Upload } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
 import DataTable from '@/Components/DataTable';
@@ -55,8 +55,29 @@ export default function CustomersIndex({ customers, filters }) {
                         On hold only
                     </label>
                     <Link
+                        href={route('imports.show', 'customers')}
+                        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Upload className="w-4 h-4" />
+                        Import CSV
+                    </Link>
+                    <a
+                        href={route('customers.export', Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)))}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Download className="w-4 h-4" />
+                        CSV
+                    </a>
+                    <a
+                        href={route('customers.export', { ...Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)), format: 'pdf' })}
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                    >
+                        <Download className="w-4 h-4" />
+                        PDF
+                    </a>
+                    <Link
                         href={route('customers.create')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+                        className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                     >
                         <Plus className="w-4 h-4" />
                         Add Customer

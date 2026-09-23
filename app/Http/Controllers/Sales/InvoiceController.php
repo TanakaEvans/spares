@@ -71,7 +71,7 @@ class InvoiceController extends Controller
     public function receipt(SalesDocument $invoice, DocumentPdfService $pdf): HttpResponse
     {
         abort_unless($invoice->document_type === 'invoice', 404);
-        $invoice->load('customer', 'branch', 'lines', 'payments');
+        $invoice->load('customer', 'branch', 'lines', 'payments', 'salesperson');
 
         return $pdf->render('print.sales-receipt', ['invoice' => $invoice], $invoice->branch_id, paper: [0, 0, 226.77, 800])
             ->stream("{$invoice->document_number}-receipt.pdf");

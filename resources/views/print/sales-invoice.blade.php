@@ -85,6 +85,10 @@
         @endif
     </table>
 
+    @include('print.partials.document-stamp', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forSalesDocument($invoice),
+    ])
+
     @include('print.partials.document-footer', [
         'identity' => $identity,
         'footerText' => $footerText,

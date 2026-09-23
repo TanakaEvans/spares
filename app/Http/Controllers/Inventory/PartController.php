@@ -8,13 +8,37 @@ use App\Models\PartBrand;
 use App\Models\PartCategory;
 use App\Models\UnitOfMeasure;
 use App\Models\VehicleMake;
+use App\Support\ListExport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PartController extends Controller
 {
+    /** Parts catalogue as a CSV or PDF export (honours search/category/status filters). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = Part::with(['category:id,name', 'brand:id,name', 'stockLevels'])
+            ->when($request->string('search')->toString(), fn ($q, $s) => $q->search($s))
+            ->when($request->integer('category_id'), fn ($q, $id) => $q->where('category_id', $id))
+            ->when($request->string('status')->toString() === 'active', fn ($q) => $q->where('is_active', true))
+            ->when($request->string('status')->toString() === 'inactive', fn ($q) => $q->where('is_active', false))
+            ->orderBy('part_number')->get()
+            ->map(fn (Part $p) => [
+                $p->part_number, $p->oem_number, $p->description,
+                $p->category?->name, $p->brand?->name,
+                $p->is_oem ? 'OEM' : 'Aftermarket',
+                number_format((float) $p->stockLevels->sum('qty_on_hand'), 2, '.', ''),
+                $p->is_active ? 'active' : 'inactive',
+            ]);
+
+        return ListExport::respond($request, 'parts', 'Parts Catalogue', [
+            'Part #', 'OEM #', 'Description', 'Category', 'Brand', 'Type', 'On hand', 'Status',
+        ], $rows);
+    }
+
     public function index(Request $request): Response
     {
         $parts = Part::with(['category:id,name', 'brand:id,name',

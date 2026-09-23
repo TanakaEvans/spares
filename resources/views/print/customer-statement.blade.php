@@ -82,6 +82,10 @@
         </tbody>
     </table>
 
+    @include('print.partials.document-stamp', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forStatement($customer, (float) $closing),
+    ])
+
     @include('print.partials.document-footer', [
         'identity' => $identity,
         'footerText' => 'Please settle overdue amounts promptly. Queries: contact your account manager.',

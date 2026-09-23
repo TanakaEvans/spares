@@ -64,6 +64,10 @@
         <tr class="grand"><td>TOTAL CREDITED</td><td class="num">{{ number_format((float) $creditNote->total_incl, 2) }}</td></tr>
     </table>
 
+    @include('print.partials.document-stamp', [
+        'stamp' => app(\App\Services\DocumentStampService::class)->forSalesDocument($creditNote),
+    ])
+
     @include('print.partials.document-footer', [
         'identity' => $identity,
         'footerText' => $footerText,

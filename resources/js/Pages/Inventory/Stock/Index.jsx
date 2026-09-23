@@ -1,4 +1,5 @@
 import { Head, router } from '@inertiajs/react';
+import { Download } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
@@ -50,11 +51,27 @@ export default function StockIndex({ levels, branches, filters, totalValue }) {
                         />
                         Below reorder point only
                     </label>
-                    <div className="ml-auto text-sm text-slate-500">
-                        Total stock value:{' '}
-                        <span className="font-bold text-slate-800 tabular-nums">
-                            <MoneyDisplay amount={totalValue} />
-                        </span>
+                    <div className="ml-auto flex items-center gap-4">
+                        <div className="text-sm text-slate-500">
+                            Total stock value:{' '}
+                            <span className="font-bold text-slate-800 tabular-nums">
+                                <MoneyDisplay amount={totalValue} />
+                            </span>
+                        </div>
+                        <a
+                            href={route('inventory.stock.export', Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)))}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                            <Download className="w-4 h-4" />
+                            CSV
+                        </a>
+                        <a
+                            href={route('inventory.stock.export', { ...Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)), format: 'pdf' })}
+                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                            <Download className="w-4 h-4" />
+                            PDF
+                        </a>
                     </div>
                 </div>
 

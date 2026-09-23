@@ -148,10 +148,10 @@ function FulfilDialog({ order, onClose }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Fulfil and take payment">
             <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
-            <div className="relative w-full max-w-lg rounded-xl bg-white shadow-xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Fulfil &amp; invoice</h2>
-                    <span className="text-2xl font-bold tabular-nums text-slate-900">{money(total)}</span>
+            <div className="relative w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl p-8 space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h2 className="text-2xl font-semibold text-slate-900">Fulfil &amp; invoice</h2>
+                    <span className="text-4xl font-bold tabular-nums text-slate-900">{money(total)}</span>
                 </div>
 
                 <div className="space-y-2">

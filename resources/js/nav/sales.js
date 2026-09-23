@@ -1,7 +1,7 @@
 // Sales & POS module nav — content only (styling lives in ModuleLayout).
 import {
     ShoppingCart, Receipt, Undo2, FileText, ClipboardList, ListOrdered,
-    LayoutList, Plus, ScanBarcode, Users, PackageSearch, Layers,
+    LayoutList, Plus, ScanBarcode, Users, PackageSearch, Layers, Banknote,
 } from 'lucide-react';
 
 const navConfig = {
@@ -42,6 +42,7 @@ const navConfig = {
                 { label: 'New Sale', route: 'sales.pos', icon: ScanBarcode },
             ],
             quickLinks: [
+                { label: 'Daily Cash-up', route: 'reports.cashup', icon: Banknote },
                 { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
                 { label: 'Customers', route: 'customers.index', icon: Users },
                 { label: 'Price Lists', route: 'sales.price-lists.index', icon: ListOrdered },
