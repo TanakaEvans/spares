@@ -5,8 +5,8 @@
 <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
     <tr>
         <td style="vertical-align:top; width:55%;">
-            @if(!empty($identity['logo']))
-                <img src="{{ public_path('storage/'.$identity['logo']) }}" alt="" style="max-height:60px; margin-bottom:6px;">
+            @if(!empty($identity['logo']) && file_exists(public_path($identity['logo'])))
+                <img src="{{ public_path($identity['logo']) }}" alt="" style="max-height:64px; margin-bottom:6px;">
             @endif
             <div style="font-size:16px; font-weight:bold; color:#0F1B35;">
                 {{ $identity['trading_name'] ?: $identity['name'] }}

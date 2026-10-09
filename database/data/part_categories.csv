@@ -13,6 +13,7 @@ ENG-CLG,Cooling System,ENG,20
 ENG-CLG-RAD,Radiators,ENG-CLG,21
 ENG-CLG-WPP,Water Pumps,ENG-CLG,22
 ENG-CLG-THS,Thermostats,ENG-CLG,23
+ENG-CLG-HOS,Hoses & Pipes,ENG-CLG,24
 BRK,Brakes,,30
 BRK-PAD,Brake Pads,BRK,31
 BRK-DSC,Brake Discs,BRK,32
@@ -47,3 +48,7 @@ BOD,Body & Accessories,,90
 BOD-MIR,Mirrors,BOD,91
 BOD-WIP,Wiper Blades,BOD,92
 EXH,Exhaust Systems,,95
+TYR,Tyres & Wheels,,96
+TYR-TYR,Tyres,TYR,97
+TYR-RIM,Rims & Wheel Nuts,TYR,98
+USED,Used Parts,,99

@@ -13,4 +13,4 @@ Manage the currencies the business trades in and capture the **daily exchange ra
 - Sales may fall back to the last known rate when today's is missing — or be blocked entirely, depending on the [Configuration Centre](route:admin.settings.index) setting.
 
 ## Related
-- Dual-currency display (USD + ZWG on receipts) is switched on in the [Configuration Centre](route:admin.settings.index).
+- Dual-currency display (base + a secondary currency on receipts) is switched on in the [Configuration Centre](route:admin.settings.index).
