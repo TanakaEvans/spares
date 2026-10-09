@@ -40,6 +40,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? $request->user()->load('roles') : null,
             ],
+            // The business identity, captured once under System Admin › Company and
+            // reused everywhere (login branding, headers, titles).
+            'company' => fn () => \App\Models\Company::query()->first(['name', 'trading_name', 'logo'])?->toArray(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

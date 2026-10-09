@@ -1,183 +1,170 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import Button from '@/Components/Button';
-import TextInput from '@/Components/TextInput';
-import Checkbox from '@/Components/Checkbox';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
+import { Wrench, Mail, Lock, Eye, EyeOff, ArrowRight, AlertTriangle, Boxes, ShoppingCart, ShieldCheck } from 'lucide-react';
 
-export default function Login({ status, canResetPassword }) {
+const FEATURES = [
+    { icon: Boxes, title: 'Parts & stock', text: 'Multi-branch inventory, AVCO costing, live reorder.' },
+    { icon: ShoppingCart, title: 'Sell & procure', text: 'POS, quotes, purchasing and 3-way matched invoices.' },
+    { icon: ShieldCheck, title: 'Books that reconcile', text: 'Double-entry ledger, workshop and reports in one place.' },
+];
+
+export default function Login({ status }) {
+    const { flash = {}, company } = usePage().props;
+    const brand = (company?.trading_name || company?.name || 'SparesPro').toUpperCase();
+    const logo = company?.logo ? `/${company.logo.replace(/^\/+/, '')}` : null;
     const { data, setData, post, processing, errors, reset } = useForm({
         login: '',
         password: '',
         remember: false,
     });
-
     const [showPassword, setShowPassword] = useState(false);
 
-    useEffect(() => {
-        return () => {
-            reset('password');
-        };
-    }, []);
+    useEffect(() => () => reset('password'), []);
 
     const submit = (e) => {
         e.preventDefault();
-        console.log('Form submitting with data:', data);
-        post('/login', {
-            onSuccess: () => {
-                console.log('Login successful');
-            },
-            onError: (errors) => {
-                console.log('Login errors:', errors);
-            }
-        });
+        post('/login');
     };
 
+    const field = 'w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-3 text-sm text-slate-900 placeholder-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/30 focus:outline-none transition';
+
     return (
-        <div className="min-h-screen flex bg-gray-50">
+        <div className="min-h-screen flex bg-white">
             <Head title="Log in" />
 
-            {/* Left Side - Hero Image */}
-            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-blue-900">
-                <div
-                    className="absolute inset-0 bg-cover bg-center"
-                    style={{ backgroundImage: 'url(/images/school-login-bg.png)' }}
-                ></div>
-                <div className="absolute inset-0 bg-slate-900/70"></div>
-                <div className="relative z-10 w-full h-full flex flex-col justify-between p-12 text-white">
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
-                                <span className="text-2xl">🔧</span>
+            {/* Hero */}
+            <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-950 text-white">
+                <div className="absolute inset-0" style={{ background: 'radial-gradient(120% 120% at 15% 10%, rgba(234,88,12,0.35) 0%, rgba(2,6,23,0) 45%), radial-gradient(100% 100% at 90% 90%, rgba(30,58,138,0.35) 0%, rgba(2,6,23,0) 50%)' }} />
+                <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '38px 38px' }} />
+
+                <div className="relative z-10 flex h-full w-full flex-col justify-between p-12">
+                    <div className="flex items-center gap-3">
+                        {logo ? (
+                            <img src={logo} alt={brand} className="h-14 w-14 rounded-xl object-cover ring-1 ring-white/15 shadow-lg shadow-black/40" />
+                        ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-600 shadow-lg shadow-orange-900/40">
+                                <Wrench className="h-6 w-6 text-white" />
                             </div>
-                            <span className="text-xl font-bold tracking-wider">SPARESPRO</span>
-                        </div>
+                        )}
+                        <span className="text-xl font-bold tracking-widest">{brand}</span>
                     </div>
+
                     <div className="max-w-md">
-                        <h1 className="text-4xl font-bold mb-6 leading-tight">The Complete Motor Spares ERP</h1>
-                        <p className="text-lg text-slate-200/90 leading-relaxed">
+                        <h1 className="text-4xl font-bold leading-tight">The complete motor-spares ERP</h1>
+                        <p className="mt-4 text-base leading-relaxed text-slate-300">
                             Parts, stock, sales, workshop and accounts — everything your spares business runs on, in one system.
                         </p>
+                        <div className="mt-10 space-y-5">
+                            {FEATURES.map((f) => (
+                                <div key={f.title} className="flex items-start gap-3.5">
+                                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
+                                        <f.icon className="h-5 w-5 text-orange-400" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-semibold text-white">{f.title}</div>
+                                        <div className="text-sm text-slate-400">{f.text}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex gap-4 text-sm text-slate-300/80">
-                        <span>© {new Date().getFullYear()} SparesPro</span>
-                        <span>•</span>
-                        <span>Privacy Policy</span>
-                        <span>•</span>
-                        <span>Terms</span>
+
+                    <div className="flex gap-3 text-xs text-slate-400">
+                        <span>© {new Date().getFullYear()} {company?.trading_name || company?.name || 'SparesPro'}</span>
+                        <span>•</span><span>Bochum, Limpopo</span>
+                        <span>•</span><span>Powered by SparesPro</span>
                     </div>
                 </div>
             </div>
 
-            {/* Right Side - Login Form */}
-            <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-white">
-                <div className="mx-auto w-full max-w-sm lg:w-96">
-                    <div className="mb-10">
-                        <h2 className="text-3xl font-extrabold text-blue-900 tracking-tight">
-                            Sign In
-                        </h2>
-                        <p className="mt-2 text-sm text-gray-500">
-                            Please authenticate with your credentials.
-                        </p>
+            {/* Form */}
+            <div className="flex flex-1 flex-col justify-center px-6 py-12 sm:px-10 lg:px-20 xl:px-28">
+                <div className="mx-auto w-full max-w-sm">
+                    <div className="mb-8 flex items-center gap-3 lg:hidden">
+                        {logo ? (
+                            <img src={logo} alt={brand} className="h-12 w-12 rounded-xl object-cover ring-1 ring-slate-200" />
+                        ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600">
+                                <Wrench className="h-5 w-5 text-white" />
+                            </div>
+                        )}
+                        <span className="text-lg font-bold tracking-widest text-slate-900">{brand}</span>
                     </div>
 
-                    {status && <div className="mb-4 bg-green-50 text-green-700 p-4 rounded-lg text-sm font-medium border border-green-100">{status}</div>}
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900">Welcome back</h2>
+                    <p className="mt-1.5 text-sm text-slate-500">Sign in to continue to your workspace.</p>
 
-                    <form onSubmit={submit} className="space-y-6">
+                    {status && (
+                        <div className="mt-6 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{status}</div>
+                    )}
+                    {flash.error && (
+                        <div className="mt-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span>{flash.error}</span>
+                        </div>
+                    )}
+
+                    <form onSubmit={submit} className="mt-7 space-y-5">
                         <div>
-                            <InputLabel htmlFor="login" value="Username or Email" className="block text-sm font-medium text-gray-700" />
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-400 sm:text-sm">📧</span>
-                                </div>
-                                <TextInput
-                                    id="login"
-                                    type="text"
-                                    name="login"
+                            <label htmlFor="login" className="mb-1.5 block text-sm font-medium text-slate-700">Username or email</label>
+                            <div className="relative">
+                                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    id="login" name="login" type="text" autoFocus autoComplete="username"
                                     value={data.login}
-                                    className="block w-full pl-10 pr-3 py-3 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    isFocused={true}
                                     onChange={(e) => setData('login', e.target.value)}
                                     placeholder="admin or user@company.com"
+                                    className={field}
                                 />
                             </div>
-                            <InputError message={errors.login} className="mt-2 text-sm text-red-600" />
+                            {errors.login && <p className="mt-1.5 text-sm text-red-600">{errors.login}</p>}
                         </div>
 
                         <div>
-                            <InputLabel htmlFor="password" value="Password" className="block text-sm font-medium text-gray-700" />
-                            <div className="mt-1 relative rounded-md shadow-sm">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-400 sm:text-sm">🔒</span>
-                                </div>
-                                <TextInput
-                                    id="password"
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
+                            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
+                            <div className="relative">
+                                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
                                     value={data.password}
-                                    className="block w-full pl-10 pr-10 py-3 border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    autoComplete="current-password"
                                     onChange={(e) => setData('password', e.target.value)}
                                     placeholder="••••••••"
+                                    className={`${field} pr-11`}
                                 />
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                                    >
-                                        {showPassword ? (
-                                            <span className="text-xs font-semibold uppercase">Hide</span>
-                                        ) : (
-                                            <span className="text-xs font-semibold uppercase">Show</span>
-                                        )}
-                                    </button>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                >
+                                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
                             </div>
-                            <InputError message={errors.password} className="mt-2 text-sm text-red-600" />
+                            {errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>}
                         </div>
 
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                                <Checkbox
-                                    name="remember"
-                                    checked={data.remember}
-                                    onChange={(e) => setData('remember', e.target.checked)}
-                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                                <label htmlFor="remember" className="ml-2 block text-sm text-gray-900">
-                                    Remember me
-                                </label>
-                            </div>
+                        <label className="flex items-center gap-2 text-sm text-slate-600">
+                            <input
+                                type="checkbox"
+                                checked={data.remember}
+                                onChange={(e) => setData('remember', e.target.checked)}
+                                className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+                            />
+                            Remember me
+                        </label>
 
-                            {canResetPassword && (
-                                <div className="text-sm">
-                                    <Link
-                                        href={route('password.request')}
-                                        className="font-medium text-blue-600 hover:text-blue-500"
-                                    >
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-
-                        <div>
-                            <Button
-                                type="submit"
-                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-bold text-white bg-gradient-to-r from-blue-700 to-indigo-800 hover:from-blue-800 hover:to-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:-translate-y-0.5"
-                                disabled={processing}
-                                processing={processing}
-                            >
-                                {processing ? 'Signing in...' : 'Sign In'}
-                            </Button>
-                        </div>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50"
+                        >
+                            {processing ? 'Signing in…' : <>Sign in <ArrowRight className="h-4 w-4" /></>}
+                        </button>
                     </form>
 
-                    <div className="mt-8 text-center text-sm text-gray-500">
-                        Need help? <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Contact Support</a>
-                    </div>
+                    <p className="mt-8 text-center text-sm text-slate-500">
+                        Trouble signing in? Contact your system administrator.
+                    </p>
                 </div>
             </div>
         </div>
