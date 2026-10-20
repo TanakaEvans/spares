@@ -3,6 +3,7 @@ import { ArrowRight, Shuffle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import EmptyState from '@/Components/EmptyState';
+import EntityLink from '@/Components/EntityLink';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
 
@@ -67,7 +68,8 @@ export default function CrossRefIndex({ query, results }) {
                                 </div>
                                 <p className="text-sm text-slate-700">{p.description}</p>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    {p.brand}{p.category ? ` · ${p.category}` : ''}
+                                    <EntityLink type="brand" id={p.brand_id} label={p.brand} muted />
+                                    {p.category ? <> · <EntityLink type="category" id={p.category_id} label={p.category} muted /></> : null}
                                 </p>
                             </div>
                             <div className="text-right shrink-0">
@@ -96,7 +98,9 @@ export default function CrossRefIndex({ query, results }) {
                                 {p.references.map((r, i) => (
                                     <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs">
                                         <span className="font-mono text-slate-700">{r.number}</span>
-                                        <span className="text-slate-400">{r.brand ?? TYPE_LABEL[r.type] ?? r.type}</span>
+                                        {r.brand
+                                            ? <EntityLink type="brand" id={r.brand_id} label={r.brand} muted className="text-xs" />
+                                            : <span className="text-slate-400">{TYPE_LABEL[r.type] ?? r.type}</span>}
                                     </span>
                                 ))}
                             </div>

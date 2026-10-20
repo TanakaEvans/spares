@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { Search, Trash2, Wrench, PackagePlus, AlertTriangle, Receipt } from 'lucide-react';
+import { Search, Trash2, Wrench, PackagePlus, AlertTriangle, Receipt, ShieldCheck } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 const money = (n) => Number(n || 0).toFixed(2);
 const STATUS_LABEL = (s) => s.replace(/_/g, ' ');
@@ -39,19 +41,28 @@ export default function JobShow({ job, labourCodes, technicians }) {
                                     <StatusBadge status={job.status} />
                                 </div>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    {job.vehicle
-                                        ? <Link href={route('workshop.vehicles.show', job.vehicle.id)} className="font-medium text-slate-600 hover:text-orange-600">{job.vehicle.label}</Link>
-                                        : 'No vehicle'}
+                                    {job.vehicle ? (
+                                        <>
+                                            <EntityLink type="vehicle" id={job.vehicle.id} label={job.vehicle.registration} mono className="font-semibold" />
+                                            {(job.vehicle.make || job.vehicle.model) && (
+                                                <> <EntityLink type="model" id={job.vehicle.model_id} label={[job.vehicle.make, job.vehicle.model].filter(Boolean).join(' ')} muted /></>
+                                            )}
+                                        </>
+                                    ) : 'No vehicle'}
                                     {' · '}
                                     {job.customer
-                                        ? <Link href={route('customers.show', job.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{job.customer.name}</Link>
+                                        ? <EntityLink type="customer" id={job.customer.id} label={job.customer.name} className="font-medium" />
                                         : 'No customer'}
+                                    {' · '}
+                                    {job.technician
+                                        ? <EntityLink type="technician" id={job.technician.id} label={job.technician.name} className="font-medium" />
+                                        : <span className="text-slate-400">Unassigned</span>}
                                 </p>
                                 {job.reported_fault && <p className="mt-2 text-sm text-slate-600"><span className="text-slate-400">Reported:</span> {job.reported_fault}</p>}
                             </div>
                             {job.invoice && (
                                 <Link href={route('sales.invoices.show', job.invoice.id)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                                    <Receipt className="w-4 h-4" /> {job.invoice.document_number}
+                                    <Receipt className="w-4 h-4" /> <span className="font-mono">{job.invoice.document_number}</span>
                                 </Link>
                             )}
                         </div>
@@ -77,12 +88,14 @@ export default function JobShow({ job, labourCodes, technicians }) {
 
                     <LabourSection job={job} labourCodes={labourCodes} editable={editable} />
                     <PartsSection job={job} editable={editable} />
+                    {job.warranty_claims.length > 0 && <WarrantySection claims={job.warranty_claims} />}
                 </div>
 
-                {/* Costing + invoice */}
+                {/* Costing + invoice + connections */}
                 <div className="space-y-4">
                     <CostingPanel costing={job.costing} />
                     {job.is_invoiceable && <InvoicePanel job={job} />}
+                    <JobConnections job={job} />
                 </div>
             </div>
         </ModuleLayout>
@@ -108,9 +121,12 @@ function LabourSection({ job, labourCodes, editable }) {
                             <tr key={l.id}>
                                 <td className="px-4 py-2">
                                     <span className="text-slate-700">{l.description}</span>
-                                    {l.code && <span className="ml-2 font-mono text-xs text-slate-400">{l.code}</span>}
+                                    {l.code && <Link href={route('workshop.labour.index')} onClick={(e) => e.stopPropagation()} className="ml-2 font-mono text-xs text-slate-400 hover:text-orange-600 hover:underline" title="Labour codes">{l.code}</Link>}
                                     {l.is_warranty && <span className="ml-2 rounded bg-purple-50 px-1.5 text-[10px] font-semibold uppercase text-purple-600">warranty</span>}
-                                    <span className="block text-xs text-slate-400">{l.hours}h @ {money(l.rate)}{l.technician && ` · ${l.technician}`}</span>
+                                    <span className="block text-xs text-slate-400">
+                                        {l.hours}h @ {money(l.rate)}
+                                        {l.technician && <> · <EntityLink type="technician" id={l.technician_id} label={l.technician} muted className="text-xs" /></>}
+                                    </span>
                                 </td>
                                 <td className="px-2 py-2 text-right tabular-nums font-medium text-slate-700">{money(l.line_total)}</td>
                                 <td className="px-3 py-2 text-right w-9">
@@ -176,7 +192,7 @@ function PartsSection({ job, editable }) {
                         {job.parts.map((p) => (
                             <tr key={p.id} className={p.status === 'returned' ? 'opacity-50' : ''}>
                                 <td className="px-4 py-2">
-                                    <Link href={route('inventory.parts.show', p.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{p.part_number}</Link>
+                                    <EntityLink type="part" id={p.part_id} label={p.part_number} mono className="font-semibold" />
                                     {p.is_warranty && <span className="ml-2 rounded bg-purple-50 px-1.5 text-[10px] font-semibold uppercase text-purple-600">warranty</span>}
                                     <span className="block text-xs text-slate-400">{p.qty} @ {money(p.unit_price)}</span>
                                 </td>
@@ -221,6 +237,57 @@ function PartsSection({ job, editable }) {
                 </div>
             )}
         </div>
+    );
+}
+
+function WarrantySection({ claims }) {
+    return (
+        <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-slate-400" /><h2 className="text-sm font-semibold text-slate-700">Warranty claims</h2></div>
+            <table className="w-full text-sm">
+                <tbody className="divide-y divide-slate-50">
+                    {claims.map((c) => (
+                        <tr key={c.id}>
+                            <td className="px-4 py-2">
+                                <EntityLink type="warranty_claim" id={c.id} label={c.claim_number} mono className="font-semibold" />
+                                {c.supplier && <span className="block text-xs text-slate-400">against <EntityLink type="supplier" id={c.supplier_id} label={c.supplier} muted className="text-xs" /></span>}
+                            </td>
+                            <td className="px-2 py-2 text-right tabular-nums text-slate-700">{money(c.claim_amount)}</td>
+                            <td className="px-4 py-2 text-right"><StatusBadge status={c.status === 'credited' ? 'complete' : c.status === 'rejected' ? 'rejected' : c.status === 'approved' ? 'approved' : 'submitted'} label={c.status} /></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+/** Where this job sits in its workflow and everything it touches (UI-13). */
+function JobConnections({ job }) {
+    const issuedParts = job.parts.filter((p) => p.status !== 'returned');
+    return (
+        <RelatedLinks
+            trace={[
+                { type: 'job', current: true, label: job.job_number },
+                job.invoice
+                    ? { type: 'invoice', id: job.invoice.id, label: job.invoice.document_number }
+                    : { type: 'invoice', pending: true, label: job.status === 'cancelled' ? 'No invoice' : 'Invoice pending' },
+            ]}
+            groups={[
+                { title: 'Customer', items: job.customer ? [{ type: 'customer', id: job.customer.id, label: job.customer.name }] : [] },
+                {
+                    title: 'Vehicle',
+                    items: job.vehicle ? [
+                        { type: 'vehicle', id: job.vehicle.id, label: job.vehicle.registration, mono: true },
+                        ...(job.vehicle.model_id ? [{ type: 'model', id: job.vehicle.model_id, label: [job.vehicle.make, job.vehicle.model].filter(Boolean).join(' ') }] : []),
+                    ] : [],
+                },
+                { title: 'Technician', items: job.technician ? [{ type: 'technician', id: job.technician.id, label: job.technician.name }] : [] },
+                { title: 'Parts issued', items: issuedParts.map((p) => ({ type: 'part', id: p.part_id, label: p.part_number, mono: true })) },
+                { title: 'Warranty claims', items: job.warranty_claims.map((c) => ({ type: 'warranty_claim', id: c.id, label: c.claim_number, mono: true })) },
+                { title: 'Invoice', items: job.invoice ? [{ type: 'invoice', id: job.invoice.id, label: job.invoice.document_number, mono: true }] : [] },
+            ]}
+        />
     );
 }
 

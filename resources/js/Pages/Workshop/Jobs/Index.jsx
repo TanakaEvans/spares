@@ -5,6 +5,7 @@ import navConfig from '@/nav/workshop';
 import DataTable from '@/Components/DataTable';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 const STATUSES = ['open', 'allocated', 'in_progress', 'awaiting_parts', 'awaiting_customer', 'on_hold', 'quality_check', 'completed', 'invoiced', 'closed', 'cancelled'];
 
@@ -35,10 +36,10 @@ export default function JobsIndex({ jobs, filters }) {
                 </div>
                 <DataTable
                     columns={[
-                        { key: 'job_number', label: 'Job', render: (j) => <span className="font-mono font-semibold text-slate-800">{j.job_number}</span> },
-                        { key: 'customer', label: 'Customer', render: (j) => j.customer_id ? <Link href={route('customers.show', j.customer_id)} onClick={(e) => e.stopPropagation()} className="text-slate-700 hover:text-orange-600">{j.customer}</Link> : <span className="text-slate-400">—</span> },
-                        { key: 'vehicle', label: 'Vehicle', render: (j) => j.vehicle_id ? <Link href={route('workshop.vehicles.show', j.vehicle_id)} onClick={(e) => e.stopPropagation()} className="font-mono text-slate-500 hover:text-orange-600">{j.vehicle}</Link> : <span className="font-mono text-slate-400">—</span> },
-                        { key: 'technician', label: 'Technician', render: (j) => <span className="text-slate-500">{j.technician ?? '—'}</span> },
+                        { key: 'job_number', label: 'Job', render: (j) => <EntityLink type="job" id={j.id} label={j.job_number} mono className="font-semibold" /> },
+                        { key: 'customer', label: 'Customer', render: (j) => <EntityLink type="customer" id={j.customer_id} label={j.customer} /> },
+                        { key: 'vehicle', label: 'Vehicle', render: (j) => <EntityLink type="vehicle" id={j.vehicle_id} label={j.vehicle} mono muted /> },
+                        { key: 'technician', label: 'Technician', render: (j) => <EntityLink type="technician" id={j.technician_id} label={j.technician} muted /> },
                         { key: 'created_at', label: 'Opened', render: (j) => <span className="tabular-nums text-slate-500">{j.created_at}</span> },
                         { key: 'status', label: 'Status', render: (j) => <StatusBadge status={j.status} /> },
                     ]}

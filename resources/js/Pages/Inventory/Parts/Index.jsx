@@ -3,10 +3,11 @@ import { ArrowRight, Plus, Download, Upload } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
 
-export default function PartsIndex({ parts, categories, filters }) {
+export default function PartsIndex({ parts, categories, brands = [], filters }) {
     function filter(params) {
         router.get(route('inventory.parts.index'), Object.fromEntries(
             Object.entries({ ...filters, ...params }).filter(([, v]) => v)
@@ -44,6 +45,15 @@ export default function PartsIndex({ parts, categories, filters }) {
                         {categories.map((c) => (
                             <option key={c.id} value={c.id}>{c.parent_id ? '  ' : ''}{c.name}</option>
                         ))}
+                    </select>
+                    <select
+                        aria-label="Filter by brand"
+                        value={filters.brand_id ?? ''}
+                        onChange={(e) => filter({ brand_id: e.target.value })}
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                        <option value="">All brands</option>
+                        {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                     <select
                         aria-label="Filter by status"
@@ -91,18 +101,18 @@ export default function PartsIndex({ parts, categories, filters }) {
                             key: 'part_number', label: 'Part No',
                             render: (p) => (
                                 <div>
-                                    <span className="font-mono font-semibold text-slate-800">{p.part_number}</span>
+                                    <EntityLink type="part" id={p.id} label={p.part_number} mono className="font-semibold" />
                                     {p.superseded_by && (
                                         <span className="block text-[11px] text-amber-600">
-                                            → {p.superseded_by}
+                                            → <EntityLink type="part" id={p.superseded_by_id} label={p.superseded_by} mono className="text-amber-700" />
                                         </span>
                                     )}
                                 </div>
                             ),
                         },
                         { key: 'description', label: 'Description', render: (p) => <span className="text-slate-700">{p.description}</span> },
-                        { key: 'brand', label: 'Brand', render: (p) => <span className="text-slate-500">{p.brand}</span> },
-                        { key: 'category', label: 'Category', render: (p) => <span className="text-slate-500">{p.category}</span> },
+                        { key: 'brand', label: 'Brand', render: (p) => <EntityLink type="brand" id={p.brand_id} label={p.brand} muted /> },
+                        { key: 'category', label: 'Category', render: (p) => <EntityLink type="category" id={p.category_id} label={p.category} muted /> },
                         {
                             key: 'qty_available', label: 'Available', align: 'right',
                             render: (p) => p.qty_available > 0

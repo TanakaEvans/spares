@@ -5,6 +5,7 @@ import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
 import { StatTile } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 export default function VatIndex({ preview, returns, filters }) {
     const { data, setData, post, processing } = useForm({ from: filters.from, to: filters.to });
@@ -29,8 +30,8 @@ export default function VatIndex({ preview, returns, filters }) {
                         <input type="date" value={filters.to} onChange={(e) => { apply({ to: e.target.value }); setData('to', e.target.value); }} className={input} />
                     </div>
                     <div className="grid grid-cols-3 gap-3">
-                        <StatTile label="Output VAT (2210)" value={preview.output_vat} money />
-                        <StatTile label="Input VAT (2220)" value={preview.input_vat} money />
+                        <StatTile label={<EntityLink type="gl_account" number="2210" label="Output VAT (2210)" muted className="text-xs uppercase tracking-wider" />} value={preview.output_vat} money />
+                        <StatTile label={<EntityLink type="gl_account" number="2220" label="Input VAT (2220)" muted className="text-xs uppercase tracking-wider" />} value={preview.input_vat} money />
                         <StatTile label="Net payable" value={preview.net_payable} money tone={preview.net_payable >= 0 ? 'red' : 'emerald'} />
                     </div>
                     <div className="flex justify-end">
@@ -51,7 +52,7 @@ export default function VatIndex({ preview, returns, filters }) {
                                 <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
                                     <th className="px-4 py-2">Reference</th><th className="px-2 py-2">Period</th>
                                     <th className="px-2 py-2 text-right">Output</th><th className="px-2 py-2 text-right">Input</th>
-                                    <th className="px-2 py-2 text-right">Net</th><th className="px-2 py-2">Status</th><th className="px-4 py-2"></th>
+                                    <th className="px-2 py-2 text-right">Net</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">Prepared by</th><th className="px-4 py-2"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -63,6 +64,7 @@ export default function VatIndex({ preview, returns, filters }) {
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.input_vat.toFixed(2)}</td>
                                         <td className="px-2 py-2 text-right tabular-nums font-medium text-slate-800"><MoneyDisplay amount={r.net_payable} /></td>
                                         <td className="px-2 py-2"><StatusBadge status={r.status} /></td>
+                                        <td className="px-2 py-2">{r.prepared_by ? <EntityLink type="user" id={r.prepared_by.id} label={r.prepared_by.name} muted /> : <span className="text-slate-300">—</span>}</td>
                                         <td className="px-4 py-2 text-right">
                                             {r.status === 'draft' && <button onClick={() => router.post(route('finance.vat.transition', r.id), { action: 'submit' }, { preserveScroll: true })} className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">Submit</button>}
                                             {r.status === 'submitted' && <button onClick={() => router.post(route('finance.vat.transition', r.id), { action: 'pay' }, { preserveScroll: true })} className="rounded border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50">Mark paid</button>}

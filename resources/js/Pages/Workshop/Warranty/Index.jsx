@@ -4,6 +4,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 const NEXT = { draft: 'submitted', submitted: 'acknowledged', acknowledged: 'approved', approved: 'credited' };
 
@@ -19,13 +20,14 @@ export default function WarrantyIndex({ claims, suppliers, jobs }) {
                         <div className="py-10 text-center text-sm text-slate-400"><ShieldCheck className="w-8 h-8 mx-auto mb-2 text-slate-300" />No warranty claims yet.</div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Claim</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Job</th><th className="px-2 py-2 text-right">Claim</th><th className="px-2 py-2">Status</th><th className="px-4 py-2"></th></tr></thead>
+                            <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Claim</th><th className="px-2 py-2">Supplier</th><th className="px-2 py-2">Job</th><th className="px-2 py-2">Part</th><th className="px-2 py-2 text-right">Claim</th><th className="px-2 py-2">Status</th><th className="px-4 py-2"></th></tr></thead>
                             <tbody className="divide-y divide-slate-50">
                                 {claims.data.map((c) => (
                                     <tr key={c.id}>
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{c.claim_number}<span className="block text-xs text-slate-400 truncate max-w-[14rem]">{c.fault}</span></td>
-                                        <td className="px-2 py-2 text-slate-600">{c.supplier ?? '—'}</td>
-                                        <td className="px-2 py-2 text-slate-500">{c.job_number ?? '—'}</td>
+                                        <td className="px-4 py-2"><EntityLink type="warranty_claim" id={c.id} label={c.claim_number} mono className="font-semibold" /><span className="block font-sans text-xs text-slate-400 truncate max-w-[14rem]">{c.fault}</span></td>
+                                        <td className="px-2 py-2"><EntityLink type="supplier" id={c.supplier_id} label={c.supplier} /></td>
+                                        <td className="px-2 py-2"><EntityLink type="job" id={c.job_card_id} label={c.job_number} mono muted /></td>
+                                        <td className="px-2 py-2"><EntityLink type="part" id={c.part_id} label={c.part_number} mono muted /></td>
                                         <td className="px-2 py-2 text-right tabular-nums"><MoneyDisplay amount={c.claim_amount} />{c.credit_amount > 0 && <span className="block text-xs text-emerald-600">+{c.credit_amount.toFixed(2)} credited</span>}</td>
                                         <td className="px-2 py-2"><StatusBadge status={c.status === 'credited' ? 'complete' : c.status === 'rejected' ? 'rejected' : c.status === 'approved' ? 'approved' : 'submitted'} label={c.status} /></td>
                                         <td className="px-4 py-2 text-right">

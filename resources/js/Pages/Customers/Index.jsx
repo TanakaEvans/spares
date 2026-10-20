@@ -6,6 +6,7 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function CustomersIndex({ customers, filters }) {
     function filter(params) {
@@ -89,8 +90,8 @@ export default function CustomersIndex({ customers, filters }) {
                         { key: 'customer_number', label: 'Number', render: (c) => <span className="font-mono text-slate-600">{c.customer_number}</span> },
                         {
                             key: 'name', label: 'Name', render: (c) => (
-                                <span className="font-semibold text-slate-800">
-                                    {c.name}
+                                <span className="font-semibold">
+                                    <EntityLink type="customer" id={c.id} label={c.name} />
                                     {c.is_walk_in && <span className="ml-2 text-[10px] uppercase tracking-wide text-slate-400">walk-in</span>}
                                 </span>
                             ),

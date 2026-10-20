@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Workshop;
 
 use App\Exceptions\DomainException;
+use App\Exceptions\UnpricedPartException;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -13,7 +14,9 @@ use App\Models\LabourCode;
 use App\Models\Part;
 use App\Models\StockLevel;
 use App\Models\Technician;
+use App\Models\WarrantyClaim;
 use App\Services\JobCardService;
+use App\Services\PricingService;
 use App\Services\WorkshopInvoiceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,9 +26,7 @@ use Inertia\Response;
 
 class JobCardController extends Controller
 {
-    public function __construct(private readonly JobCardService $jobs)
-    {
-    }
+    public function __construct(private readonly JobCardService $jobs) {}
 
     public function index(Request $request): Response
     {
@@ -48,6 +49,7 @@ class JobCardController extends Controller
                     'vehicle' => $j->vehicle?->registration,
                     'vehicle_id' => $j->vehicle_id,
                     'technician' => $j->technician?->name,
+                    'technician_id' => $j->technician_id,
                     'status' => $j->status,
                     'created_at' => $j->created_at->toDateString(),
                 ]),
@@ -106,9 +108,16 @@ class JobCardController extends Controller
 
     public function show(JobCard $job): Response
     {
-        $job->load('customer:id,name,customer_number,is_walk_in', 'vehicle', 'technician:id,name',
+        $job->load('customer:id,name,customer_number,is_walk_in', 'vehicle.make:id,name', 'vehicle.model:id,name', 'technician:id,name',
             'labours.labourCode:id,code', 'labours.technician:id,name', 'parts.part:id,part_number',
             'invoice:id,document_number');
+
+        $claims = WarrantyClaim::where('job_card_id', $job->id)->with('supplier:id,name')->latest('id')->get()
+            ->map(fn (WarrantyClaim $c) => [
+                'id' => $c->id, 'claim_number' => $c->claim_number, 'status' => $c->status,
+                'supplier' => $c->supplier?->name, 'supplier_id' => $c->supplier_id,
+                'claim_amount' => (float) $c->claim_amount,
+            ]);
 
         return Inertia::render('Workshop/Jobs/Show', [
             'job' => [
@@ -120,6 +129,8 @@ class JobCardController extends Controller
                 'vehicle' => $job->vehicle ? [
                     'id' => $job->vehicle->id, 'registration' => $job->vehicle->registration,
                     'label' => $job->vehicle->label(),
+                    'make' => $job->vehicle->make?->name, 'make_id' => $job->vehicle->make_id,
+                    'model' => $job->vehicle->model?->name, 'model_id' => $job->vehicle->model_id,
                 ] : null,
                 'technician' => $job->technician?->only(['id', 'name']),
                 'reported_fault' => $job->reported_fault,
@@ -130,9 +141,12 @@ class JobCardController extends Controller
                 'invoice' => $job->invoice?->only(['id', 'document_number']),
                 'next_statuses' => JobCard::FLOW[$job->status] ?? [],
                 'is_invoiceable' => $job->status === 'completed' && $job->customer_id,
+                'warranty_claims' => $claims,
                 'labours' => $job->labours->map(fn ($l) => [
                     'id' => $l->id, 'description' => $l->description, 'code' => $l->labourCode?->code,
-                    'technician' => $l->technician?->name, 'hours' => (float) $l->hours, 'rate' => (float) $l->rate,
+                    'labour_code_id' => $l->labour_code_id,
+                    'technician' => $l->technician?->name, 'technician_id' => $l->technician_id,
+                    'hours' => (float) $l->hours, 'rate' => (float) $l->rate,
                     'line_total' => (float) $l->line_total, 'is_warranty' => $l->is_warranty,
                 ]),
                 'parts' => $job->parts->map(fn ($p) => [
@@ -161,7 +175,7 @@ class JobCardController extends Controller
             return back()->withErrors(['status' => $e->getMessage()]);
         }
 
-        return back()->with('success', "Job moved to ".str_replace('_', ' ', $to).'.');
+        return back()->with('success', 'Job moved to '.str_replace('_', ' ', $to).'.');
     }
 
     public function update(Request $request, JobCard $job): RedirectResponse
@@ -208,7 +222,7 @@ class JobCardController extends Controller
 
     // ── Parts ────────────────────────────────────────────────────────────
 
-    public function partLookup(Request $request, \App\Services\PricingService $pricing): JsonResponse
+    public function partLookup(Request $request, PricingService $pricing): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
         $branchId = $request->integer('branch_id') ?: null;
@@ -220,7 +234,7 @@ class JobCardController extends Controller
             $level = $branchId ? StockLevel::where('part_id', $p->id)->where('branch_id', $branchId)->first() : null;
             try {
                 $price = round($pricing->priceFor($p), 2); // default retail list
-            } catch (\App\Exceptions\UnpricedPartException) {
+            } catch (UnpricedPartException) {
                 $price = 0.0;
             }
 

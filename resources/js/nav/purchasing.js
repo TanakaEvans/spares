@@ -1,7 +1,7 @@
 // Purchasing module nav — content only.
 import {
     Factory, FileInput, FileSpreadsheet, LayoutList, PackageCheck,
-    PackageX, Plus, RefreshCw, Truck, FileMinus,
+    PackageX, Plus, RefreshCw, Truck, FileMinus, Ship, Scale,
 } from 'lucide-react';
 
 const navConfig = {
@@ -33,6 +33,13 @@ const navConfig = {
             section: 'Returns',
             items: [
                 { label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX },
+            ],
+        },
+        {
+            section: 'Sourcing',
+            items: [
+                { label: 'Import Management', route: 'purchasing.imports.index', icon: Ship },
+                { label: 'Price Comparison', route: 'purchasing.price-comparison.index', icon: Scale },
             ],
         },
     ],
@@ -95,6 +102,30 @@ const navConfig = {
             quickLinks: [
                 { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
                 { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+            ],
+        },
+        imports: {
+            label: 'Import Management',
+            icon: Ship,
+            routePrefix: 'purchasing.imports',
+            work: [
+                { label: 'All Shipments', route: 'purchasing.imports.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
+                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
+            ],
+        },
+        priceComparison: {
+            label: 'Price Comparison',
+            icon: Scale,
+            routePrefix: 'purchasing.price-comparison',
+            work: [
+                { label: 'Compare Prices', route: 'purchasing.price-comparison.index', icon: Scale },
+            ],
+            quickLinks: [
+                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
+                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
             ],
         },
     },

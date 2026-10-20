@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PriceListItem extends Model
 {
+    use Auditable;
     protected $fillable = ['price_list_id', 'part_id', 'price'];
 
     protected $casts = ['price' => 'decimal:2'];

@@ -3,6 +3,7 @@ import { Car, CheckCircle2, Search } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import EmptyState from '@/Components/EmptyState';
+import EntityLink from '@/Components/EntityLink';
 import StatusBadge from '@/Components/StatusBadge';
 
 // The counter's killer feature: pick a vehicle, see everything that fits it.
@@ -137,8 +138,21 @@ export default function FitmentIndex({ makes, models, variants, selection, resul
                                                         {p.part_number}
                                                     </Link>
                                                 </td>
-                                                <td className="px-3 py-2.5 text-slate-700">{p.description}</td>
-                                                <td className="px-3 py-2.5 text-slate-400 w-32">{p.brand}</td>
+                                                <td className="px-3 py-2.5 text-slate-700">
+                                                    {p.description}
+                                                    {p.fits?.length > 0 && (
+                                                        <span className="block text-xs text-slate-400">
+                                                            {p.fits.map((f, i) => (
+                                                                <span key={i}>
+                                                                    {i > 0 && ', '}
+                                                                    <EntityLink type="model" id={f.model_id} label={f.label} muted />
+                                                                    {f.years ? ` ${f.years}` : ''}{f.engine_code ? ` · ${f.engine_code}` : ''}
+                                                                </span>
+                                                            ))}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2.5 w-32"><EntityLink type="brand" id={p.brand_id} label={p.brand} muted /></td>
                                                 <td className="px-3 py-2.5 w-20">
                                                     {p.is_oem && <StatusBadge status="active" label="OEM" />}
                                                 </td>

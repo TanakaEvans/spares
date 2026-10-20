@@ -4,6 +4,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 const NEXT = { ordered: 'in_transit', in_transit: 'customs', customs: 'cleared', cleared: 'received' };
 
@@ -23,8 +24,8 @@ export default function ImportsIndex({ shipments, suppliers }) {
                             <tbody className="divide-y divide-slate-50">
                                 {shipments.data.map((s) => (
                                     <tr key={s.id}>
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{s.shipment_ref}<span className="block text-xs text-slate-400">{s.origin_country}</span></td>
-                                        <td className="px-2 py-2 text-slate-600">{s.supplier ?? '—'}</td>
+                                        <td className="px-4 py-2"><EntityLink type="import_shipment" id={s.id} label={s.shipment_ref} mono className="font-semibold" /><span className="block text-xs text-slate-400">{s.origin_country}</span></td>
+                                        <td className="px-2 py-2"><EntityLink type="supplier" id={s.supplier_id} label={s.supplier ?? '—'} /></td>
                                         <td className="px-2 py-2 tabular-nums text-slate-500">{s.eta ?? '—'}</td>
                                         <td className="px-2 py-2 text-right tabular-nums"><MoneyDisplay amount={s.landed} /></td>
                                         <td className="px-2 py-2"><StatusBadge status={s.status === 'received' ? 'received' : s.status === 'cleared' ? 'confirmed' : 'in_transit'} label={s.status.replace('_', ' ')} /></td>

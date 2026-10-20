@@ -18,7 +18,7 @@ class BankController extends Controller
     {
         $accounts = BankAccount::with('glAccount:id,account_code,name')->get()->map(fn (BankAccount $a) => [
             'id' => $a->id, 'name' => $a->name, 'bank_name' => $a->bank_name, 'account_number' => $a->account_number,
-            'currency' => $a->currency, 'gl_account' => $a->glAccount?->account_code,
+            'currency' => $a->currency, 'gl_account' => $a->glAccount?->account_code, 'gl_account_name' => $a->glAccount?->name,
             'gl_balance' => $a->glAccount ? round($gl->accountBalance($a->glAccount->account_code), 2) : null,
             'unreconciled' => BankStatementLine::where('bank_account_id', $a->id)->where('reconciled', false)->count(),
         ]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
+use App\Models\GlJournal;
 use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
 use App\Services\SalesPostingService;
@@ -32,7 +33,9 @@ class CreditNoteController extends Controller
                     'id' => $d->id,
                     'document_number' => $d->document_number,
                     'customer' => $d->customer?->name,
+                    'customer_id' => $d->customer_id,
                     'against' => $d->parent?->document_number,
+                    'against_id' => $d->parent_id,
                     'document_date' => $d->document_date->toDateString(),
                     'total_incl' => (float) $d->total_incl,
                     'credit_mode' => $d->credit_mode,
@@ -55,6 +58,7 @@ class CreditNoteController extends Controller
                 'document_date' => $invoice->document_date->toDateString(),
                 'lines' => $invoice->lines->map(fn ($l) => [
                     'id' => $l->id,
+                    'part_id' => $l->part_id,
                     'part_number' => $l->part?->part_number,
                     'description' => $l->description,
                     'qty' => (float) $l->qty,
@@ -113,7 +117,10 @@ class CreditNoteController extends Controller
                 'document_number' => $creditNote->document_number,
                 'customer' => $creditNote->customer?->only(['id', 'name', 'customer_number']),
                 'against' => $creditNote->parent?->only(['id', 'document_number']),
-                'branch' => $creditNote->branch?->name,
+                'branch' => $creditNote->branch?->only(['id', 'name']),
+                'journal' => $creditNote->gl_journal_id
+                    ? GlJournal::query()->find($creditNote->gl_journal_id, ['id', 'journal_number'])?->only(['id', 'journal_number'])
+                    : null,
                 'document_date' => $creditNote->document_date->toDateString(),
                 'credit_mode' => $creditNote->credit_mode,
                 'reason' => $creditNote->reason,

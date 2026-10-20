@@ -1,8 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { Award } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function LoyaltyIndex({ balances, recent, enabled, earnRate }) {
     return (
@@ -21,7 +22,7 @@ export default function LoyaltyIndex({ balances, recent, enabled, earnRate }) {
                         ) : (
                             <table className="w-full text-sm"><tbody className="divide-y divide-slate-50">
                                 {balances.map((b) => (
-                                    <tr key={b.customer_id}><td className="px-4 py-2"><Link href={route('customers.show', b.customer_id)} className="text-slate-700 hover:text-orange-600">{b.customer}</Link></td><td className="px-4 py-2 text-right tabular-nums font-semibold text-slate-800">{b.points.toLocaleString()} pts</td></tr>
+                                    <tr key={b.customer_id}><td className="px-4 py-2"><EntityLink type="customer" id={b.customer_id} label={b.customer} /></td><td className="px-4 py-2 text-right tabular-nums font-semibold text-slate-800">{b.points.toLocaleString()} pts</td></tr>
                                 ))}
                             </tbody></table>
                         )}
@@ -33,7 +34,7 @@ export default function LoyaltyIndex({ balances, recent, enabled, earnRate }) {
                         ) : (
                             <ul className="divide-y divide-slate-50">
                                 {recent.map((e) => (
-                                    <li key={e.id} className="px-4 py-2 flex items-center justify-between text-sm"><span className="text-slate-600">{e.customer} · {e.reason}</span><span className={`tabular-nums font-medium ${e.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{e.points >= 0 ? '+' : ''}{e.points}</span></li>
+                                    <li key={e.id} className="px-4 py-2 flex items-center justify-between text-sm"><span className="text-slate-600"><EntityLink type="customer" id={e.customer_id} label={e.customer} /> · {e.reason}</span><span className={`tabular-nums font-medium ${e.points >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{e.points >= 0 ? '+' : ''}{e.points}</span></li>
                                 ))}
                             </ul>
                         )}

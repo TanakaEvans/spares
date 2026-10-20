@@ -3,6 +3,7 @@ import { Landmark, CheckCircle2, Circle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 export default function BankIndex({ accounts, bankGlAccounts, selectedId, lines }) {
     const acct = useForm({ name: '', bank_name: '', account_number: '', gl_account_id: '', currency: 'USD' });
@@ -23,7 +24,7 @@ export default function BankIndex({ accounts, bankGlAccounts, selectedId, lines 
                             <table className="w-full text-sm"><tbody className="divide-y divide-slate-50">
                                 {accounts.map((a) => (
                                     <tr key={a.id} className={`cursor-pointer hover:bg-slate-50 ${a.id === selectedId ? 'bg-orange-50/40' : ''}`} onClick={() => router.get(route('finance.bank.index'), { account_id: a.id }, { preserveState: true, replace: true })}>
-                                        <td className="px-4 py-2"><div className="font-medium text-slate-800">{a.name}</div><div className="text-xs text-slate-400">{a.bank_name} · {a.gl_account ?? 'no GL'}</div></td>
+                                        <td className="px-4 py-2"><div className="font-medium text-slate-800">{a.name}</div><div className="text-xs text-slate-400">{a.bank_name} · {a.gl_account ? <EntityLink type="gl_account" number={a.gl_account} label={`${a.gl_account} ${a.gl_account_name ?? ''}`} mono muted className="text-xs" /> : 'no GL'}</div></td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-700">{a.gl_balance !== null ? <MoneyDisplay amount={a.gl_balance} /> : '—'}</td>
                                         <td className="px-4 py-2 text-right text-xs">{a.unreconciled > 0 ? <span className="text-amber-600">{a.unreconciled} unrec.</span> : <span className="text-emerald-600">clear</span>}</td>
                                     </tr>

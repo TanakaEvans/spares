@@ -6,6 +6,7 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function OrdersIndex({ orders, filters }) {
     function filter(params) {
@@ -56,9 +57,9 @@ export default function OrdersIndex({ orders, filters }) {
 
                 <DataTable
                     columns={[
-                        { key: 'po_number', label: 'PO No', render: (po) => <span className="font-mono font-semibold text-slate-800">{po.po_number}</span> },
-                        { key: 'supplier', label: 'Supplier', render: (po) => <span className="text-slate-700">{po.supplier}</span> },
-                        { key: 'branch', label: 'Branch', render: (po) => <span className="text-slate-500">{po.branch}</span> },
+                        { key: 'po_number', label: 'PO No', render: (po) => <EntityLink type="purchase_order" id={po.id} label={po.po_number} mono className="font-semibold" /> },
+                        { key: 'supplier', label: 'Supplier', render: (po) => <EntityLink type="supplier" id={po.supplier_id} label={po.supplier} /> },
+                        { key: 'branch', label: 'Branch', render: (po) => <EntityLink type="branch" id={po.branch_id} label={po.branch} muted /> },
                         { key: 'order_date', label: 'Ordered', render: (po) => <span className="tabular-nums text-slate-500">{po.order_date}</span> },
                         { key: 'expected_date', label: 'Expected', render: (po) => <span className="tabular-nums text-slate-500">{po.expected_date ?? '—'}</span> },
                         { key: 'total', label: 'Total', align: 'right', render: (po) => <MoneyDisplay amount={po.total} /> },

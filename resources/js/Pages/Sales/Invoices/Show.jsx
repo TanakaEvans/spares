@@ -4,11 +4,25 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import PrintButton from '@/Components/PrintButton';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 const methodLabel = { cash: 'Cash', card: 'Card', eft: 'EFT', account: 'On account' };
 
-export default function InvoiceShow({ invoice, creditNotes }) {
+export default function InvoiceShow({ invoice, creditNotes, related = {} }) {
     const anyCreditable = invoice.lines.some((l) => l.qty_creditable > 0);
+    const onAccount = invoice.payments.some((p) => p.method === 'account');
+
+    // Quote → Order → Invoice (here) → Credit notes / Receipts.
+    const trace = [
+        related.quote ? { type: 'quote', id: related.quote.id, label: related.quote.document_number } : null,
+        related.order ? { type: 'order', id: related.order.id, label: related.order.document_number } : null,
+        related.job ? { type: 'job', id: related.job.id, label: related.job.job_number } : null,
+        { type: 'invoice', current: true, label: invoice.document_number },
+        ...creditNotes.map((c) => ({ type: 'credit_note', id: c.id, label: c.document_number })),
+        ...(related.receipts ?? []).map((r) => ({ type: 'receipt', id: r.id, label: r.receipt_number })),
+        onAccount && (related.receipts ?? []).length === 0 ? { type: 'receipt', pending: true, label: 'Receipt' } : null,
+    ].filter(Boolean);
 
     return (
         <ModuleLayout
@@ -27,11 +41,10 @@ export default function InvoiceShow({ invoice, creditNotes }) {
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">{invoice.document_number}</h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            {invoice.customer
-                                ? <Link href={route('customers.show', invoice.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{invoice.customer.name}</Link>
-                                : '—'}
-                            {' · '}{invoice.document_date}{' · '}{invoice.branch}
-                            {invoice.salesperson && ` · ${invoice.salesperson}`}
+                            <EntityLink type="customer" id={invoice.customer?.id} label={invoice.customer?.name} className="font-medium" />
+                            {' · '}{invoice.document_date}
+                            {' · '}<EntityLink type="branch" id={invoice.branch_id} label={invoice.branch} muted />
+                            {invoice.salesperson && <> · <EntityLink type="user" id={invoice.salesperson_id} label={invoice.salesperson} muted /></>}
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -61,7 +74,7 @@ export default function InvoiceShow({ invoice, creditNotes }) {
                             {invoice.lines.map((l) => (
                                 <tr key={l.id}>
                                     <td className="px-4 py-2.5">
-                                        <Link href={route('inventory.parts.show', l.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{l.part_number}</Link>
+                                        <EntityLink type="part" id={l.part_id} label={l.part_number ?? l.description} mono className="font-semibold" />
                                         <span className="block text-xs text-slate-400">{l.description}</span>
                                         {l.qty_credited > 0 && <span className="text-xs text-red-500">{l.qty_credited} credited</span>}
                                     </td>
@@ -108,17 +121,28 @@ export default function InvoiceShow({ invoice, creditNotes }) {
                         <h2 className="text-sm font-semibold text-slate-700 mb-2">Credit notes against this invoice</h2>
                         <ul className="space-y-1 text-sm">
                             {creditNotes.map((c) => (
-                                <li key={c.id}>
-                                    <Link href={route('sales.credit-notes.show', c.id)} className="inline-flex items-center gap-2 font-mono text-slate-600 hover:text-orange-600">
-                                        <Receipt className="w-3.5 h-3.5 text-slate-400" />
-                                        {c.document_number}
-                                        <span className="text-slate-400">· {c.document_date} · −{c.total_incl.toFixed(2)}</span>
-                                    </Link>
+                                <li key={c.id} className="inline-flex items-center gap-2 text-slate-600">
+                                    <Receipt className="w-3.5 h-3.5 text-slate-400" />
+                                    <EntityLink type="credit_note" id={c.id} label={c.document_number} mono />
+                                    <span className="text-slate-400">· {c.document_date} · −{c.total_incl.toFixed(2)}</span>
                                 </li>
                             ))}
                         </ul>
                     </div>
                 )}
+
+                <RelatedLinks
+                    trace={trace}
+                    groups={[
+                        { title: 'Customer', items: invoice.customer ? [{ type: 'customer', id: invoice.customer.id, label: invoice.customer.name }] : [] },
+                        { title: 'Parts', items: invoice.lines.filter((l) => l.part_id).map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+                        { title: 'Receipts', items: (related.receipts ?? []).map((r) => ({ type: 'receipt', id: r.id, label: `${r.receipt_number} · ${r.amount.toFixed(2)}`, mono: true })) },
+                        { title: 'GL journal', items: related.journal ? [{ type: 'journal', id: related.journal.id, label: related.journal.journal_number, mono: true }] : [] },
+                        { title: 'Workshop job', items: related.job ? [{ type: 'job', id: related.job.id, label: related.job.job_number, mono: true }] : [] },
+                        { title: 'Branch', items: invoice.branch ? [{ type: 'branch', id: invoice.branch_id, label: invoice.branch }] : [] },
+                        { title: 'Salesperson', items: invoice.salesperson ? [{ type: 'user', id: invoice.salesperson_id, label: invoice.salesperson }] : [] },
+                    ]}
+                />
             </div>
         </ModuleLayout>
     );

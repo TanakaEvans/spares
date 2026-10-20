@@ -3,7 +3,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, ClipboardCheck } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
+import EntityLink from '@/Components/EntityLink';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import RelatedLinks from '@/Components/RelatedLinks';
 import StatusBadge from '@/Components/StatusBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 
@@ -65,7 +67,11 @@ export default function StockTakeShow({ take, recountValue }) {
                             <h1 className="text-xl font-bold text-slate-900">{take.take_number}</h1>
                             <StatusBadge status={take.status} />
                         </div>
-                        <p className="mt-1 text-sm text-slate-500 capitalize">{take.type} count · {take.branch} · {take.lines.length} lines · {countedLines.length} counted</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                            <span className="capitalize">{take.type} count</span> · <EntityLink type="branch" id={take.branch_id} label={take.branch} />
+                            {take.started_by && <> · started by <EntityLink type="user" id={take.started_by_id} label={take.started_by} /></>}
+                            {' '}· {take.lines.length} lines · {countedLines.length} counted
+                        </p>
                     </div>
                     <div className="flex gap-2">
                         {counting && (
@@ -82,9 +88,9 @@ export default function StockTakeShow({ take, recountValue }) {
                             </button>
                         )}
                         {take.status === 'posted' && take.adjustment_id && (
-                            <Link href={route('inventory.adjustments.index')} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            <Link href={route('inventory.adjustments.show', take.adjustment_id)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                                View adjustment
+                                View {take.adjustment_number ?? 'adjustment'}
                             </Link>
                         )}
                     </div>
@@ -116,7 +122,7 @@ export default function StockTakeShow({ take, recountValue }) {
                                 return (
                                     <tr key={l.id} className={bigVariance ? 'bg-amber-50' : ''}>
                                         <td className="px-4 py-2.5">
-                                            <span className="font-mono font-semibold text-slate-700">{l.part_number}</span>
+                                            <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold" />
                                             <span className="block text-xs text-slate-400 truncate max-w-[18rem]">{l.description}</span>
                                             {bigVariance && <span className="text-xs text-amber-600">Large variance — recount recommended.</span>}
                                         </td>
@@ -138,6 +144,23 @@ export default function StockTakeShow({ take, recountValue }) {
                         </tbody>
                     </table>
                 </div>
+
+                <RelatedLinks
+                    trace={[
+                        { type: 'stock_take', id: take.id, label: take.take_number, current: true },
+                        take.adjustment_id
+                            ? { type: 'adjustment', id: take.adjustment_id, label: take.adjustment_number ?? 'Adjustment' }
+                            : { label: 'Adjustment (on post)', pending: true },
+                        take.journal_id
+                            ? { type: 'journal', id: take.journal_id, label: 'GL journal' }
+                            : { label: 'GL journal', pending: true },
+                    ]}
+                    groups={[
+                        { title: 'Branch', items: [{ type: 'branch', id: take.branch_id, label: take.branch }] },
+                        { title: 'Started by', items: take.started_by ? [{ type: 'user', id: take.started_by_id, label: take.started_by }] : [] },
+                        { title: 'Parts counted', items: take.lines.slice(0, 40).map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+                    ]}
+                />
             </div>
 
             <ConfirmDialog

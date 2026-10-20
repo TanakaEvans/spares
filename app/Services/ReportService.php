@@ -3,11 +3,11 @@
 namespace App\Services;
 
 use App\Models\Customer;
+use App\Models\GlAccount;
 use App\Models\JobCard;
 use App\Models\PurchaseOrder;
 use App\Models\SalesDocument;
 use App\Models\StockLevel;
-use App\Models\SupplierInvoice;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,8 +21,7 @@ class ReportService
         private readonly ArReceiptService $ar,
         private readonly ApPaymentService $ap,
         private readonly LedgerReportService $ledger,
-    ) {
-    }
+    ) {}
 
     // ── 9.1 Executive dashboard ──────────────────────────────────────────
 
@@ -108,9 +107,9 @@ class ReportService
             ->whereDate('d.document_date', '>=', $from)->whereDate('d.document_date', '<=', $to)
             ->when($branchId, fn ($q) => $q->where('d.branch_id', $branchId))
             ->groupBy('p.id', 'p.part_number', 'p.description')
-            ->selectRaw('p.part_number, p.description, SUM(l.line_total_excl) as revenue, SUM(l.qty) as qty')
+            ->selectRaw('p.id as part_id, p.part_number, p.description, SUM(l.line_total_excl) as revenue, SUM(l.qty) as qty')
             ->orderByDesc('revenue')->limit($limit)->get()
-            ->map(fn ($r) => ['part_number' => $r->part_number, 'description' => $r->description,
+            ->map(fn ($r) => ['part_id' => (int) $r->part_id, 'part_number' => $r->part_number, 'description' => $r->description,
                 'revenue' => round((float) $r->revenue, 2), 'qty' => (float) $r->qty])->all();
     }
 
@@ -124,10 +123,11 @@ class ReportService
             ->where('l.line_type', 'part')
             ->whereDate('d.document_date', '>=', $from)->whereDate('d.document_date', '<=', $to)
             ->when($branchId, fn ($q) => $q->where('d.branch_id', $branchId))
-            ->groupBy('c.name')
-            ->selectRaw('COALESCE(c.name, \'Uncategorised\') as category, SUM(l.line_total_excl) as revenue')
+            ->groupBy('c.id', 'c.name')
+            ->selectRaw('c.id as category_id, COALESCE(c.name, \'Uncategorised\') as category, SUM(l.line_total_excl) as revenue')
             ->orderByDesc('revenue')->get()
-            ->map(fn ($r) => ['category' => $r->category, 'revenue' => round((float) $r->revenue, 2)])->all();
+            ->map(fn ($r) => ['category_id' => $r->category_id !== null ? (int) $r->category_id : null,
+                'category' => $r->category, 'revenue' => round((float) $r->revenue, 2)])->all();
     }
 
     public function salesSummary(string $from, string $to, ?int $branchId = null): array
@@ -182,7 +182,7 @@ class ReportService
         $total = round($rows->sum(fn (StockLevel $s) => (float) $s->qty_on_hand * (float) $s->average_cost), 2);
         $gl = $this->ledger->balancesByAccount(null, now()->toDateString());
         $glInventory = null;
-        $acc = \App\Models\GlAccount::where('account_code', '1310')->first();
+        $acc = GlAccount::where('account_code', '1310')->first();
         if ($acc && isset($gl[$acc->id])) {
             $glInventory = round($gl[$acc->id]['debit'] - $gl[$acc->id]['credit'], 2);
         }
@@ -200,8 +200,10 @@ class ReportService
             ->orderByDesc(DB::raw('qty_on_hand * average_cost'))
             ->limit(300)->get()
             ->map(fn (StockLevel $s) => [
+                'part_id' => $s->part_id,
                 'part_number' => $s->part?->part_number,
                 'description' => $s->part?->description,
+                'branch_id' => $s->branch_id,
                 'branch' => $s->branch?->name,
                 'on_hand' => (float) $s->qty_on_hand,
                 'reserved' => (float) $s->qty_reserved,
@@ -300,7 +302,8 @@ class ReportService
             ->orderBy('expected_date')->get()
             ->map(fn (PurchaseOrder $po) => [
                 'id' => $po->id, 'po_number' => $po->po_number,
-                'supplier' => $po->supplier?->name, 'branch' => $po->branch?->name,
+                'supplier_id' => $po->supplier_id, 'supplier' => $po->supplier?->name,
+                'branch_id' => $po->branch_id, 'branch' => $po->branch?->name,
                 'order_date' => $po->order_date->toDateString(),
                 'expected_date' => $po->expected_date?->toDateString(),
                 'total' => (float) $po->total, 'status' => $po->status,
@@ -332,13 +335,16 @@ class ReportService
 
     public function jobProfitability(string $from, string $to, ?int $branchId = null): array
     {
-        return JobCard::with('labours', 'parts', 'customer:id,name')
+        return JobCard::with('labours', 'parts', 'customer:id,name', 'technician:id,name', 'invoice:id,document_number')
             ->where('status', 'invoiced')
             ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('invoiced_at', [$from.' 00:00:00', $to.' 23:59:59'])
             ->latest('invoiced_at')->limit(200)->get()
             ->map(fn (JobCard $j) => [
-                'job_number' => $j->job_number, 'customer' => $j->customer?->name,
+                'job_id' => $j->id, 'job_number' => $j->job_number,
+                'customer_id' => $j->customer_id, 'customer' => $j->customer?->name,
+                'technician_id' => $j->technician_id, 'technician' => $j->technician?->name,
+                'invoice_id' => $j->sales_document_id, 'invoice_number' => $j->invoice?->document_number,
                 'cost' => $j->totalCost(), 'billed' => $j->totalBilled(), 'margin_pct' => $j->marginPct(),
             ])->all();
     }

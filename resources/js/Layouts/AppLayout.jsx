@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Wrench } from 'lucide-react';
 import FlashToasts from '@/Components/FlashToasts';
 import { PageGuidePanel, PageGuideTrigger, usePageGuide } from '@/Components/PageGuide';
@@ -7,6 +7,8 @@ import NotificationBell from '@/Components/NotificationBell';
 
 export default function AppLayout({ children, title = 'Dashboard', auth }) {
     const guide = usePageGuide();
+    const { company } = usePage().props;
+    const brand = company?.trading_name || company?.name || 'SparesPro';
     const logout = () => {
         router.post(route('logout'));
     };
@@ -22,7 +24,7 @@ export default function AppLayout({ children, title = 'Dashboard', auth }) {
                                 <Wrench className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <span className="text-xl font-bold text-white">SparesPro</span>
+                                <span className="text-xl font-bold text-white">{brand}</span>
                                 <span className="ml-2 text-sm text-slate-400 hidden sm:inline">Motor Spares ERP</span>
                             </div>
                         </div>

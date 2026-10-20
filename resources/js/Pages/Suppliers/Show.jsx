@@ -6,11 +6,23 @@ import navConfig from '@/nav/suppliers';
 import FormField from '@/Components/FormField';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
-const TABS = ['Orders', 'Invoices', 'Price Lists', 'Contacts'];
+const TABS = ['Orders', 'Receipts', 'Invoices', 'Payments', 'Returns', 'Price Lists', 'Contacts'];
 
 export default function SupplierShow({ supplier }) {
     const [tab, setTab] = useState('Orders');
+
+    const groups = [
+        { title: 'Purchase orders', items: supplier.purchase_orders.map((po) => ({ type: 'purchase_order', id: po.id, label: po.po_number, mono: true })) },
+        { title: 'Goods received', items: supplier.grns.map((g) => ({ type: 'grn', id: g.id, label: g.grn_number, mono: true })) },
+        { title: 'Supplier invoices', items: supplier.invoices.map((i) => ({ type: 'supplier_invoice', id: i.id, label: i.supplier_ref, mono: true })) },
+        { title: 'Payments', items: supplier.payments.map((p) => ({ type: 'payment', id: p.id, label: p.payment_number, mono: true })) },
+        { title: 'Returns', items: supplier.returns.map((r) => ({ type: 'supplier_return', id: r.id, label: r.return_number, mono: true })) },
+        { title: 'Active price list', items: supplier.active_price_list ? [{ type: 'price_list', id: null, label: supplier.active_price_list.name }] : [] },
+        { title: 'Approved / preferred for', items: supplier.approved_parts.map((a) => ({ type: 'part', id: a.part_id, label: a.is_preferred ? `★ ${a.part_number}` : a.part_number, mono: true })) },
+    ];
 
     return (
         <ModuleLayout
@@ -32,6 +44,7 @@ export default function SupplierShow({ supplier }) {
                                 <h1 className="text-2xl font-bold text-slate-900">{supplier.name}</h1>
                                 <StatusBadge status={supplier.is_active ? 'active' : 'inactive'} />
                                 <span className="font-mono text-sm text-slate-400">{supplier.supplier_number}</span>
+                                {supplier.currency && <span className="text-xs rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">{supplier.currency}</span>}
                             </div>
                             <p className="text-sm text-slate-500 mt-1 capitalize">
                                 {supplier.type}{supplier.city ? ` · ${supplier.city}` : ''}{supplier.country ? `, ${supplier.country}` : ''}
@@ -96,7 +109,7 @@ export default function SupplierShow({ supplier }) {
                         rows={supplier.purchase_orders}
                         render={(po) => (
                             <tr key={po.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => router.visit(route('purchasing.orders.show', po.id))}>
-                                <td className="px-6 py-2.5 font-mono font-semibold text-orange-700">{po.po_number}</td>
+                                <td className="px-6 py-2.5"><EntityLink type="purchase_order" id={po.id} label={po.po_number} mono className="font-semibold" /></td>
                                 <td className="px-3 py-2.5 text-slate-500">{po.order_date}</td>
                                 <td className="px-3 py-2.5"><StatusBadge status={po.status} /></td>
                                 <td className="px-6 py-2.5 text-right tabular-nums"><MoneyDisplay amount={po.total} /></td>
@@ -106,13 +119,30 @@ export default function SupplierShow({ supplier }) {
                     />
                 )}
 
+                {tab === 'Receipts' && (
+                    <SimpleTable
+                        headers={['GRN No', 'PO', 'Received', 'Status']}
+                        rows={supplier.grns}
+                        render={(g) => (
+                            <tr key={g.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => router.visit(route('purchasing.grns.show', g.id))}>
+                                <td className="px-6 py-2.5"><EntityLink type="grn" id={g.id} label={g.grn_number} mono className="font-semibold" /></td>
+                                <td className="px-3 py-2.5"><EntityLink type="purchase_order" id={g.po_id} label={g.po_number} mono muted /></td>
+                                <td className="px-3 py-2.5 text-slate-500">{g.received_date}</td>
+                                <td className="px-6 py-2.5"><StatusBadge status={g.status} /></td>
+                            </tr>
+                        )}
+                        empty="Nothing received from this supplier yet."
+                    />
+                )}
+
                 {tab === 'Invoices' && (
                     <SimpleTable
-                        headers={['Supplier Ref', 'Date', 'Due', 'Status', 'Total']}
+                        headers={['Supplier Ref', 'GRN', 'Date', 'Due', 'Status', 'Total']}
                         rows={supplier.invoices}
                         render={(inv) => (
-                            <tr key={inv.id}>
-                                <td className="px-6 py-2.5 font-mono text-slate-700">{inv.supplier_ref}</td>
+                            <tr key={inv.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => router.visit(route('purchasing.invoices.show', inv.id))}>
+                                <td className="px-6 py-2.5"><EntityLink type="supplier_invoice" id={inv.id} label={inv.supplier_ref} mono className="font-semibold" /></td>
+                                <td className="px-3 py-2.5"><EntityLink type="grn" id={inv.grn_id} label={inv.grn_number} mono muted /></td>
                                 <td className="px-3 py-2.5 text-slate-500">{inv.invoice_date}</td>
                                 <td className="px-3 py-2.5 text-slate-500">{inv.due_date}</td>
                                 <td className="px-3 py-2.5"><StatusBadge status={inv.status} /></td>
@@ -120,6 +150,36 @@ export default function SupplierShow({ supplier }) {
                             </tr>
                         )}
                         empty="No invoices captured yet."
+                    />
+                )}
+
+                {tab === 'Payments' && (
+                    <SimpleTable
+                        headers={['Payment No', 'Date', 'Amount']}
+                        rows={supplier.payments}
+                        render={(p) => (
+                            <tr key={p.id}>
+                                <td className="px-6 py-2.5"><EntityLink type="payment" id={p.id} label={p.payment_number} mono className="font-semibold" /></td>
+                                <td className="px-3 py-2.5 text-slate-500">{p.payment_date}</td>
+                                <td className="px-6 py-2.5 text-right tabular-nums"><MoneyDisplay amount={p.amount} /></td>
+                            </tr>
+                        )}
+                        empty="No payments made to this supplier yet."
+                    />
+                )}
+
+                {tab === 'Returns' && (
+                    <SimpleTable
+                        headers={['Return No', 'Status', 'Credited']}
+                        rows={supplier.returns}
+                        render={(r) => (
+                            <tr key={r.id} className="hover:bg-slate-50/60 cursor-pointer" onClick={() => router.visit(route('purchasing.returns.show', r.id))}>
+                                <td className="px-6 py-2.5"><EntityLink type="supplier_return" id={r.id} label={r.return_number} mono className="font-semibold" /></td>
+                                <td className="px-3 py-2.5"><StatusBadge status={r.status} /></td>
+                                <td className="px-6 py-2.5 text-right tabular-nums">{r.credit_total !== null ? <MoneyDisplay amount={r.credit_total} /> : <span className="text-slate-300">—</span>}</td>
+                            </tr>
+                        )}
+                        empty="No returns to this supplier."
                     />
                 )}
 
@@ -161,6 +221,8 @@ export default function SupplierShow({ supplier }) {
                 )}
 
                 {tab === 'Contacts' && <ContactsTab supplier={supplier} />}
+
+                <RelatedLinks groups={groups} />
             </div>
         </ModuleLayout>
     );
@@ -176,7 +238,7 @@ function SimpleTable({ headers, rows, render, empty }) {
                     <thead>
                         <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
                             {headers.map((h, i) => (
-                                <th key={i} className={`px-3 py-3 first:pl-6 last:pr-6 ${['Total', 'Items', 'Matched', 'Unmatched'].includes(h) ? 'text-right' : ''}`}>{h}</th>
+                                <th key={i} className={`px-3 py-3 first:pl-6 last:pr-6 ${['Total', 'Items', 'Matched', 'Unmatched', 'Amount', 'Credited'].includes(h) ? 'text-right' : ''}`}>{h}</th>
                             ))}
                         </tr>
                     </thead>

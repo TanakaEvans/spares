@@ -1,9 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Scale } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 export default function PriceComparisonIndex({ rows, filters }) {
     return (
@@ -17,14 +18,14 @@ export default function PriceComparisonIndex({ rows, filters }) {
                 ) : rows.map((r) => (
                     <div key={r.part_id} className="rounded-xl border border-slate-100 bg-white overflow-hidden">
                         <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                            <Link href={route('inventory.parts.show', r.part_id)} className="font-mono font-semibold text-slate-800 hover:text-orange-600">{r.part_number}</Link>
+                            <EntityLink type="part" id={r.part_id} label={r.part_number} mono className="font-semibold" />
                             <span className="text-xs text-slate-400">{r.description}</span>
                         </div>
                         <table className="w-full text-sm">
                             <tbody className="divide-y divide-slate-50">
                                 {r.offers.map((o, i) => (
                                     <tr key={i} className={o.cost === r.best ? 'bg-emerald-50/50' : ''}>
-                                        <td className="px-4 py-2">{o.supplier_id ? <Link href={route('suppliers.show', o.supplier_id)} className="text-slate-700 hover:text-orange-600">{o.supplier}</Link> : o.supplier}{o.cost === r.best && <span className="ml-2 text-[10px] font-semibold uppercase text-emerald-600">best</span>}</td>
+                                        <td className="px-4 py-2"><EntityLink type="supplier" id={o.supplier_id} label={o.supplier} />{o.cost === r.best && <span className="ml-2 text-[10px] font-semibold uppercase text-emerald-600">best</span>}</td>
                                         <td className="px-4 py-2 text-right tabular-nums font-medium text-slate-700"><MoneyDisplay amount={o.cost} /></td>
                                     </tr>
                                 ))}

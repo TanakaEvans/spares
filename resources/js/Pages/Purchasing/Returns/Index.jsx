@@ -6,6 +6,7 @@ import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function ReturnsIndex({ returns }) {
     const [action, setAction] = useState(null); // {type: 'ship'|'credit', return}
@@ -48,8 +49,8 @@ export default function ReturnsIndex({ returns }) {
 
                 <DataTable
                     columns={[
-                        { key: 'return_number', label: 'Return No', render: (r) => <span className="font-mono font-semibold text-slate-800">{r.return_number}</span> },
-                        { key: 'supplier', label: 'Supplier', render: (r) => <span className="text-slate-700">{r.supplier}</span> },
+                        { key: 'return_number', label: 'Return No', render: (r) => <EntityLink type="supplier_return" id={r.id} label={r.return_number} mono className="font-semibold" /> },
+                        { key: 'supplier', label: 'Supplier', render: (r) => <EntityLink type="supplier" id={r.supplier_id} label={r.supplier} /> },
                         { key: 'reason', label: 'Reason', render: (r) => <span className="capitalize text-slate-500">{r.reason.replace('_', ' ')}</span> },
                         { key: 'supplier_rma', label: 'RMA', render: (r) => <span className="font-mono text-slate-500">{r.supplier_rma ?? '—'}</span> },
                         { key: 'value', label: 'Stock value', align: 'right', render: (r) => <MoneyDisplay amount={r.value} /> },
@@ -75,6 +76,7 @@ export default function ReturnsIndex({ returns }) {
                     ]}
                     rows={returns.data}
                     pagination={returns}
+                    rowHref={(r) => route('purchasing.returns.show', r.id)}
                     emptyTitle="No supplier returns"
                     emptyMessage="Return damaged, incorrect or excess stock and recover the money."
                 />

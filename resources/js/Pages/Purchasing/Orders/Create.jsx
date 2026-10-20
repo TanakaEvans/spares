@@ -6,6 +6,7 @@ import navConfig from '@/nav/purchasing';
 import FormField from '@/Components/FormField';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import PartLinePicker from '@/Components/PartLinePicker';
+import EntityLink from '@/Components/EntityLink';
 
 export default function OrderCreate({ suppliers, branches, preselectedSupplierId }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -109,7 +110,7 @@ export default function OrderCreate({ suppliers, branches, preselectedSupplierId
                                 {lines.map((l, i) => (
                                     <tr key={l.part_id}>
                                         <td className="py-2">
-                                            <span className="font-mono font-semibold text-slate-800">{l.part_number}</span>
+                                            <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold" />
                                             <span className="block text-xs text-slate-400">{l.description} · cost from {l.cost_source}</span>
                                         </td>
                                         <td className="py-2">

@@ -5,6 +5,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import FormField from '@/Components/FormField';
 import PartLinePicker from '@/Components/PartLinePicker';
+import EntityLink from '@/Components/EntityLink';
 
 export default function ReturnCreate({ suppliers, branches }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -69,7 +70,7 @@ export default function ReturnCreate({ suppliers, branches }) {
 
                     {lines.map((l, i) => (
                         <div key={l.part_id} className="flex items-center gap-3 text-sm">
-                            <span className="font-mono font-semibold text-slate-800 w-36 truncate">{l.part_number}</span>
+                            <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold w-36 truncate" />
                             <span className="flex-1 text-slate-500 truncate">{l.description}</span>
                             <input
                                 type="number" step="0.01" min="0.01" value={l.qty}

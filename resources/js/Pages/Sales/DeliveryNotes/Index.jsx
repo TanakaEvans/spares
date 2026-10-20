@@ -3,6 +3,9 @@ import { Truck } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
+
+const docType = (t) => (t === 'order' ? 'order' : t === 'quotation' ? 'quote' : t === 'credit_note' ? 'credit_note' : 'invoice');
 
 export default function DeliveryNotesIndex({ notes, customers, branches }) {
     const { data, setData, post, processing, reset } = useForm({ customer_id: '', branch_id: branches[0]?.id ?? '', delivery_date: new Date().toISOString().slice(0, 10), driver: '', vehicle_reg: '', address: '' });
@@ -16,12 +19,13 @@ export default function DeliveryNotesIndex({ notes, customers, branches }) {
                         <div className="py-10 text-center text-sm text-slate-400"><Truck className="w-8 h-8 mx-auto mb-2 text-slate-300" />No delivery notes yet.</div>
                     ) : (
                         <table className="w-full text-sm">
-                            <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Delivery</th><th className="px-2 py-2">Customer</th><th className="px-2 py-2">Date</th><th className="px-2 py-2">Driver</th><th className="px-2 py-2">Status</th><th className="px-4 py-2"></th></tr></thead>
+                            <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Delivery</th><th className="px-2 py-2">Customer</th><th className="px-2 py-2">Source</th><th className="px-2 py-2">Date</th><th className="px-2 py-2">Driver</th><th className="px-2 py-2">Status</th><th className="px-4 py-2"></th></tr></thead>
                             <tbody className="divide-y divide-slate-50">
                                 {notes.data.map((d) => (
                                     <tr key={d.id}>
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{d.delivery_number}</td>
-                                        <td className="px-2 py-2 text-slate-600">{d.customer}</td>
+                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800"><EntityLink type="delivery_note" id={d.id} label={d.delivery_number} mono /></td>
+                                        <td className="px-2 py-2 text-slate-600"><EntityLink type="customer" id={d.customer_id} label={d.customer} /></td>
+                                        <td className="px-2 py-2 text-slate-500">{d.document ? <EntityLink type={docType(d.document.document_type)} id={d.document.id} label={d.document.document_number} mono muted /> : '—'}</td>
                                         <td className="px-2 py-2 tabular-nums text-slate-500">{d.delivery_date}</td>
                                         <td className="px-2 py-2 text-slate-500">{d.driver ?? '—'}{d.vehicle_reg ? ` · ${d.vehicle_reg}` : ''}</td>
                                         <td className="px-2 py-2"><StatusBadge status={d.status === 'dispatched' ? 'in_transit' : d.status === 'delivered' ? 'complete' : 'draft'} label={d.status} /></td>

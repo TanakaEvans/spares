@@ -77,6 +77,7 @@ class AuthManagementController extends Controller
                 'locked_at' => null,
                 'failed_login_attempts' => 0
             ]);
+            app(\App\Services\AuditLogService::class)->record('user.unlocked', $user, null, null, 'Unlocked by administrator');
 
             return back()->with('success', 'User account unlocked successfully.');
         } catch (\Exception $e) {

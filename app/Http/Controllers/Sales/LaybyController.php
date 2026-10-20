@@ -21,12 +21,39 @@ class LaybyController extends Controller
         return Inertia::render('Sales/Laybys/Index', [
             'laybys' => Layby::with('customer:id,name')->latest('id')->paginate(20)
                 ->through(fn (Layby $l) => [
-                    'id' => $l->id, 'layby_number' => $l->layby_number, 'customer' => $l->customer?->name,
+                    'id' => $l->id, 'layby_number' => $l->layby_number,
+                    'customer' => $l->customer?->name, 'customer_id' => $l->customer_id,
                     'total' => (float) $l->total, 'deposit_paid' => (float) $l->deposit_paid, 'balance' => $l->balance(), 'status' => $l->status,
                 ]),
             'customers' => Customer::where('is_walk_in', false)->orderBy('name')->limit(200)->get(['id', 'name']),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
             'minDepositPct' => (float) $settings->get('sales.layby_minimum_deposit_pct'),
+        ]);
+    }
+
+    public function show(Layby $layby): Response
+    {
+        $layby->load('customer:id,name,customer_number', 'branch:id,name', 'payments');
+
+        return Inertia::render('Sales/Laybys/Show', [
+            'layby' => [
+                'id' => $layby->id,
+                'layby_number' => $layby->layby_number,
+                'status' => $layby->status,
+                'customer' => $layby->customer?->only(['id', 'name', 'customer_number']),
+                'branch' => $layby->branch?->only(['id', 'name']),
+                'total' => (float) $layby->total,
+                'deposit_paid' => (float) $layby->deposit_paid,
+                'balance' => $layby->balance(),
+                'notes' => $layby->notes,
+                'created_at' => $layby->created_at?->toDateString(),
+                'payments' => $layby->payments->sortByDesc('id')->values()->map(fn ($p) => [
+                    'id' => $p->id,
+                    'amount' => (float) $p->amount,
+                    'method' => $p->method,
+                    'paid_on' => $p->paid_on?->toDateString(),
+                ]),
+            ],
         ]);
     }
 

@@ -32,4 +32,9 @@ class GrnLine extends Model
     {
         return $this->belongsTo(Part::class);
     }
+
+    public function bin(): BelongsTo
+    {
+        return $this->belongsTo(BinLocation::class, 'bin_location_id');
+    }
 }

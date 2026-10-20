@@ -53,12 +53,22 @@ class SettingsService
             throw new InvalidArgumentException("Setting [{$key}] does not allow per-branch overrides.");
         }
 
+        $before = $this->get($key, $branchId);
+
         Setting::updateOrCreate(
             ['key' => $key, 'branch_id' => $branchId],
             ['value' => $this->serialize($value, $definition['type']), 'updated_by' => $userId]
         );
 
         $this->flush();
+
+        // Rule 10: every configuration change is audited with before/after.
+        app(AuditLogService::class)->record(
+            'setting.changed', null,
+            ['key' => $key, 'branch_id' => $branchId, 'value' => $before],
+            ['key' => $key, 'branch_id' => $branchId, 'value' => $value],
+            $definition['label'] ?? $key, $userId,
+        );
     }
 
     /**

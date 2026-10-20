@@ -46,7 +46,7 @@ class CashupService
         $cashiers = [];
         $add = function (int|string|null $uid, string $method, float $amount) use (&$cashiers, $names) {
             $key = $uid ?? 0;
-            $cashiers[$key] ??= ['cashier' => $names[$key] ?? 'Unattributed', 'cash' => 0, 'card' => 0, 'eft' => 0, 'account' => 0, 'total' => 0];
+            $cashiers[$key] ??= ['user_id' => $key ?: null, 'cashier' => $names[$key] ?? 'Unattributed', 'cash' => 0, 'card' => 0, 'eft' => 0, 'account' => 0, 'total' => 0];
             $cashiers[$key][$method] = round($cashiers[$key][$method] + $amount, 2);
             $cashiers[$key]['total'] = round($cashiers[$key]['total'] + $amount, 2);
         };

@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import SearchInput from '@/Components/SearchInput';
 
@@ -60,8 +61,8 @@ export default function ModelsIndex({ models, makes, filters }) {
                     </div>
                     <DataTable
                         columns={[
-                            { key: 'make', label: 'Make', render: (m) => <span className="text-slate-500">{m.make?.name}</span> },
-                            { key: 'name', label: 'Model', render: (m) => <span className="font-medium text-slate-800">{m.name}</span> },
+                            { key: 'make', label: 'Make', render: (m) => <EntityLink type="make" id={m.make_id} label={m.make?.name} params={{ make_id: m.make_id }} muted /> },
+                            { key: 'name', label: 'Model', render: (m) => <EntityLink type="model" id={m.id} label={m.name} className="font-medium" /> },
                             { key: 'body_type', label: 'Body', render: (m) => <span className="capitalize text-slate-500">{m.body_type}</span> },
                             { key: 'years', label: 'Years', render: (m) => <span className="tabular-nums text-slate-500">{m.year_from ?? ''}–{m.year_to ?? 'now'}</span> },
                             { key: 'variants_count', label: 'Variants', align: 'right' },

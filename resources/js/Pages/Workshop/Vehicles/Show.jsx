@@ -2,8 +2,16 @@ import { Head, Link } from '@inertiajs/react';
 import { Plus, Wrench } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
+import StatusBadge from '@/Components/StatusBadge';
 
 export default function VehicleShow({ vehicle, history }) {
+    const makeModel = [vehicle.make, vehicle.model].filter(Boolean).join(' ');
+    const jobs = history.filter((h) => h.job_card_id);
+    const invoices = history.filter((h) => h.invoice_id);
+    const technicians = Object.values(Object.fromEntries(history.filter((h) => h.technician_id).map((h) => [h.technician_id, h])));
+
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -21,13 +29,16 @@ export default function VehicleShow({ vehicle, history }) {
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 font-mono">{vehicle.registration}</h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            {[vehicle.make, vehicle.model, vehicle.variant].filter(Boolean).join(' ') || 'Unspecified vehicle'}
+                            {makeModel
+                                ? <EntityLink type="model" id={vehicle.model_id} label={makeModel} className="font-medium" />
+                                : 'Unspecified vehicle'}
+                            {vehicle.variant && ` ${vehicle.variant}`}
                             {vehicle.year && ` · ${vehicle.year}`}{vehicle.colour && ` · ${vehicle.colour}`}
-                            {vehicle.engine_code && ` · ${vehicle.engine_code}`}
+                            {vehicle.engine_code && <> · <EntityLink type="engine" label={vehicle.engine_code} mono muted /></>}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
                             Owner: {vehicle.customer
-                                ? <Link href={route('customers.show', vehicle.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{vehicle.customer.name}</Link>
+                                ? <EntityLink type="customer" id={vehicle.customer.id} label={vehicle.customer.name} className="font-medium" />
                                 : '—'}
                             {vehicle.vin && ` · VIN ${vehicle.vin}`}
                         </p>
@@ -48,7 +59,9 @@ export default function VehicleShow({ vehicle, history }) {
                                     <th className="px-4 py-2">Date</th>
                                     <th className="px-2 py-2 text-right">Odometer</th>
                                     <th className="px-2 py-2">Work</th>
-                                    <th className="px-4 py-2">Job</th>
+                                    <th className="px-2 py-2">Job</th>
+                                    <th className="px-2 py-2">Technician</th>
+                                    <th className="px-4 py-2">Invoice</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -57,17 +70,28 @@ export default function VehicleShow({ vehicle, history }) {
                                         <td className="px-4 py-2 tabular-nums text-slate-500">{h.service_date}</td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-500">{h.odometer ? h.odometer.toLocaleString() : '—'}</td>
                                         <td className="px-2 py-2 text-slate-700">{h.summary}</td>
-                                        <td className="px-4 py-2">
-                                            {h.job_card_id
-                                                ? <Link href={route('workshop.jobs.show', h.job_card_id)} className="font-mono text-slate-600 hover:text-orange-600">{h.job_number}</Link>
-                                                : '—'}
+                                        <td className="px-2 py-2">
+                                            <EntityLink type="job" id={h.job_card_id} label={h.job_number} mono muted />
+                                            {h.job_status && <span className="ml-2 inline-block align-middle"><StatusBadge status={h.job_status} /></span>}
                                         </td>
+                                        <td className="px-2 py-2"><EntityLink type="technician" id={h.technician_id} label={h.technician} muted /></td>
+                                        <td className="px-4 py-2"><EntityLink type="invoice" id={h.invoice_id} label={h.invoice_number} mono muted /></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     )}
                 </div>
+
+                <RelatedLinks
+                    groups={[
+                        { title: 'Owner', items: vehicle.customer ? [{ type: 'customer', id: vehicle.customer.id, label: vehicle.customer.name }] : [] },
+                        { title: 'Model', items: vehicle.model_id ? [{ type: 'model', id: vehicle.model_id, label: makeModel }] : [] },
+                        { title: 'Job cards', items: jobs.map((h) => ({ type: 'job', id: h.job_card_id, label: h.job_number, mono: true })) },
+                        { title: 'Invoices', items: invoices.map((h) => ({ type: 'invoice', id: h.invoice_id, label: h.invoice_number, mono: true })) },
+                        { title: 'Technicians', items: technicians.map((h) => ({ type: 'technician', id: h.technician_id, label: h.technician })) },
+                    ]}
+                />
             </div>
         </ModuleLayout>
     );

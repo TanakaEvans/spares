@@ -1,7 +1,8 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
+import EntityLink from '@/Components/EntityLink';
 
 export default function CommsIndex({ notes, customers }) {
     const { data, setData, post, processing, reset } = useForm({ customer_id: '', channel: 'call', subject: '', body: '' });
@@ -18,12 +19,12 @@ export default function CommsIndex({ notes, customers }) {
                             {notes.data.map((n) => (
                                 <li key={n.id} className="px-4 py-3">
                                     <div className="flex items-center justify-between">
-                                        <Link href={route('customers.show', n.customer_id)} className="text-sm font-semibold text-slate-800 hover:text-orange-600">{n.customer}</Link>
+                                        <EntityLink type="customer" id={n.customer_id} label={n.customer} className="text-sm font-semibold" />
                                         <span className="text-xs text-slate-400 capitalize">{n.channel} · {n.at}</span>
                                     </div>
                                     <div className="text-sm text-slate-700 mt-0.5">{n.subject}</div>
                                     {n.body && <div className="text-xs text-slate-500 mt-0.5">{n.body}</div>}
-                                    {n.user && <div className="text-[11px] text-slate-400 mt-0.5">by {n.user}</div>}
+                                    {n.user && <div className="text-[11px] text-slate-400 mt-0.5">by <EntityLink type="user" id={n.user_id} label={n.user} muted /></div>}
                                 </li>
                             ))}
                         </ul>

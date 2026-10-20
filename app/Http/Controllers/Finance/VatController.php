@@ -19,15 +19,18 @@ class VatController extends Controller
 
         return Inertia::render('Finance/Vat/Index', [
             'preview' => $vat->compute($from, $to),
-            'returns' => VatReturn::orderByDesc('period_end')->limit(24)->get()
+            'returns' => VatReturn::with('preparedBy:id,name')->orderByDesc('period_end')->limit(24)->get()
                 ->map(fn (VatReturn $r) => [
                     'id' => $r->id,
                     'reference' => $r->reference,
                     'period' => $r->period_start->toDateString().' → '.$r->period_end->toDateString(),
+                    'period_start' => $r->period_start->toDateString(),
+                    'period_end' => $r->period_end->toDateString(),
                     'output_vat' => (float) $r->output_vat,
                     'input_vat' => (float) $r->input_vat,
                     'net_payable' => (float) $r->net_payable,
                     'status' => $r->status,
+                    'prepared_by' => $r->preparedBy ? ['id' => $r->preparedBy->id, 'name' => $r->preparedBy->name] : null,
                 ]),
             'filters' => ['from' => $from, 'to' => $to],
         ]);

@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 
@@ -77,10 +78,10 @@ export default function StockIndex({ levels, branches, filters, totalValue }) {
 
                 <DataTable
                     columns={[
-                        { key: 'part_number', label: 'Part No', render: (l) => <span className="font-mono font-semibold text-slate-800">{l.part_number}</span> },
+                        { key: 'part_number', label: 'Part No', render: (l) => <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold" /> },
                         { key: 'description', label: 'Description', render: (l) => <span className="text-slate-600">{l.description}</span> },
-                        { key: 'branch', label: 'Branch', render: (l) => <span className="text-slate-500">{l.branch}</span> },
-                        { key: 'bin', label: 'Bin', render: (l) => <span className="font-mono text-slate-400">{l.bin ?? '—'}</span> },
+                        { key: 'branch', label: 'Branch', render: (l) => <EntityLink type="branch" id={l.branch_id} label={l.branch} muted /> },
+                        { key: 'bin', label: 'Bin', render: (l) => <EntityLink type="bin" id={l.bin_id} label={l.bin ?? '—'} mono muted /> },
                         { key: 'qty_on_hand', label: 'On hand', align: 'right' },
                         { key: 'qty_reserved', label: 'Reserved', align: 'right', render: (l) => <span className="text-slate-400">{l.qty_reserved}</span> },
                         {

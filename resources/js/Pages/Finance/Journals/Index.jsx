@@ -6,6 +6,7 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function JournalsIndex({ journals, filters }) {
     function filter(params) {
@@ -35,9 +36,12 @@ export default function JournalsIndex({ journals, filters }) {
                 </div>
                 <DataTable
                     columns={[
-                        { key: 'journal_number', label: 'Number', render: (j) => <span className="font-mono font-semibold text-slate-800">{j.journal_number}</span> },
+                        { key: 'journal_number', label: 'Number', render: (j) => <EntityLink type="journal" id={j.id} label={j.journal_number} mono className="font-semibold" /> },
                         { key: 'journal_date', label: 'Date', render: (j) => <span className="tabular-nums text-slate-500">{j.journal_date}</span> },
                         { key: 'journal_type', label: 'Type', render: (j) => <span className="capitalize text-slate-500">{j.journal_type}</span> },
+                        { key: 'source', label: 'Source', render: (j) => j.source
+                            ? <EntityLink type={j.source.type} id={j.source.id} label={j.source.label} mono />
+                            : <span className="text-slate-400">{j.reference ? <span className="font-mono">{j.reference}</span> : '—'}</span> },
                         { key: 'description', label: 'Description', render: (j) => <span className="text-slate-600">{j.description}</span> },
                         { key: 'total', label: 'Amount', align: 'right', render: (j) => <MoneyDisplay amount={j.total} /> },
                         { key: 'status', label: 'Status', render: (j) => <StatusBadge status={j.status} /> },

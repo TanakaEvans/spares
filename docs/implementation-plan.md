@@ -157,6 +157,27 @@ Tasks: [tasks/09-reports.md](tasks/09-reports.md) + deferred sections in each mo
 
 ---
 
+## Phase 8 — Pre-Deployment Hardening (2026-10-20)
+
+**Why:** the [pre-deployment audit](audit/2026-10-20-pre-deployment-audit.md) found the ledger core sound but the control layer around it missing: permissions not enforced, a client-side supervisor override, no audit trail, no scheduler/backups, a hard-coded `$` in a ZAR business, and no deployment procedure. None of this is a new module — it is what makes the existing modules safe to hand to staff.
+
+| Order | Work | Why this order |
+|-------|------|----------------|
+| 8.1 | Enforce the role→route matrix (middleware + seeded role defaults + permission-filtered cards/sidebars) | Nothing else matters if a cashier can post journals |
+| 8.2 | Base currency symbol + company branding shared to every page | Every figure the owner sees must be in rand |
+| 8.3 | POS: real supervisor override, scanner-safe Enter, shortcuts, suspend/recall | The busiest screen; the override is a cash-control hole |
+| 8.4 | Audit trail (table, service, model trait, screen) | 8.3 and 8.6 write to it |
+| 8.5 | Scheduler, real backups, persisted health runs + operations checks | A disk failure must not lose the books |
+| 8.6 | Security settings enforced at login and password change | The Password Policy screen must do what it says |
+| 8.7 | `app:preflight` + deployment runbook | Go-live becomes a checklist |
+| 8.8 | Housekeeping (demo seeders, labels, duplicate dirs, brand assets) | Cheap, and visible to the client |
+
+**Exit criteria:** a demo Cashier sees only the sales screens and gets *Unauthorized* elsewhere; an over-limit discount needs a Manager's credentials and appears in the audit log; `php artisan app:preflight` passes on the production server; a nightly backup file exists and System Health shows the scheduled run.
+
+Tasks: [tasks/11-go-live-hardening.md](tasks/11-go-live-hardening.md)
+
+---
+
 ## The Plan ↔ Tasks ↔ Docs Relationship
 
 ```

@@ -39,6 +39,50 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function show(SupplierPayment $payment): Response
+    {
+        $payment->load([
+            'supplier:id,name,supplier_number',
+            'branch:id,name',
+            'paidBy:id,name',
+            'journal:id,journal_number',
+            'allocations.invoice:id,invoice_number,supplier_ref,invoice_date,total,status',
+        ]);
+
+        return Inertia::render('Finance/Payments/Show', [
+            'payment' => [
+                'id' => $payment->id,
+                'payment_number' => $payment->payment_number,
+                'payment_date' => $payment->payment_date->toDateString(),
+                'method' => $payment->method,
+                'amount' => (float) $payment->amount,
+                'allocated' => (float) $payment->allocated,
+                'unallocated' => round((float) $payment->amount - (float) $payment->allocated, 2),
+                'reference' => $payment->reference,
+                'batch_ref' => $payment->batch_ref,
+                'notes' => $payment->notes,
+                'posted_at' => $payment->posted_at?->toDateTimeString(),
+                'supplier' => $payment->supplier ? [
+                    'id' => $payment->supplier->id,
+                    'name' => $payment->supplier->name,
+                    'supplier_number' => $payment->supplier->supplier_number,
+                ] : null,
+                'branch' => $payment->branch ? ['id' => $payment->branch->id, 'name' => $payment->branch->name] : null,
+                'paid_by' => $payment->paidBy ? ['id' => $payment->paidBy->id, 'name' => $payment->paidBy->name] : null,
+                'journal' => $payment->journal ? ['id' => $payment->journal->id, 'journal_number' => $payment->journal->journal_number] : null,
+                'allocations' => $payment->allocations->map(fn ($a) => [
+                    'id' => $a->id,
+                    'supplier_invoice_id' => $a->supplier_invoice_id,
+                    'invoice_number' => $a->invoice?->invoice_number,
+                    'supplier_ref' => $a->invoice?->supplier_ref,
+                    'invoice_date' => $a->invoice?->invoice_date?->toDateString(),
+                    'invoice_total' => (float) ($a->invoice?->total ?? 0),
+                    'amount' => (float) $a->amount,
+                ])->values(),
+            ],
+        ]);
+    }
+
     public function create(): Response
     {
         return Inertia::render('Finance/Payments/Create', [

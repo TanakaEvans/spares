@@ -17,7 +17,7 @@ class PromotionController extends Controller
         return Inertia::render('Sales/Promotions/Index', [
             'promotions' => Promotion::with('category:id,name')->latest('id')->get()->map(fn (Promotion $p) => [
                 'id' => $p->id, 'name' => $p->name, 'type' => $p->type, 'value' => (float) $p->value, 'applies_to' => $p->applies_to,
-                'category' => $p->category?->name, 'starts_at' => $p->starts_at?->toDateString(), 'ends_at' => $p->ends_at?->toDateString(), 'is_active' => $p->is_active,
+                'category' => $p->category?->name, 'category_id' => $p->category_id, 'starts_at' => $p->starts_at?->toDateString(), 'ends_at' => $p->ends_at?->toDateString(), 'is_active' => $p->is_active,
             ]),
             'categories' => PartCategory::orderBy('name')->get(['id', 'name']),
         ]);

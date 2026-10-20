@@ -32,6 +32,7 @@ class OrderController extends Controller
                     'id' => $d->id,
                     'document_number' => $d->document_number,
                     'customer' => $d->customer?->name,
+                    'customer_id' => $d->customer_id,
                     'document_date' => $d->document_date->toDateString(),
                     'total_incl' => (float) $d->total_incl,
                     'status' => $d->status,
@@ -43,8 +44,8 @@ class OrderController extends Controller
     public function show(SalesDocument $order): Response
     {
         abort_unless($order->document_type === 'order', 404);
-        $order->load('customer:id,name,customer_number,is_walk_in', 'lines.part:id,part_number',
-            'parent:id,document_number', 'children:id,document_number,document_type,parent_id');
+        $order->load('customer:id,name,customer_number,is_walk_in', 'branch:id,name', 'lines.part:id,part_number',
+            'parent:id,document_number,document_type', 'children:id,document_number,document_type,parent_id');
 
         return Inertia::render('Sales/Orders/Show', [
             'order' => [
@@ -53,7 +54,8 @@ class OrderController extends Controller
                 'status' => $order->status,
                 'customer' => $order->customer?->only(['id', 'name', 'customer_number', 'is_walk_in']),
                 'document_date' => $order->document_date->toDateString(),
-                'from_quote' => $order->parent?->only(['id', 'document_number']),
+                'branch' => $order->branch?->only(['id', 'name']),
+                'from_quote' => $order->parent?->document_type === 'quotation' ? $order->parent->only(['id', 'document_number']) : null,
                 'invoice' => $order->children->firstWhere('document_type', 'invoice')?->only(['id', 'document_number']),
                 'subtotal_excl' => (float) $order->subtotal_excl,
                 'vat_amount' => (float) $order->vat_amount,

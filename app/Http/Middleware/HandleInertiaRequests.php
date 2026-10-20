@@ -39,7 +39,14 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user() ? $request->user()->load('roles') : null,
+                // Route names this user may open ('*' = everything). Screens hide
+                // what the user may not do; EnforceRoutePermission still enforces.
+                'routes' => fn () => $request->user()
+                    ? ($request->user()->hasRole('Superuser') ? ['*'] : $request->user()->getAccessibleRoutes())
+                    : [],
             ],
+            // The base currency, captured once (10.12) and used by MoneyDisplay everywhere.
+            'currency' => fn () => $this->baseCurrency(),
             // The business identity, captured once under System Admin › Company and
             // reused everywhere (login branding, headers, titles).
             'company' => fn () => \App\Models\Company::query()->first(['name', 'trading_name', 'logo'])?->toArray(),
@@ -67,5 +74,17 @@ class HandleInertiaRequests extends Middleware
                     ]),
             ] : null,
         ];
+    }
+
+    /** @return array{code:string,symbol:string,decimals:int} */
+    private function baseCurrency(): array
+    {
+        try {
+            $base = app(\App\Services\CurrencyService::class)->base();
+
+            return ['code' => $base->code, 'symbol' => $base->symbol, 'decimals' => (int) $base->decimal_places];
+        } catch (\Throwable) {
+            return ['code' => 'ZAR', 'symbol' => 'R', 'decimals' => 2];
+        }
     }
 }

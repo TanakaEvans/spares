@@ -35,4 +35,19 @@ class SupplierPayment extends Model
     {
         return $this->hasMany(PaymentAllocation::class, 'payment_id');
     }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'gl_journal_id');
+    }
+
+    public function unallocated(): float
+    {
+        return round((float) $this->amount - (float) $this->allocated, 2);
+    }
 }

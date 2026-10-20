@@ -25,7 +25,9 @@ class SupplierInvoiceController extends Controller
                     'id' => $inv->id,
                     'invoice_number' => $inv->invoice_number,
                     'supplier_ref' => $inv->supplier_ref,
+                    'supplier_id' => $inv->supplier_id,
                     'supplier' => $inv->supplier?->name,
+                    'grn_id' => $inv->grn_id,
                     'grn_number' => $inv->grn?->grn_number,
                     'invoice_date' => $inv->invoice_date->toDateString(),
                     'due_date' => $inv->due_date?->toDateString(),
@@ -54,11 +56,14 @@ class SupplierInvoiceController extends Controller
             'grn' => [
                 'id' => $grn->id,
                 'grn_number' => $grn->grn_number,
+                'po_id' => $grn->po_id,
                 'po_number' => $grn->purchaseOrder?->po_number,
+                'supplier_id' => $grn->supplier_id,
                 'supplier' => $grn->supplier?->name,
                 'received_date' => $grn->received_date->toDateString(),
                 'value' => $grn->acceptedValue(),
                 'lines' => $grn->lines->map(fn ($l) => [
+                    'part_id' => $l->part_id,
                     'part_number' => $l->part?->part_number,
                     'qty_received' => (float) $l->qty_received,
                     'unit_cost' => (float) $l->unit_cost,
@@ -92,6 +97,69 @@ class SupplierInvoiceController extends Controller
                 ? "Invoice {$invoice->supplier_ref} matched and posted to accounts payable."
                 : "Invoice {$invoice->supplier_ref} captured as DISPUTED: {$invoice->dispute_reason}"
         );
+    }
+
+    public function show(SupplierInvoice $supplierInvoice): Response
+    {
+        $supplierInvoice->load([
+            'supplier:id,name,payment_terms_days', 'glJournal:id,journal_number',
+            'grn:id,grn_number,po_id,branch_id,received_date,status',
+            'grn.purchaseOrder:id,po_number,status', 'grn.branch:id,name',
+            'grn.lines.part:id,part_number,description',
+            'allocations.payment:id,payment_number,payment_date,method,amount,reference',
+        ]);
+
+        $grn = $supplierInvoice->grn;
+        $paid = $supplierInvoice->paidAmount();
+
+        return Inertia::render('Purchasing/Invoices/Show', [
+            'invoice' => [
+                'id' => $supplierInvoice->id,
+                'invoice_number' => $supplierInvoice->invoice_number,
+                'supplier_ref' => $supplierInvoice->supplier_ref,
+                'status' => $supplierInvoice->status,
+                'dispute_reason' => $supplierInvoice->dispute_reason,
+                'invoice_date' => $supplierInvoice->invoice_date->toDateString(),
+                'due_date' => $supplierInvoice->due_date?->toDateString(),
+                'posted_at' => $supplierInvoice->posted_at?->toDateTimeString(),
+                'subtotal' => (float) $supplierInvoice->subtotal,
+                'vat_amount' => (float) $supplierInvoice->vat_amount,
+                'total' => (float) $supplierInvoice->total,
+                'paid' => $paid,
+                'outstanding' => round((float) $supplierInvoice->total - $paid, 2),
+                'supplier_id' => $supplierInvoice->supplier_id,
+                'supplier' => $supplierInvoice->supplier?->name,
+                'gl_journal_id' => $supplierInvoice->gl_journal_id,
+                'journal_number' => $supplierInvoice->glJournal?->journal_number,
+                'grn_id' => $supplierInvoice->grn_id,
+                'grn_number' => $grn?->grn_number,
+                'grn_received_date' => $grn?->received_date?->toDateString(),
+                'grn_value' => $grn?->acceptedValue() ?? 0.0,
+                'po_id' => $grn?->po_id,
+                'po_number' => $grn?->purchaseOrder?->po_number,
+                'branch_id' => $grn?->branch_id,
+                'branch' => $grn?->branch?->name,
+                'lines' => ($grn?->lines ?? collect())->map(fn ($l) => [
+                    'id' => $l->id,
+                    'part_id' => $l->part_id,
+                    'part_number' => $l->part?->part_number,
+                    'description' => $l->part?->description,
+                    'qty_received' => (float) $l->qty_received,
+                    'unit_cost' => (float) $l->unit_cost,
+                    'line_total' => round((float) $l->qty_received * (float) $l->unit_cost, 2),
+                ]),
+                'payments' => $supplierInvoice->allocations
+                    ->filter(fn ($a) => $a->payment !== null)
+                    ->map(fn ($a) => [
+                        'id' => $a->payment->id,
+                        'payment_number' => $a->payment->payment_number,
+                        'payment_date' => $a->payment->payment_date->toDateString(),
+                        'method' => $a->payment->method,
+                        'reference' => $a->payment->reference,
+                        'allocated' => (float) $a->amount,
+                    ])->values(),
+            ],
+        ]);
     }
 
     /** Resolve a dispute by posting anyway (after buyer approval). */

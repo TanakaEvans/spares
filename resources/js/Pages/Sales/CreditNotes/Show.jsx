@@ -1,10 +1,17 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import PrintButton from '@/Components/PrintButton';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 export default function CreditNoteShow({ creditNote }) {
+    const trace = [
+        creditNote.against ? { type: 'invoice', id: creditNote.against.id, label: creditNote.against.document_number } : null,
+        { type: 'credit_note', current: true, label: creditNote.document_number },
+    ].filter(Boolean);
+
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -22,11 +29,10 @@ export default function CreditNoteShow({ creditNote }) {
                     <div>
                         <h1 className="text-xl font-bold text-slate-900">{creditNote.document_number}</h1>
                         <p className="mt-1 text-sm text-slate-500">
-                            {creditNote.customer && (
-                                <Link href={route('customers.show', creditNote.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{creditNote.customer.name}</Link>
-                            )}
+                            <EntityLink type="customer" id={creditNote.customer?.id} label={creditNote.customer?.name} className="font-medium" />
                             {' · '}{creditNote.document_date}
-                            {creditNote.against && <> · against <Link href={route('sales.invoices.show', creditNote.against.id)} className="font-mono text-slate-600 hover:text-orange-600">{creditNote.against.document_number}</Link></>}
+                            {creditNote.branch && <> · <EntityLink type="branch" id={creditNote.branch.id} label={creditNote.branch.name} muted /></>}
+                            {creditNote.against && <> · against <EntityLink type="invoice" id={creditNote.against.id} label={creditNote.against.document_number} mono /></>}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
                             {creditNote.credit_mode === 'refund_cash' ? 'Cash refund' : 'Credited to account'} · {creditNote.reason}
@@ -49,7 +55,7 @@ export default function CreditNoteShow({ creditNote }) {
                             {creditNote.lines.map((l, i) => (
                                 <tr key={i}>
                                     <td className="px-4 py-2.5">
-                                        <Link href={route('inventory.parts.show', l.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{l.part_number}</Link>
+                                        <EntityLink type="part" id={l.part_id} label={l.part_number ?? l.description} mono className="font-semibold" />
                                         <span className="block text-xs text-slate-400">{l.description}</span>
                                     </td>
                                     <td className="px-2 py-2.5 text-right tabular-nums">{l.qty}</td>
@@ -68,6 +74,17 @@ export default function CreditNoteShow({ creditNote }) {
                         <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-red-600"><dt>Total credited</dt><dd className="tabular-nums"><MoneyDisplay amount={creditNote.total_incl} /></dd></div>
                     </dl>
                 </div>
+
+                <RelatedLinks
+                    trace={trace}
+                    groups={[
+                        { title: 'Customer', items: creditNote.customer ? [{ type: 'customer', id: creditNote.customer.id, label: creditNote.customer.name }] : [] },
+                        { title: 'Original invoice', items: creditNote.against ? [{ type: 'invoice', id: creditNote.against.id, label: creditNote.against.document_number, mono: true }] : [] },
+                        { title: 'Parts', items: creditNote.lines.filter((l) => l.part_id).map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+                        { title: 'GL journal', items: creditNote.journal ? [{ type: 'journal', id: creditNote.journal.id, label: creditNote.journal.journal_number, mono: true }] : [] },
+                        { title: 'Branch', items: creditNote.branch ? [{ type: 'branch', id: creditNote.branch.id, label: creditNote.branch.name }] : [] },
+                    ]}
+                />
             </div>
         </ModuleLayout>
     );

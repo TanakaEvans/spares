@@ -3,6 +3,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/reports';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import { StatTile, HBarList } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 export default function SalesReport({ summary, byCategory, byCustomer, topParts, branches, filters }) {
     function apply(params) {
@@ -49,18 +50,30 @@ export default function SalesReport({ summary, byCategory, byCustomer, topParts,
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-white p-5">
                         <h2 className="text-sm font-semibold text-slate-700 mb-3">Sales by category</h2>
-                        <HBarList data={byCategory.map((c) => ({ label: c.category, value: c.revenue }))} labelKey="label" valueKey="value" />
+                        <HBarList
+                            data={byCategory.map((c) => ({ id: c.category_id, label: c.category, value: c.revenue }))}
+                            labelKey="label" valueKey="value"
+                            renderLabel={(c) => <EntityLink type="category" id={c.id} label={c.label} />}
+                        />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="rounded-xl border border-slate-100 bg-white p-5">
                         <h2 className="text-sm font-semibold text-slate-700 mb-3">Top parts</h2>
-                        <HBarList data={topParts.map((p) => ({ label: p.part_number, value: p.revenue }))} labelKey="label" valueKey="value" />
+                        <HBarList
+                            data={topParts.map((p) => ({ id: p.part_id, label: p.part_number, description: p.description, value: p.revenue }))}
+                            labelKey="label" valueKey="value"
+                            renderLabel={(p) => <EntityLink type="part" id={p.id} label={p.label} mono title={p.description} />}
+                        />
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-white p-5">
                         <h2 className="text-sm font-semibold text-slate-700 mb-3">Top customers</h2>
-                        <HBarList data={byCustomer.map((c) => ({ label: c.customer, value: c.spend }))} labelKey="label" valueKey="value" />
+                        <HBarList
+                            data={byCustomer.map((c) => ({ id: c.customer_id, label: c.customer, value: c.spend }))}
+                            labelKey="label" valueKey="value"
+                            renderLabel={(c) => <EntityLink type="customer" id={c.id} label={c.label} />}
+                        />
                     </div>
                 </div>
             </div>

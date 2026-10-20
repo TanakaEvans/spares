@@ -36,6 +36,16 @@ class CustomerReceipt extends Model
         return $this->hasMany(ReceiptAllocation::class, 'receipt_id');
     }
 
+    public function receivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'gl_journal_id');
+    }
+
     public function unallocated(): float
     {
         return round((float) $this->amount - (float) $this->allocated, 2);

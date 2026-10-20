@@ -17,7 +17,8 @@ class ImportShipmentController extends Controller
         return Inertia::render('Purchasing/Imports/Index', [
             'shipments' => ImportShipment::with('supplier:id,name')->latest('id')->paginate(20)
                 ->through(fn (ImportShipment $s) => [
-                    'id' => $s->id, 'shipment_ref' => $s->shipment_ref, 'supplier' => $s->supplier?->name,
+                    'id' => $s->id, 'shipment_ref' => $s->shipment_ref,
+                    'supplier_id' => $s->supplier_id, 'supplier' => $s->supplier?->name,
                     'origin_country' => $s->origin_country, 'status' => $s->status, 'eta' => $s->eta?->toDateString(),
                     'goods_value' => (float) $s->goods_value, 'freight' => (float) $s->freight, 'duty' => (float) $s->duty, 'landed' => $s->landedTotal(),
                 ]),
@@ -36,6 +37,29 @@ class ImportShipmentController extends Controller
         ImportShipment::create($data + ['status' => 'ordered']);
 
         return back()->with('success', 'Import shipment created.');
+    }
+
+    public function show(ImportShipment $shipment): Response
+    {
+        $shipment->load('supplier:id,name,country');
+
+        return Inertia::render('Purchasing/Imports/Show', [
+            'shipment' => [
+                'id' => $shipment->id,
+                'shipment_ref' => $shipment->shipment_ref,
+                'status' => $shipment->status,
+                'origin_country' => $shipment->origin_country,
+                'eta' => $shipment->eta?->toDateString(),
+                'goods_value' => (float) $shipment->goods_value,
+                'freight' => (float) $shipment->freight,
+                'duty' => (float) $shipment->duty,
+                'landed' => $shipment->landedTotal(),
+                'notes' => $shipment->notes,
+                'created_at' => $shipment->created_at?->toDateString(),
+                'supplier_id' => $shipment->supplier_id,
+                'supplier' => $shipment->supplier?->name,
+            ],
+        ]);
     }
 
     public function transition(Request $request, ImportShipment $shipment): RedirectResponse

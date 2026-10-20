@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Star, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import DataTable from '@/Components/DataTable';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 function PriceCell({ priceList, item }) {
     const [value, setValue] = useState(item.price);
@@ -44,7 +45,7 @@ function UnpricedRow({ priceList, part }) {
 
     return (
         <tr>
-            <td className="px-4 py-2"><Link href={route('inventory.parts.show', part.id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{part.part_number}</Link><span className="block text-xs text-slate-400">{part.description}</span></td>
+            <td className="px-4 py-2"><EntityLink type="part" id={part.id} label={part.part_number} mono className="font-semibold" /><span className="block text-xs text-slate-400">{part.description}</span></td>
             <td className="px-4 py-2 text-right">
                 <div className="inline-flex items-center gap-2">
                     <input type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)}
@@ -96,7 +97,7 @@ export default function PriceListShow({ priceList, items, filters, unpricedParts
                     </div>
                     <DataTable
                         columns={[
-                            { key: 'part_number', label: 'Part', render: (i) => <Link href={route('inventory.parts.show', i.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{i.part_number}</Link> },
+                            { key: 'part_number', label: 'Part', render: (i) => <EntityLink type="part" id={i.part_id} label={i.part_number} mono className="font-semibold" /> },
                             { key: 'description', label: 'Description', render: (i) => <span className="text-slate-500">{i.description}</span> },
                             { key: 'price', label: 'Price (excl)', align: 'right', render: (i) => <PriceCell priceList={priceList} item={i} /> },
                             { key: 'actions', label: '', align: 'right', render: (i) => (

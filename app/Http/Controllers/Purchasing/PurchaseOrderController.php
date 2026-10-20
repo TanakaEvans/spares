@@ -10,6 +10,7 @@ use App\Models\Supplier;
 use App\Models\SupplierPriceListItem;
 use App\Services\DocumentPdfService;
 use App\Services\NumberSequenceService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,9 @@ class PurchaseOrderController extends Controller
                 ->through(fn (PurchaseOrder $po) => [
                     'id' => $po->id,
                     'po_number' => $po->po_number,
+                    'supplier_id' => $po->supplier_id,
                     'supplier' => $po->supplier?->name,
+                    'branch_id' => $po->branch_id,
                     'branch' => $po->branch?->name,
                     'status' => $po->status,
                     'order_date' => $po->order_date->toDateString(),
@@ -54,7 +57,7 @@ class PurchaseOrderController extends Controller
     }
 
     /** Part search for PO lines — returns supplier price-list cost when available. */
-    public function partLookup(Request $request): \Illuminate\Http\JsonResponse
+    public function partLookup(Request $request): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
         $supplierId = $request->integer('supplier_id') ?: null;
@@ -139,8 +142,16 @@ class PurchaseOrderController extends Controller
     {
         $order->load(['supplier:id,name,email,lead_time_days', 'branch:id,name',
             'buyer:id,name', 'lines.part:id,part_number',
-            'grns' => fn ($q) => $q->latest(),
+            'grns' => fn ($q) => $q->latest()->with([
+                'glJournal:id,journal_number',
+                'invoices' => fn ($i) => $i->latest('id')->with('allocations.payment:id,payment_number,payment_date,amount'),
+            ]),
         ]);
+
+        $invoices = $order->grns->flatMap(fn ($g) => $g->invoices);
+        $payments = $invoices
+            ->flatMap(fn ($inv) => $inv->allocations->map(fn ($a) => $a->payment))
+            ->filter()->unique('id')->values();
 
         return Inertia::render('Purchasing/Orders/Show', [
             'order' => [
@@ -148,7 +159,9 @@ class PurchaseOrderController extends Controller
                 'po_number' => $order->po_number,
                 'status' => $order->status,
                 'supplier' => $order->supplier?->only(['id', 'name', 'email']),
+                'branch_id' => $order->branch_id,
                 'branch' => $order->branch?->name,
+                'buyer_id' => $order->buyer_id,
                 'buyer' => $order->buyer?->name,
                 'order_date' => $order->order_date->toDateString(),
                 'expected_date' => $order->expected_date?->toDateString(),
@@ -172,6 +185,16 @@ class PurchaseOrderController extends Controller
                 'grns' => $order->grns->map(fn ($g) => [
                     'id' => $g->id, 'grn_number' => $g->grn_number,
                     'received_date' => $g->received_date->toDateString(), 'status' => $g->status,
+                    'gl_journal_id' => $g->gl_journal_id, 'journal_number' => $g->glJournal?->journal_number,
+                    'invoiced' => $g->invoices->contains(fn ($inv) => in_array($inv->status, ['matched', 'posted'], true)),
+                ]),
+                'invoices' => $invoices->map(fn ($inv) => [
+                    'id' => $inv->id, 'invoice_number' => $inv->invoice_number, 'supplier_ref' => $inv->supplier_ref,
+                    'status' => $inv->status, 'total' => (float) $inv->total,
+                ])->values(),
+                'payments' => $payments->map(fn ($p) => [
+                    'id' => $p->id, 'payment_number' => $p->payment_number,
+                    'payment_date' => $p->payment_date->toDateString(), 'amount' => (float) $p->amount,
                 ]),
             ],
         ]);

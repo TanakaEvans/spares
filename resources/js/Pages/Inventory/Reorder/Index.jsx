@@ -4,6 +4,7 @@ import { RefreshCw, ShoppingCart } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import EmptyState from '@/Components/EmptyState';
+import EntityLink from '@/Components/EntityLink';
 
 // The buyer's morning screen (Module 1.5): what needs ordering, and
 // one click drafts the POs to each part's preferred supplier.
@@ -115,10 +116,10 @@ export default function ReorderIndex({ rows, branches, suppliers, filters }) {
                                             />
                                         </td>
                                         <td className="px-3 py-2.5">
-                                            <span className="font-mono font-semibold text-slate-800">{r.part_number}</span>
+                                            <EntityLink type="part" id={r.part_id} label={r.part_number} mono className="font-semibold" />
                                             <span className="block text-xs text-slate-400">{r.description}</span>
                                         </td>
-                                        <td className="px-3 py-2.5 text-slate-500">{r.branch}</td>
+                                        <td className="px-3 py-2.5"><EntityLink type="branch" id={r.branch_id} label={r.branch} muted /></td>
                                         <td className="px-3 py-2.5 text-right tabular-nums text-red-600 font-semibold">{r.available}</td>
                                         <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">{r.reorder_point}</td>
                                         <td className="px-3 py-2.5">
@@ -132,7 +133,7 @@ export default function ReorderIndex({ rows, branches, suppliers, filters }) {
                                         </td>
                                         <td className="px-6 py-2.5">
                                             {r.preferred_supplier ? (
-                                                <span className="text-slate-700">{r.preferred_supplier}</span>
+                                                <EntityLink type="supplier" id={r.preferred_supplier_id} label={r.preferred_supplier} />
                                             ) : (
                                                 <select
                                                     aria-label={`Set preferred supplier for ${r.part_number}`}

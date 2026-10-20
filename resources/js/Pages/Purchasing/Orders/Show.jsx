@@ -7,9 +7,31 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import PrintButton from '@/Components/PrintButton';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 export default function OrderShow({ order }) {
     const [confirm, setConfirm] = useState(null); // {action, title, message, destructive}
+
+    const trace = [
+        { type: 'purchase_order', current: true, label: order.po_number },
+        ...(order.grns.length > 0
+            ? order.grns.map((g) => ({ type: 'grn', id: g.id, label: g.grn_number }))
+            : [{ type: 'grn', pending: true, label: 'Goods received' }]),
+        ...(order.invoices.length > 0
+            ? order.invoices.map((i) => ({ type: 'supplier_invoice', id: i.id, label: i.supplier_ref }))
+            : [{ type: 'supplier_invoice', pending: true, label: 'Supplier invoice' }]),
+        ...(order.payments.length > 0
+            ? order.payments.map((p) => ({ type: 'payment', id: p.id, label: p.payment_number }))
+            : [{ type: 'payment', pending: true, label: 'Payment' }]),
+    ];
+    const groups = [
+        { title: 'Supplier', items: [{ type: 'supplier', id: order.supplier?.id, label: order.supplier?.name }] },
+        { title: 'Parts', items: order.lines.map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+        { title: 'GL journals', items: order.grns.filter((g) => g.gl_journal_id).map((g) => ({ type: 'journal', id: g.gl_journal_id, label: g.journal_number ?? `Journal #${g.gl_journal_id}`, mono: true })) },
+        { title: 'Branch', items: [{ type: 'branch', id: order.branch_id, label: order.branch }] },
+        { title: 'Buyer', items: order.buyer ? [{ type: 'user', id: order.buyer_id, label: order.buyer }] : [] },
+    ];
 
     function transition(action) {
         router.post(route('purchasing.orders.transition', order.id), { action }, {
@@ -38,13 +60,18 @@ export default function OrderShow({ order }) {
                                 <h1 className="font-mono text-2xl font-bold text-slate-900">{order.po_number}</h1>
                                 <StatusBadge status={order.status} />
                             </div>
-                            <p className="text-sm text-slate-500 mt-1">
-                                <Link href={route('suppliers.show', order.supplier.id)} className="text-orange-700 hover:underline font-medium">
-                                    {order.supplier.name}
-                                </Link>
-                                {' '}· deliver to {order.branch} · ordered {order.order_date}
-                                {order.expected_date ? ` · expected ${order.expected_date}` : ''}
-                                {order.buyer ? ` · buyer ${order.buyer}` : ''}
+                            <p className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-x-1.5">
+                                <EntityLink type="supplier" id={order.supplier?.id} label={order.supplier?.name} className="font-medium" />
+                                <span>· deliver to</span>
+                                <EntityLink type="branch" id={order.branch_id} label={order.branch} />
+                                <span>· ordered {order.order_date}</span>
+                                {order.expected_date && <span>· expected {order.expected_date}</span>}
+                                {order.buyer && (
+                                    <>
+                                        <span>· buyer</span>
+                                        <EntityLink type="user" id={order.buyer_id} label={order.buyer} />
+                                    </>
+                                )}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -105,9 +132,7 @@ export default function OrderShow({ order }) {
                             {order.lines.map((l) => (
                                 <tr key={l.id}>
                                     <td className="px-6 py-2.5">
-                                        <Link href={route('inventory.parts.show', l.part_id)} className="font-mono font-semibold text-orange-700 hover:underline">
-                                            {l.part_number}
-                                        </Link>
+                                        <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold" />
                                     </td>
                                     <td className="px-3 py-2.5 text-slate-600">{l.description}</td>
                                     <td className="px-3 py-2.5 text-right tabular-nums">{l.qty_ordered}</td>
@@ -133,20 +158,41 @@ export default function OrderShow({ order }) {
                         <ul className="divide-y divide-slate-50 text-sm">
                             {order.grns.map((g) => (
                                 <li key={g.id} className="py-2 flex items-center gap-3">
-                                    <span className="font-mono font-semibold text-slate-700">{g.grn_number}</span>
+                                    <EntityLink type="grn" id={g.id} label={g.grn_number} mono className="font-semibold" />
                                     <span className="text-slate-400">{g.received_date}</span>
                                     <StatusBadge status={g.status} />
-                                    <Link
-                                        href={route('purchasing.invoices.create', g.id)}
-                                        className="ml-auto text-xs font-semibold text-orange-700 hover:underline"
-                                    >
-                                        Capture supplier invoice →
-                                    </Link>
+                                    {g.gl_journal_id && <EntityLink type="journal" id={g.gl_journal_id} label={g.journal_number ?? `Journal #${g.gl_journal_id}`} mono muted className="text-xs" />}
+                                    {g.status === 'posted' && !g.invoiced && (
+                                        <Link
+                                            href={route('purchasing.invoices.create', g.id)}
+                                            className="ml-auto text-xs font-semibold text-orange-700 hover:underline"
+                                        >
+                                            Capture supplier invoice →
+                                        </Link>
+                                    )}
                                 </li>
                             ))}
                         </ul>
                     </div>
                 )}
+
+                {order.invoices.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
+                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">Supplier Invoices</h2>
+                        <ul className="divide-y divide-slate-50 text-sm">
+                            {order.invoices.map((i) => (
+                                <li key={i.id} className="py-2 flex items-center gap-3">
+                                    <EntityLink type="supplier_invoice" id={i.id} label={i.supplier_ref} mono className="font-semibold" />
+                                    <span className="font-mono text-xs text-slate-400">{i.invoice_number}</span>
+                                    <StatusBadge status={i.status} />
+                                    <span className="ml-auto tabular-nums"><MoneyDisplay amount={i.total} /></span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                <RelatedLinks trace={trace} groups={groups} />
             </div>
 
             <ConfirmDialog

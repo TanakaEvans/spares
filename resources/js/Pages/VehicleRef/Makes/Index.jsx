@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
@@ -41,7 +42,7 @@ export default function MakesIndex({ makes, filters }) {
                     />
                     <DataTable
                         columns={[
-                            { key: 'name', label: 'Make', render: (m) => <span className="font-medium text-slate-800">{m.name}</span> },
+                            { key: 'name', label: 'Make', render: (m) => <EntityLink type="make" id={m.id} label={m.name} params={{ make_id: m.id }} className="font-medium" title="Models of this make" /> },
                             { key: 'code', label: 'Code', render: (m) => <span className="font-mono text-slate-500">{m.code}</span> },
                             { key: 'country_of_origin', label: 'Origin' },
                             { key: 'models_count', label: 'Models', align: 'right' },

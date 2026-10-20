@@ -2,8 +2,11 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowRight } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { MODULES } from '@/modules';
+import { useCan } from '@/lib/can';
 
 export default function Dashboard({ auth }) {
+    const { canModule } = useCan();
+    const visible = MODULES.filter((m) => canModule(m.key));
     const currentDate = new Date().toLocaleDateString('en-GB', {
         weekday: 'long',
         year: 'numeric',
@@ -35,7 +38,7 @@ export default function Dashboard({ auth }) {
 
                 {/* Module cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {MODULES.map((module) => {
+                    {visible.map((module) => {
                         const Icon = module.icon;
                         return (
                             <Link
@@ -69,6 +72,11 @@ export default function Dashboard({ auth }) {
                         );
                     })}
                 </div>
+                {visible.length === 0 && (
+                    <div className="bg-white rounded-xl shadow-sm p-8 text-center text-slate-500 border border-slate-100">
+                        Your role has no screens assigned yet — ask an administrator to grant permissions under Roles.
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

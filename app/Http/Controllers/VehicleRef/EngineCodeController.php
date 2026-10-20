@@ -4,7 +4,9 @@ namespace App\Http\Controllers\VehicleRef;
 
 use App\Http\Controllers\Controller;
 use App\Models\EngineCode;
+use App\Models\PartFitment;
 use App\Models\VehicleMake;
+use App\Models\VehicleVariant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -21,7 +23,21 @@ class EngineCodeController extends Controller
                 ))
                 ->orderBy('code')
                 ->paginate(25)
-                ->withQueryString(),
+                ->withQueryString()
+                ->through(fn (EngineCode $e) => [
+                    'id' => $e->id,
+                    'code' => $e->code,
+                    'make_id' => $e->make_id,
+                    'make' => $e->make ? ['id' => $e->make->id, 'name' => $e->make->name] : null,
+                    'description' => $e->description,
+                    'capacity_cc' => $e->capacity_cc,
+                    'fuel_type' => $e->fuel_type,
+                    'aspiration' => $e->aspiration,
+                    'cylinders' => $e->cylinders,
+                    // Where this engine is used — variants carrying the code, and parts fitted to it.
+                    'models_count' => VehicleVariant::where('engine_code', $e->code)->distinct('model_id')->count('model_id'),
+                    'parts_count' => PartFitment::where('engine_code', $e->code)->distinct('part_id')->count('part_id'),
+                ]),
             'makes' => VehicleMake::active()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only('search'),
         ]);

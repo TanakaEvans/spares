@@ -20,6 +20,7 @@ class CustomerGroupController extends Controller
                     'id' => $g->id,
                     'name' => $g->name,
                     'price_list' => $g->priceList?->name,
+                    'price_list_id' => $g->price_list_id,
                     'customers_count' => $g->customers_count,
                 ]),
             'priceLists' => PriceList::where('is_active', true)->orderBy('name')->get(['id', 'name']),

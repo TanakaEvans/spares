@@ -1,8 +1,9 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { TrendingUp } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/suppliers';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 export default function PerformanceIndex({ rows }) {
     return (
@@ -28,7 +29,7 @@ export default function PerformanceIndex({ rows }) {
                         <tbody className="divide-y divide-slate-50">
                             {rows.map((r) => (
                                 <tr key={r.supplier_id} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2"><Link href={route('suppliers.show', r.supplier_id)} className="font-medium text-slate-700 hover:text-orange-600">{r.supplier}</Link></td>
+                                    <td className="px-4 py-2"><EntityLink type="supplier" id={r.supplier_id} label={r.supplier} className="font-medium" /></td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-500">{r.po_count}</td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-500">{r.grn_count}</td>
                                     <td className={`px-2 py-2 text-right tabular-nums font-medium ${r.on_time_pct === null ? 'text-slate-400' : r.on_time_pct >= 90 ? 'text-emerald-600' : r.on_time_pct >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{r.on_time_pct === null ? '—' : `${r.on_time_pct}%`}</td>

@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import StatusBadge from '@/Components/StatusBadge';
 
@@ -41,13 +42,14 @@ export default function BinsIndex({ bins, branches, filters }) {
                     </select>
                     <DataTable
                         columns={[
-                            { key: 'code', label: 'Bin Code', render: (b) => <span className="font-mono font-semibold text-slate-800">{b.code}</span> },
-                            { key: 'branch', label: 'Branch', render: (b) => <span className="text-slate-500">{b.branch?.name}</span> },
+                            { key: 'code', label: 'Bin Code', render: (b) => <EntityLink type="bin" id={b.id} label={b.code} mono className="font-semibold" /> },
+                            { key: 'branch', label: 'Branch', render: (b) => <EntityLink type="branch" id={b.branch_id} label={b.branch?.name} muted /> },
                             { key: 'notes', label: 'Notes', render: (b) => <span className="text-slate-400">{b.notes}</span> },
                             { key: 'is_active', label: 'Status', render: (b) => <StatusBadge status={b.is_active ? 'active' : 'inactive'} /> },
                         ]}
                         rows={bins.data}
                         pagination={bins}
+                        rowHref={(b) => route('inventory.bins.show', b.id)}
                         emptyTitle="No bins yet"
                         emptyMessage="Map your warehouse: aisle-shelf-bin codes like A-01-01."
                     />

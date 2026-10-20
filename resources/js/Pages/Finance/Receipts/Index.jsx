@@ -3,8 +3,9 @@ import { Plus, HandCoins } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
-function AgeingTable({ ageing, linkFor, label }) {
+function AgeingTable({ ageing, label }) {
     const { rows, totals } = ageing;
     return (
         <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
@@ -28,8 +29,9 @@ function AgeingTable({ ageing, linkFor, label }) {
                     ) : rows.map((r) => (
                         <tr key={r.customer_id ?? r.supplier_id} className="hover:bg-slate-50">
                             <td className="px-4 py-2">
-                                {linkFor ? <Link href={linkFor(r)} className="font-medium text-slate-700 hover:text-orange-600">{r.customer ?? r.supplier}</Link>
-                                    : <span className="font-medium text-slate-700">{r.customer ?? r.supplier}</span>}
+                                {r.customer_id
+                                    ? <EntityLink type="customer" id={r.customer_id} label={r.customer} className="font-medium" />
+                                    : <EntityLink type="supplier" id={r.supplier_id} label={r.supplier} className="font-medium" />}
                             </td>
                             <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.current.toFixed(2)}</td>
                             <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.b30.toFixed(2)}</td>
@@ -77,7 +79,7 @@ export default function ReceiptsIndex({ receipts, ageing, filters }) {
                     </Link>
                 </div>
 
-                <AgeingTable ageing={ageing} label="Debtors" linkFor={(r) => route('customers.show', r.customer_id)} />
+                <AgeingTable ageing={ageing} label="Debtors" />
 
                 <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-slate-100"><h2 className="text-sm font-semibold text-slate-700">Recent receipts</h2></div>
@@ -97,9 +99,9 @@ export default function ReceiptsIndex({ receipts, ageing, filters }) {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {receipts.data.map((r) => (
-                                    <tr key={r.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{r.receipt_number}</td>
-                                        <td className="px-2 py-2"><Link href={route('customers.show', r.customer_id)} className="text-slate-700 hover:text-orange-600">{r.customer}</Link></td>
+                                    <tr key={r.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => router.visit(route('finance.receipts.show', r.id))}>
+                                        <td className="px-4 py-2"><EntityLink type="receipt" id={r.id} label={r.receipt_number} mono className="font-semibold" /></td>
+                                        <td className="px-2 py-2"><EntityLink type="customer" id={r.customer_id} label={r.customer} /></td>
                                         <td className="px-2 py-2 tabular-nums text-slate-500">{r.receipt_date}</td>
                                         <td className="px-2 py-2 capitalize text-slate-500">{r.method}</td>
                                         <td className="px-2 py-2 text-right tabular-nums"><MoneyDisplay amount={r.amount} /></td>

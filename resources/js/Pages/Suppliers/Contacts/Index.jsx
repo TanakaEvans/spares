@@ -1,9 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { UsersRound, Star } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/suppliers';
 import DataTable from '@/Components/DataTable';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 export default function ContactsIndex({ contacts, filters }) {
     return (
@@ -16,7 +17,7 @@ export default function ContactsIndex({ contacts, filters }) {
                     columns={[
                         { key: 'name', label: 'Contact', render: (c) => <span className="font-semibold text-slate-800">{c.name}{c.is_primary && <Star className="inline w-3.5 h-3.5 ml-1.5 fill-amber-400 text-amber-400" />}</span> },
                         { key: 'position', label: 'Position', render: (c) => <span className="text-slate-500">{c.position ?? '—'}</span> },
-                        { key: 'supplier', label: 'Supplier', render: (c) => <Link href={route('suppliers.show', c.supplier_id)} onClick={(e) => e.stopPropagation()} className="text-slate-700 hover:text-orange-600">{c.supplier}</Link> },
+                        { key: 'supplier', label: 'Supplier', render: (c) => <EntityLink type="supplier" id={c.supplier_id} label={c.supplier} /> },
                         { key: 'phone', label: 'Phone', render: (c) => <span className="text-slate-500">{c.phone ?? '—'}</span> },
                         { key: 'email', label: 'Email', render: (c) => (c.email ? <a href={`mailto:${c.email}`} onClick={(e) => e.stopPropagation()} className="text-slate-600 hover:text-orange-600">{c.email}</a> : '—') },
                     ]}

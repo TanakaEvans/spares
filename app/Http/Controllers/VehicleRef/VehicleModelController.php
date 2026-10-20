@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\VehicleRef;
 
 use App\Http\Controllers\Controller;
+use App\Models\Part;
+use App\Models\PartFitment;
 use App\Models\VehicleMake;
 use App\Models\VehicleModel;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +19,12 @@ class VehicleModelController extends Controller
         return Inertia::render('VehicleRef/Models/Index', [
             'models' => VehicleModel::with('make:id,name')->withCount('variants')
                 ->when($request->integer('make_id'), fn ($q, $id) => $q->where('make_id', $id))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+                // Search matches the model, its make, or a variant's engine code — so
+                // make/engine EntityLinks land on the right list.
+                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(fn ($x) => $x
+                    ->where('name', 'like', "%{$s}%")
+                    ->orWhereHas('make', fn ($m) => $m->where('name', 'like', "%{$s}%"))
+                    ->orWhereHas('variants', fn ($v) => $v->where('engine_code', 'like', "%{$s}%"))))
                 ->orderBy('name')
                 ->paginate(25)
                 ->withQueryString(),
@@ -28,8 +35,33 @@ class VehicleModelController extends Controller
 
     public function show(VehicleModel $model): Response
     {
+        $model->load('make:id,name', 'variants');
+
+        // Parts recorded as fitting this model (model-level or make-wide fitments).
+        $partIds = PartFitment::forVehicle($model->make_id, $model->id)->pluck('part_id')->unique();
+        $fittingParts = Part::with(['category:id,name', 'brand:id,name', 'stockLevels'])
+            ->whereIn('id', $partIds)
+            ->orderBy('description')
+            ->limit(200)
+            ->get()
+            ->map(fn (Part $p) => [
+                'id' => $p->id,
+                'part_number' => $p->part_number,
+                'description' => $p->description,
+                'category_id' => $p->category_id,
+                'category' => $p->category?->name,
+                'brand_id' => $p->brand_id,
+                'brand' => $p->brand?->name,
+                'is_active' => $p->is_active,
+                'qty_available' => (float) $p->stockLevels->sum(
+                    fn ($l) => (float) $l->qty_on_hand - (float) $l->qty_reserved
+                ),
+            ])->values();
+
         return Inertia::render('VehicleRef/Models/Show', [
-            'model' => $model->load('make:id,name', 'variants'),
+            'model' => $model,
+            'fittingParts' => $fittingParts,
+            'fittingPartsTotal' => $partIds->count(),
         ]);
     }
 

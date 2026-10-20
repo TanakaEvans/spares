@@ -5,6 +5,7 @@ import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function GrnsIndex({ grns, awaiting }) {
     return (
@@ -43,23 +44,17 @@ export default function GrnsIndex({ grns, awaiting }) {
 
                 <DataTable
                     columns={[
-                        { key: 'grn_number', label: 'GRN No', render: (g) => <span className="font-mono font-semibold text-slate-800">{g.grn_number}</span> },
-                        {
-                            key: 'po_number', label: 'PO',
-                            render: (g) => (
-                                <Link href={route('purchasing.orders.show', g.po_id)} onClick={(e) => e.stopPropagation()} className="font-mono text-orange-700 hover:underline">
-                                    {g.po_number}
-                                </Link>
-                            ),
-                        },
-                        { key: 'supplier', label: 'Supplier', render: (g) => <span className="text-slate-700">{g.supplier}</span> },
-                        { key: 'branch', label: 'Branch', render: (g) => <span className="text-slate-500">{g.branch}</span> },
+                        { key: 'grn_number', label: 'GRN No', render: (g) => <EntityLink type="grn" id={g.id} label={g.grn_number} mono className="font-semibold" /> },
+                        { key: 'po_number', label: 'PO', render: (g) => <EntityLink type="purchase_order" id={g.po_id} label={g.po_number} mono /> },
+                        { key: 'supplier', label: 'Supplier', render: (g) => <EntityLink type="supplier" id={g.supplier_id} label={g.supplier} /> },
+                        { key: 'branch', label: 'Branch', render: (g) => <EntityLink type="branch" id={g.branch_id} label={g.branch} muted /> },
                         { key: 'received_date', label: 'Received', render: (g) => <span className="tabular-nums text-slate-500">{g.received_date}</span> },
                         { key: 'value', label: 'Value', align: 'right', render: (g) => <MoneyDisplay amount={g.value} /> },
                         { key: 'status', label: 'Status', render: (g) => <StatusBadge status={g.status} /> },
                     ]}
                     rows={grns.data}
                     pagination={grns}
+                    rowHref={(g) => route('purchasing.grns.show', g.id)}
                     emptyTitle="Nothing received yet"
                     emptyMessage="Receive goods against a submitted or confirmed purchase order."
                 />

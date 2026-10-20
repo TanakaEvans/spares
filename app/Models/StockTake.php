@@ -25,6 +25,11 @@ class StockTake extends Model
         return $this->belongsTo(User::class, 'started_by');
     }
 
+    public function adjustment(): BelongsTo
+    {
+        return $this->belongsTo(StockAdjustment::class, 'adjustment_id');
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(StockTakeLine::class, 'take_id');

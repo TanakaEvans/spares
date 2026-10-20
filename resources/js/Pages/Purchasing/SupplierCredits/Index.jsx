@@ -1,10 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { FileMinus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 export default function SupplierCreditsIndex({ credits, filters }) {
     return (
@@ -16,15 +17,15 @@ export default function SupplierCreditsIndex({ credits, filters }) {
                 <SearchInput id="scr-search" value={filters.search ?? ''} onSearch={(s) => router.get(route('purchasing.supplier-credits.index'), s ? { search: s } : {}, { preserveState: true, replace: true })} placeholder="Return, credit ref or supplier…" className="w-72" />
                 <DataTable
                     columns={[
-                        { key: 'return_number', label: 'Return', render: (c) => <span className="font-mono font-semibold text-slate-800">{c.return_number}</span> },
+                        { key: 'return_number', label: 'Return', render: (c) => <EntityLink type="supplier_return" id={c.id} label={c.return_number} mono className="font-semibold" /> },
                         { key: 'credit_note_ref', label: 'Supplier credit ref', render: (c) => <span className="font-mono text-slate-600">{c.credit_note_ref ?? '—'}</span> },
-                        { key: 'supplier', label: 'Supplier', render: (c) => <Link href={route('suppliers.show', c.supplier_id)} onClick={(e) => e.stopPropagation()} className="text-slate-700 hover:text-orange-600">{c.supplier}</Link> },
+                        { key: 'supplier', label: 'Supplier', render: (c) => <EntityLink type="supplier" id={c.supplier_id} label={c.supplier} /> },
                         { key: 'reason', label: 'Reason', render: (c) => <span className="text-slate-500">{c.reason}</span> },
                         { key: 'credit_total', label: 'Credit', align: 'right', render: (c) => <span className="text-red-600"><MoneyDisplay amount={c.credit_total} /></span> },
                     ]}
                     rows={credits.data}
                     pagination={credits}
-                    rowHref={(c) => route('purchasing.returns.index')}
+                    rowHref={(c) => route('purchasing.returns.show', c.id)}
                     emptyTitle="No supplier credit notes"
                     emptyMessage="Credits appear here once a return to supplier is credited."
                     emptyIcon={FileMinus}

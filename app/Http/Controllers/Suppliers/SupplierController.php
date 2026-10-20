@@ -82,9 +82,14 @@ class SupplierController extends Controller
     {
         $supplier->load(['contacts', 'currency:id,code',
             'priceLists' => fn ($q) => $q->latest()->withCount('items'),
-            'invoices' => fn ($q) => $q->latest()->limit(15),
+            'invoices' => fn ($q) => $q->latest()->limit(15)->with('grn:id,grn_number'),
             'purchaseOrders' => fn ($q) => $q->latest()->limit(15),
+            'grns' => fn ($q) => $q->latest('received_date')->latest('id')->limit(15)->with('purchaseOrder:id,po_number'),
+            'returns' => fn ($q) => $q->latest('id')->limit(15),
+            'payments' => fn ($q) => $q->latest('payment_date')->latest('id')->limit(15),
+            'approvedParts' => fn ($q) => $q->orderByDesc('is_preferred')->with('part:id,part_number')->limit(50),
         ]);
+        $activePriceList = $supplier->priceLists->firstWhere('status', 'active');
 
         return Inertia::render('Suppliers/Show', [
             'supplier' => [
@@ -119,6 +124,27 @@ class SupplierController extends Controller
                     'id' => $inv->id, 'supplier_ref' => $inv->supplier_ref, 'status' => $inv->status,
                     'invoice_date' => $inv->invoice_date->toDateString(),
                     'due_date' => $inv->due_date?->toDateString(), 'total' => (float) $inv->total,
+                    'grn_id' => $inv->grn_id, 'grn_number' => $inv->grn?->grn_number,
+                ]),
+                'grns' => $supplier->grns->map(fn ($g) => [
+                    'id' => $g->id, 'grn_number' => $g->grn_number, 'status' => $g->status,
+                    'received_date' => $g->received_date->toDateString(),
+                    'po_id' => $g->po_id, 'po_number' => $g->purchaseOrder?->po_number,
+                ]),
+                'returns' => $supplier->returns->map(fn ($r) => [
+                    'id' => $r->id, 'return_number' => $r->return_number, 'status' => $r->status,
+                    'credit_total' => $r->credit_total !== null ? (float) $r->credit_total : null,
+                ]),
+                'payments' => $supplier->payments->map(fn ($p) => [
+                    'id' => $p->id, 'payment_number' => $p->payment_number,
+                    'payment_date' => $p->payment_date->toDateString(), 'amount' => (float) $p->amount,
+                ]),
+                'active_price_list' => $activePriceList ? [
+                    'id' => $activePriceList->id, 'name' => $activePriceList->name,
+                ] : null,
+                'approved_parts' => $supplier->approvedParts->map(fn ($a) => [
+                    'id' => $a->id, 'part_id' => $a->part_id, 'part_number' => $a->part?->part_number,
+                    'is_preferred' => $a->is_preferred,
                 ]),
             ],
         ]);

@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import PartLinePicker from '@/Components/PartLinePicker';
 import StatusBadge from '@/Components/StatusBadge';
@@ -35,14 +36,27 @@ export default function AdjustmentsIndex({ adjustments, branches }) {
                 <div className="xl:col-span-2">
                     <DataTable
                         columns={[
-                            { key: 'adjustment_number', label: 'Number', render: (a) => <span className="font-mono font-semibold text-slate-800">{a.adjustment_number}</span> },
-                            { key: 'branch', label: 'Branch', render: (a) => <span className="text-slate-500">{a.branch}</span> },
+                            { key: 'adjustment_number', label: 'Number', render: (a) => <EntityLink type="adjustment" id={a.id} label={a.adjustment_number} mono className="font-semibold" /> },
+                            { key: 'branch', label: 'Branch', render: (a) => <EntityLink type="branch" id={a.branch_id} label={a.branch} muted /> },
                             { key: 'reason_code', label: 'Reason', render: (a) => <span className="capitalize text-slate-500">{a.reason_code.replace('_', ' ')}</span> },
-                            { key: 'lines', label: 'Lines', render: (a) => <span className="text-xs text-slate-400">{a.lines}</span> },
+                            {
+                                key: 'lines', label: 'Lines',
+                                render: (a) => (
+                                    <span className="text-xs text-slate-400">
+                                        {a.lines.map((l, i) => (
+                                            <span key={l.part_id ?? i}>
+                                                {i > 0 && ', '}
+                                                <EntityLink type="part" id={l.part_id} label={l.part_number} mono muted /> {l.direction} {l.qty}
+                                            </span>
+                                        ))}
+                                    </span>
+                                ),
+                            },
                             { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
                         ]}
                         rows={adjustments.data}
                         pagination={adjustments}
+                        rowHref={(a) => route('inventory.adjustments.show', a.id)}
                         emptyTitle="No adjustments yet"
                         emptyMessage="Post write-offs, corrections and found stock — each one hits the ledger and GL."
                     />

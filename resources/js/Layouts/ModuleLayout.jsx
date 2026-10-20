@@ -5,6 +5,7 @@ import FlashToasts from '@/Components/FlashToasts';
 import { PageGuidePanel, PageGuideTrigger, usePageGuide } from '@/Components/PageGuide';
 import CommandPalette from '@/Components/CommandPalette';
 import NotificationBell from '@/Components/NotificationBell';
+import { useCan } from '@/lib/can';
 
 /**
  * The ONE module shell (component-standards §1a): dark slate-900 sidebar,
@@ -55,8 +56,12 @@ function SectionLabel({ children }) {
 }
 
 export default function ModuleLayout({ navConfig, title, breadcrumbs = [], children }) {
-    const { auth } = usePage().props;
+    const { auth, company } = usePage().props;
+    const { can } = useCan();
+    const brand = company?.trading_name || company?.name || 'SparesPro';
     const currentRoute = route().current() ?? '';
+    // Sidebars show only what this user may open (the server enforces the same matrix).
+    const allowed = (items) => (items ?? []).filter((item) => can(item.route));
     const [mobileOpen, setMobileOpen] = useState(false);
     const guide = usePageGuide();
 
@@ -79,7 +84,7 @@ export default function ModuleLayout({ navConfig, title, breadcrumbs = [], child
                     <Wrench className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
                 </Link>
                 <div className="min-w-0">
-                    <div className="text-sm font-bold text-white truncate">SparesPro</div>
+                    <div className="text-sm font-bold text-white truncate">{brand}</div>
                     <div className="text-[11px] text-slate-400 truncate">{navConfig.moduleLabel}</div>
                 </div>
             </div>
@@ -104,41 +109,41 @@ export default function ModuleLayout({ navConfig, title, breadcrumbs = [], child
                             </span>
                         </div>
 
-                        {activeSub.work?.length > 0 && (
+                        {allowed(activeSub.work).length > 0 && (
                             <>
                                 <SectionLabel>Work</SectionLabel>
-                                {activeSub.work.map((item) => (
+                                {allowed(activeSub.work).map((item) => (
                                     <NavItem key={item.route} item={item} active={route().current(item.route)} />
                                 ))}
                             </>
                         )}
-                        {activeSub.insights?.length > 0 && (
+                        {allowed(activeSub.insights).length > 0 && (
                             <>
                                 <SectionLabel>Insights</SectionLabel>
-                                {activeSub.insights.map((item) => (
+                                {allowed(activeSub.insights).map((item) => (
                                     <NavItem key={item.route} item={item} active={route().current(item.route)} />
                                 ))}
                             </>
                         )}
-                        {activeSub.setup?.length > 0 && (
+                        {allowed(activeSub.setup).length > 0 && (
                             <>
                                 <SectionLabel>Setup</SectionLabel>
-                                {activeSub.setup.map((item) => (
+                                {allowed(activeSub.setup).map((item) => (
                                     <NavItem key={item.route} item={item} active={route().current(item.route)} />
                                 ))}
                             </>
                         )}
-                        {activeSub.quickLinks?.length > 0 && (
+                        {allowed(activeSub.quickLinks).length > 0 && (
                             <>
                                 <SectionLabel>Quick Links ⇄</SectionLabel>
-                                {activeSub.quickLinks.map((item) => (
+                                {allowed(activeSub.quickLinks).map((item) => (
                                     <NavItem key={item.route} item={item} active={false} muted />
                                 ))}
                             </>
                         )}
                     </>
                 ) : (
-                    (navConfig.module ?? []).map(({ section, items }) => (
+                    (navConfig.module ?? []).map(({ section, items }) => ({ section, items: allowed(items) })).filter(({ items }) => items.length > 0).map(({ section, items }) => (
                         <div key={section}>
                             <SectionLabel>{section}</SectionLabel>
                             {items.map((item) => (

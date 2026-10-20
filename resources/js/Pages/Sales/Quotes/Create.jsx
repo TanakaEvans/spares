@@ -4,6 +4,7 @@ import { Search, Trash2, UserRound, X } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 const money = (n) => Number(n || 0).toFixed(2);
 
@@ -124,7 +125,7 @@ export default function QuoteCreate({ walkIn }) {
                                     {lines.map((l, i) => (
                                         <tr key={l.part_id}>
                                             <td className="px-3 py-2">
-                                                <span className="font-mono font-semibold text-slate-800">{l.part_number}</span>
+                                                <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold" />
                                                 <span className="block text-xs text-slate-400 truncate max-w-[16rem]">{l.description}</span>
                                             </td>
                                             <td className="px-2 py-2"><input type="number" min="0.01" step="0.01" value={l.qty} aria-label="Qty" onChange={(e) => setLine(i, 'qty', Number(e.target.value) || 0)} className={cell} /></td>
@@ -150,7 +151,7 @@ export default function QuoteCreate({ walkIn }) {
                             <div className="flex items-center gap-2 min-w-0">
                                 <UserRound className="w-4 h-4 text-slate-400" />
                                 <div className="min-w-0">
-                                    <div className="text-sm font-semibold text-slate-800 truncate">{customer.name}</div>
+                                    <div className="text-sm font-semibold text-slate-800 truncate"><EntityLink type="customer" id={customer.id} label={customer.name} /></div>
                                     <div className="text-xs text-slate-400">{customer.customer_number}</div>
                                 </div>
                             </div>

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { ScanBarcode, Search, X } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
+import EntityLink from '@/Components/EntityLink';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
 
@@ -40,8 +41,8 @@ export default function SerialsIndex({ serials, branches, filters }) {
                                         <tr key={n.id}>
                                             <td className="px-4 py-2 font-mono font-semibold text-slate-800">{n.serial}</td>
                                             <td className="px-2 py-2 text-slate-500">{n.batch ?? '—'}</td>
-                                            <td className="px-2 py-2"><Link href={route('inventory.parts.show', n.part_id)} className="font-mono text-slate-600 hover:text-orange-600">{n.part_number}</Link></td>
-                                            <td className="px-2 py-2 text-slate-500">{n.branch ?? '—'}</td>
+                                            <td className="px-2 py-2"><EntityLink type="part" id={n.part_id} label={n.part_number} mono /></td>
+                                            <td className="px-2 py-2"><EntityLink type="branch" id={n.branch_id} label={n.branch ?? '—'} muted /></td>
                                             <td className="px-4 py-2"><StatusBadge status={n.status === 'in_stock' ? 'active' : n.status === 'sold' ? 'complete' : 'inactive'} label={n.status.replace('_', ' ')} /></td>
                                         </tr>
                                     ))}

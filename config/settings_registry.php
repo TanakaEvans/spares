@@ -175,7 +175,7 @@ return [
         'help'       => 'Returns after this need manager approval.',
     ],
     'sales.loyalty_earn_rate' => [
-        'label'      => 'Loyalty points per $1 spent',
+        'label'      => 'Loyalty points per 1 unit of base currency spent',
         'group'      => 'Sales',
         'type'       => 'decimal',
         'default'    => 1,
@@ -355,5 +355,10 @@ return [
     'comms.sms_sender_id' => ['label' => 'SMS sender ID', 'group' => 'Communications', 'type' => 'string', 'default' => 'SPARES', 'rules' => ['string', 'max:11'], 'per_branch' => true],
 
     // ── Loyalty ─────────────────────────────────────────────────────────
+    // ── Operations (backups, scheduler, disk) — read by BackupService / OperationsChecks ──
+    'backup.retention_days' => ['label' => 'Keep backups for (days)', 'group' => 'Operations', 'type' => 'int', 'default' => 30, 'rules' => ['integer', 'min:1', 'max:3650'], 'per_branch' => false, 'help' => 'Older dump files in storage/app/backups are deleted after each run.'],
+    'backup.max_age_hours' => ['label' => 'Backup considered stale after (hours)', 'group' => 'Operations', 'type' => 'int', 'default' => 26, 'rules' => ['integer', 'min:1', 'max:720'], 'per_branch' => false, 'help' => 'System Health warns when the newest backup is older than this.'],
+    'ops.scheduler_stale_minutes' => ['label' => 'Scheduler heartbeat stale after (minutes)', 'group' => 'Operations', 'type' => 'int', 'default' => 10, 'rules' => ['integer', 'min:2', 'max:1440'], 'per_branch' => false],
+    'ops.disk_warn_free_pct' => ['label' => 'Warn when free disk below (%)', 'group' => 'Operations', 'type' => 'int', 'default' => 15, 'rules' => ['integer', 'min:1', 'max:90'], 'per_branch' => false],
     'loyalty.enabled' => ['label' => 'Loyalty programme enabled', 'group' => 'Sales', 'type' => 'bool', 'default' => true, 'rules' => ['boolean'], 'per_branch' => false],
 ];

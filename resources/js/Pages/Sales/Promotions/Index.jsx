@@ -3,6 +3,7 @@ import { Percent } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function PromotionsIndex({ promotions, categories }) {
     const { data, setData, post, processing, reset } = useForm({ name: '', type: 'percent', value: '', applies_to: 'all', category_id: '', starts_at: '', ends_at: '' });
@@ -22,7 +23,7 @@ export default function PromotionsIndex({ promotions, categories }) {
                                     <tr key={p.id}>
                                         <td className="px-4 py-2 font-medium text-slate-800">{p.name} {p.is_active ? <StatusBadge status="active" /> : <StatusBadge status="inactive" />}</td>
                                         <td className="px-2 py-2 text-slate-600">{p.type === 'percent' ? `${p.value}%` : `$${p.value.toFixed(2)}`}</td>
-                                        <td className="px-2 py-2 text-slate-500">{p.applies_to === 'all' ? 'All parts' : (p.category ?? 'Category')}</td>
+                                        <td className="px-2 py-2 text-slate-500">{p.applies_to === 'all' ? 'All parts' : <EntityLink type="category" id={p.category_id} label={p.category ?? 'Category'} muted />}</td>
                                         <td className="px-2 py-2 tabular-nums text-slate-400">{p.starts_at ?? '—'} → {p.ends_at ?? '—'}</td>
                                         <td className="px-4 py-2 text-right"><button onClick={() => router.post(route('sales.promotions.toggle', p.id), {}, { preserveScroll: true })} className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">{p.is_active ? 'Disable' : 'Enable'}</button></td>
                                     </tr>

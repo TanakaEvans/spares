@@ -88,14 +88,18 @@ export function LineChart({ data, series, height = 200 }) {
     );
 }
 
-/** Horizontal ranking bars (top parts, top customers). */
-export function HBarList({ data, labelKey, valueKey, isMoney = true }) {
+/**
+ * Horizontal ranking bars (top parts, top customers).
+ * `renderLabel(row)` lets callers render the label as an entity link (UI-13)
+ * instead of plain text; omitted, the label renders as before.
+ */
+export function HBarList({ data, labelKey, valueKey, isMoney = true, renderLabel }) {
     const max = Math.max(1, ...data.map((d) => Math.abs(d[valueKey])));
     return (
         <div className="space-y-1.5">
             {data.map((d, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                    <span className="w-40 truncate text-slate-600">{d[labelKey]}</span>
+                    <span className="w-40 truncate text-slate-600">{renderLabel ? renderLabel(d) : d[labelKey]}</span>
                     <div className="flex-1 bg-slate-100 rounded h-3 overflow-hidden">
                         <div className="h-full bg-orange-500/80 rounded" style={{ width: `${(Math.abs(d[valueKey]) / max) * 100}%` }} />
                     </div>

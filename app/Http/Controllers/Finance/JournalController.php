@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\GlAccount;
 use App\Models\GlJournal;
 use App\Services\GlPostingService;
+use App\Services\JournalSourceResolver;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -15,27 +16,31 @@ use Inertia\Response;
 
 class JournalController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, JournalSourceResolver $sources): Response
     {
+        $journals = GlJournal::with('branch:id,name')
+            ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('journal_type', $t))
+            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                fn ($x) => $x->where('journal_number', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")
+            ))
+            ->latest('journal_date')->latest('id')
+            ->paginate(25)
+            ->withQueryString();
+
+        $links = $sources->resolveMany($journals->getCollection());
+
         return Inertia::render('Finance/Journals/Index', [
-            'journals' => GlJournal::with('branch:id,name')
-                ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('journal_type', $t))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('journal_number', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")
-                ))
-                ->latest('journal_date')->latest('id')
-                ->paginate(25)
-                ->withQueryString()
-                ->through(fn (GlJournal $j) => [
-                    'id' => $j->id,
-                    'journal_number' => $j->journal_number,
-                    'journal_type' => $j->journal_type,
-                    'journal_date' => $j->journal_date->toDateString(),
-                    'description' => $j->description,
-                    'reference' => $j->reference,
-                    'status' => $j->status,
-                    'total' => (float) $j->lines()->sum('debit'),
-                ]),
+            'journals' => $journals->through(fn (GlJournal $j) => [
+                'id' => $j->id,
+                'journal_number' => $j->journal_number,
+                'journal_type' => $j->journal_type,
+                'journal_date' => $j->journal_date->toDateString(),
+                'description' => $j->description,
+                'reference' => $j->reference,
+                'status' => $j->status,
+                'total' => (float) $j->lines()->sum('debit'),
+                'source' => $links["{$j->source_type}:{$j->source_id}"] ?? null,
+            ]),
             'filters' => $request->only('search', 'type'),
         ]);
     }
@@ -89,9 +94,9 @@ class JournalController extends Controller
             ->with('success', "Journal {$journal->journal_number} posted.");
     }
 
-    public function show(GlJournal $journal): Response
+    public function show(GlJournal $journal, JournalSourceResolver $sources): Response
     {
-        $journal->load('lines.account:id,account_code,name', 'branch:id,name');
+        $journal->load('lines.account:id,account_code,name', 'branch:id,name', 'postedBy:id,name', 'reversingJournal:id,journal_number', 'reversalOf:id,journal_number');
 
         return Inertia::render('Finance/Journals/Show', [
             'journal' => [
@@ -103,8 +108,15 @@ class JournalController extends Controller
                 'reference' => $journal->reference,
                 'status' => $journal->status,
                 'branch' => $journal->branch?->name,
+                'branch_id' => $journal->branch_id,
+                'posted_by' => $journal->postedBy ? ['id' => $journal->postedBy->id, 'name' => $journal->postedBy->name] : null,
+                'posted_at' => $journal->posted_at?->toDateTimeString(),
+                'source' => $sources->resolve($journal->source_type, $journal->source_id),
+                'reversing_journal' => $journal->reversingJournal ? ['id' => $journal->reversingJournal->id, 'label' => $journal->reversingJournal->journal_number] : null,
+                'reversal_of' => $journal->reversalOf ? ['id' => $journal->reversalOf->id, 'label' => $journal->reversalOf->journal_number] : null,
                 'is_reversible' => $journal->status === 'posted' && $journal->journal_type === 'manual',
                 'lines' => $journal->lines->map(fn ($l) => [
+                    'account_id' => $l->account_id,
                     'account_code' => $l->account?->account_code,
                     'account_name' => $l->account?->name,
                     'description' => $l->description,

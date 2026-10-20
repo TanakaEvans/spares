@@ -29,4 +29,9 @@ class StockTransfer extends Model
     {
         return $this->hasMany(StockTransferLine::class, 'transfer_id');
     }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

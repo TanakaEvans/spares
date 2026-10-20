@@ -2,11 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Branch extends Model
 {
+    use Auditable;
+    /** Audited events (rule 10). */
+    protected static array $auditEvents = ['created', 'updated', 'deleted'];
+
     use HasFactory;
 
     protected $fillable = [

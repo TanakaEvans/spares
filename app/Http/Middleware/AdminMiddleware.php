@@ -7,26 +7,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Guards the `admin.*` / `auth.*` prefixes. Admin and Superuser always pass;
+ * any other role passes only for a route it has been explicitly granted in
+ * the permission matrix (e.g. a Manager given `admin.health`).
+ */
 class AdminMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             return redirect()->route('login');
         }
 
         $user = Auth::user();
+        $routeName = $request->route()?->getName();
 
-        // Check if user has admin or superuser role
-        if (!$user->hasAnyRole(['Admin', 'Superuser'])) {
-            abort(403, 'Unauthorized. Admin access required.');
+        if ($user->hasAnyRole(['Admin', 'Superuser'])) {
+            return $next($request);
         }
 
-        return $next($request);
+        if ($routeName && EnforceRoutePermission::enforcementActive() && $user->hasRouteAccess($routeName)) {
+            return $next($request);
+        }
+
+        abort(403, 'Unauthorized. Admin access required.');
     }
 }

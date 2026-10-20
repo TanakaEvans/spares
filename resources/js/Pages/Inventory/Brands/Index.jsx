@@ -1,4 +1,4 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
@@ -40,13 +40,22 @@ export default function BrandsIndex({ brands, filters }) {
                     />
                     <DataTable
                         columns={[
-                            { key: 'name', label: 'Brand', render: (b) => <span className="font-medium text-slate-800">{b.name}</span> },
+                            {
+                                key: 'name', label: 'Brand',
+                                render: (b) => (
+                                    <Link href={route('inventory.parts.index', { brand_id: b.id })} onClick={(e) => e.stopPropagation()} title="Parts by this brand"
+                                        className="font-medium text-slate-800 hover:text-orange-600 hover:underline underline-offset-2 decoration-orange-300">
+                                        {b.name}
+                                    </Link>
+                                ),
+                            },
                             { key: 'code', label: 'Code', render: (b) => <span className="font-mono text-slate-500">{b.code}</span> },
                             { key: 'country_of_origin', label: 'Origin' },
                             { key: 'is_oem_brand', label: 'Type', render: (b) => <StatusBadge status={b.is_oem_brand ? 'posted' : 'draft'} label={b.is_oem_brand ? 'OEM' : 'Aftermarket'} /> },
                         ]}
                         rows={brands.data}
                         pagination={brands}
+                        rowHref={(b) => route('inventory.parts.index', { brand_id: b.id })}
                         emptyTitle="No brands found"
                     />
                 </div>

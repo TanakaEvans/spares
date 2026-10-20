@@ -1,8 +1,9 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { Plus, UsersRound } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
 import EmptyState from '@/Components/EmptyState';
+import EntityLink from '@/Components/EntityLink';
 
 export default function CustomerGroupsIndex({ groups, priceLists }) {
     const { data, setData, post, processing, errors, reset } = useForm({ name: '', price_list_id: '' });
@@ -44,9 +45,7 @@ export default function CustomerGroupsIndex({ groups, priceLists }) {
                                         <tr key={g.id} className="hover:bg-slate-50">
                                             <td className="px-4 py-2.5 font-semibold text-slate-800">{g.name}</td>
                                             <td className="px-4 py-2.5 text-slate-500">
-                                                {g.price_list
-                                                    ? <Link href={route('sales.price-lists.index')} className="text-slate-600 hover:text-orange-600">{g.price_list}</Link>
-                                                    : '—'}
+                                                <EntityLink type="price_list" id={g.price_list_id} label={g.price_list ?? '—'} muted />
                                             </td>
                                             <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">{g.customers_count}</td>
                                         </tr>

@@ -1,7 +1,7 @@
 // Workshop nav — content only (styling lives in ModuleLayout).
 import {
     Wrench, KanbanSquare, ClipboardList, CarFront, Timer, HardHat,
-    LayoutList, Plus, Car, Receipt, PackageSearch,
+    LayoutList, Plus, Car, Receipt, PackageSearch, ShieldCheck, Truck,
 } from 'lucide-react';
 
 const navConfig = {
@@ -78,6 +78,14 @@ const navConfig = {
             quickLinks: [
                 { label: 'Technician Board', route: 'workshop.board', icon: KanbanSquare },
                 { label: 'Labour Codes', route: 'workshop.labour.index', icon: Timer },
+            ],
+        },
+        warranty: {
+            label: 'Warranty Claims', icon: ShieldCheck, routePrefix: 'workshop.warranty',
+            work: [{ label: 'All Claims', route: 'workshop.warranty.index', icon: LayoutList }],
+            quickLinks: [
+                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
+                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
             ],
         },
     },

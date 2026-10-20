@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Part;
 use App\Models\SerialNumber;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -22,7 +23,7 @@ class SerialNumberController extends Controller
                 ->withQueryString()
                 ->through(fn (SerialNumber $n) => [
                     'id' => $n->id, 'serial' => $n->serial, 'batch' => $n->batch, 'part_number' => $n->part?->part_number,
-                    'part_id' => $n->part_id, 'branch' => $n->branch?->name, 'status' => $n->status, 'reference' => $n->reference,
+                    'part_id' => $n->part_id, 'branch_id' => $n->branch_id, 'branch' => $n->branch?->name, 'status' => $n->status, 'reference' => $n->reference,
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
             'filters' => $request->only('search'),
@@ -40,7 +41,7 @@ class SerialNumberController extends Controller
         return back()->with('success', 'Serial recorded.');
     }
 
-    public function partLookup(Request $request): \Illuminate\Http\JsonResponse
+    public function partLookup(Request $request): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
         if (mb_strlen($q) < 2) {
