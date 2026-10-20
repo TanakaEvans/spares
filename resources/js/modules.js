@@ -184,6 +184,7 @@ export const MODULES = [
         subModules: [
             { title: 'Users & Roles', description: 'User accounts and role-based access control.', icon: UserCog, route: 'auth.users.index', active: true },
             { title: 'Company Setup', description: 'Company details, logo and statutory information.', icon: Building2, route: 'admin.company.index', active: true },
+            { title: 'Data Upload', description: 'Load parts & stock, suppliers and customers from Excel/CSV templates.', icon: Upload, route: 'imports.index', active: true },
             { title: 'Branch Management', description: 'Multi-branch configuration.', icon: MapPin, route: 'admin.branches.index', active: true },
             { title: 'Departments & Sections', description: 'Organisational structure.', icon: UsersRound, route: 'admin.departments.index', active: true },
             { title: 'Configuration Centre', description: 'Every business setting in one place, with per-branch overrides.', icon: SlidersHorizontal, route: 'admin.settings.index', active: true },

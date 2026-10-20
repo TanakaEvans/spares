@@ -24,6 +24,7 @@ Repeated for each new module as it is built (Phases 1–6). Each module's own ta
 ### Backend
 - [ ] `SystemModule` seeder entries for the 9 new modules (Inventory, Sales & POS, Purchasing, Workshop, Customers, Suppliers, Finance, Vehicle Reference, Reports)
 - [x] `SystemRoute` seeder pattern/helper so each module registers its routes consistently (`module.resource.*` naming) — done 2026-10-09: `SystemRouteSeeder` registers **every** named route (310) under 10 `system_modules` from the route name prefix, descriptions from `->defaults('description')`, Superuser granted all; idempotent, in `DatabaseSeeder`. This satisfies each module file's "+ SystemRoute permission seeds" item — no per-module seeder needed.
+- [x] **Data Upload hub** (`imports.index`) — Excel/CSV upload of Parts & Stock (opening stock via `StockLedgerService`, prices, bins, preferred supplier + cost), Suppliers, Customers; templates with example rows; column auto-matching; results page with per-row reasons; upload log (`data_imports`); one-click opening-stock posting — done 2026-10-20 (`DataUploadStockTest`)
 - [ ] Dashboard module cards wired to the seeded modules, permission-filtered (Phase 0 item 0.7 provides the card grid — this keeps it current as modules land)
 ### Tests
 - [ ] Feature test: user with no routes for a module sees no card and gets 403 on its routes
