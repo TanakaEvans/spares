@@ -1,0 +1,61 @@
+APP_NAME="SparesPro"
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=https://mokone.inspirelabs.co.zw
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+
+PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=error
+
+# MySQL / MariaDB from cPanel → MySQL Database Wizard.
+# If the cPanel home page says MariaDB, change DB_CONNECTION to mariadb.
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=mokonegwese_mokone
+DB_USERNAME=mokonegwese_mokone
+DB_PASSWORD=CHANGE_ME
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+SESSION_SECURE_COOKIE=true
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+
+# Mail is logged by default (local-first). To send real mail, create a mailbox in
+# cPanel → Email Accounts and switch to:
+#   MAIL_MAILER=smtp
+#   MAIL_HOST=mail.mokone.inspirelabs.co.zw
+#   MAIL_PORT=465
+#   MAIL_USERNAME=<mailbox>
+#   MAIL_PASSWORD=<mailbox password>
+MAIL_MAILER=log
+MAIL_FROM_ADDRESS="noreply@mokone.inspirelabs.co.zw"
+MAIL_FROM_NAME="${APP_NAME}"
+
+# First-seed admin login. SUPERUSER_PASSWORD only applies the first time
+# db:seed runs — after that the account exists and this is ignored.
+SUPERUSER_USERNAME=admin
+SUPERUSER_EMAIL=admin@mokone.inspirelabs.co.zw
+SUPERUSER_PASSWORD=CHANGE_ME
+
+VITE_APP_NAME="${APP_NAME}"
