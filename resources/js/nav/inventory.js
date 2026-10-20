@@ -1,7 +1,7 @@
 // Inventory Management nav — content only (component-standards §1a).
 import {
     ArrowLeftRight, Car, ClipboardCheck, FolderTree, Layers, LayoutList, MapPin,
-    PackageSearch, Plus, RefreshCw, Search, Shuffle, SlidersHorizontal, Tags,
+    PackageSearch, Plus, RefreshCw, Search, Shuffle, SlidersHorizontal, Tags, Upload,
 } from 'lucide-react';
 
 const navConfig = {
@@ -51,6 +51,7 @@ const navConfig = {
             ],
             quickLinks: [
                 { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                { label: 'Data Upload', route: 'imports.index', icon: Upload },
                 { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
                 { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
             ],

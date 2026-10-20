@@ -607,9 +607,13 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
     // ── Master-data CSV import wizard ────────────────────────────────────
     Route::prefix('imports')->name('imports.')->group(function () {
-        Route::get('{entity}', [\App\Http\Controllers\DataImportController::class, 'show'])->name('show')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Import data from CSV');
-        Route::post('{entity}/preview', [\App\Http\Controllers\DataImportController::class, 'preview'])->name('preview')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Preview a CSV import');
-        Route::post('{entity}', [\App\Http\Controllers\DataImportController::class, 'store'])->name('store')->whereIn('entity', ['customers', 'suppliers', 'parts'])->defaults('description', 'Commit a CSV import');
+        $entities = ['stock', 'parts', 'suppliers', 'customers'];
+        Route::get('/', [\App\Http\Controllers\DataImportController::class, 'index'])->name('index')->defaults('description', 'Data Upload hub — load parts & stock, suppliers, customers');
+        Route::get('result/{import}', [\App\Http\Controllers\DataImportController::class, 'result'])->name('result')->defaults('description', 'Results of a data upload');
+        Route::get('{entity}/template', [\App\Http\Controllers\DataImportController::class, 'template'])->name('template')->whereIn('entity', $entities)->defaults('description', 'Download an upload template');
+        Route::get('{entity}', [\App\Http\Controllers\DataImportController::class, 'show'])->name('show')->whereIn('entity', $entities)->defaults('description', 'Upload data from Excel/CSV');
+        Route::post('{entity}/preview', [\App\Http\Controllers\DataImportController::class, 'preview'])->name('preview')->whereIn('entity', $entities)->defaults('description', 'Preview an upload');
+        Route::post('{entity}', [\App\Http\Controllers\DataImportController::class, 'store'])->name('store')->whereIn('entity', $entities)->defaults('description', 'Commit an upload');
     });
 
     // Notification bell actions

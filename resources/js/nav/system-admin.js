@@ -3,7 +3,7 @@
 // Level-3 per-sub-module contextual sidebars (docs/design/sidebars/).
 import {
     Building2, Coins, FolderKanban, Hash, History, LayoutList,
-    MapPin, ScrollText, Settings, SlidersHorizontal, UserCog, Users, HeartPulse,
+    MapPin, ScrollText, Settings, SlidersHorizontal, UserCog, Users, HeartPulse, Upload, Boxes,
 } from 'lucide-react';
 
 const navConfig = {
@@ -16,6 +16,7 @@ const navConfig = {
             section: 'Organisation',
             items: [
                 { label: 'Company Details', route: 'admin.company.index', icon: Building2 },
+                { label: 'Data Upload', route: 'imports.index', icon: Upload },
                 { label: 'Branches', route: 'admin.branches.index', icon: MapPin },
                 { label: 'Departments', route: 'admin.departments.index', icon: FolderKanban },
             ],
@@ -45,6 +46,21 @@ const navConfig = {
     ],
 
     subModules: {
+        dataUpload: {
+            label: 'Data Upload',
+            icon: Upload,
+            routePrefix: 'imports.',
+            work: [
+                { label: 'Upload Hub', route: 'imports.index', icon: Upload },
+            ],
+            quickLinks: [
+                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Boxes },
+                { label: 'Parts', route: 'inventory.parts.index', icon: LayoutList },
+                { label: 'Suppliers', route: 'suppliers.index', icon: LayoutList },
+                { label: 'Customers', route: 'customers.index', icon: Users },
+                { label: 'System Health', route: 'admin.health', icon: HeartPulse },
+            ],
+        },
         logs: {
             label: 'Activity Log',
             icon: ScrollText,
