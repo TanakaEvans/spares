@@ -25,7 +25,7 @@ class EnforceRoutePermission
     /** Route-name prefixes every authenticated user may use. */
     public const EXEMPT_PREFIXES = [
         'dashboard', 'modules.', 'password.', 'logout', 'login', 'search.',
-        'help.', 'notifications.', 'verify.', 'storage.', 'debugbar.', 'ignition.',
+        'help.', 'guide.', 'notifications.', 'verify.', 'storage.', 'debugbar.', 'ignition.',
     ];
 
     public function handle(Request $request, Closure $next): Response
