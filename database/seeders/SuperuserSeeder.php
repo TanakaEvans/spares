@@ -40,13 +40,15 @@ class SuperuserSeeder extends Seeder
         // Retire residue from the template this project started from.
         Role::whereIn('name', ['Kitchen Staff', 'Teacher', 'Student', 'Parent', 'Staff'])->whereDoesntHave('users')->delete();
 
-        // Create Superuser account
+        // Create Superuser account. Credentials come from SUPERUSER_* env vars so a
+        // production .env can set a real password; they only apply at first seed —
+        // an existing user is matched on username and left untouched.
         $superuser = User::firstOrCreate(
-            ['username' => 'admin'],
+            ['username' => env('SUPERUSER_USERNAME', 'admin')],
             [
-                'email' => 'admin@sparespro.local',
+                'email' => env('SUPERUSER_EMAIL', 'admin@sparespro.local'),
                 'name' => 'System Administrator',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make(env('SUPERUSER_PASSWORD', 'password123')),
                 'status' => 'active',
             ]
         );
@@ -113,12 +115,9 @@ class SuperuserSeeder extends Seeder
             }
         }
 
-        $this->command->info('Superuser created successfully!');
-        $this->command->info('');
-        $this->command->info('Login Credentials:');
-        $this->command->info('==================');
-        $this->command->info('Username: admin');
-        $this->command->info('Password: password123');
-        $this->command->info('');
+        $this->command->info('Superuser ready — username: ' . env('SUPERUSER_USERNAME', 'admin'));
+        if (env('SUPERUSER_PASSWORD') === null) {
+            $this->command->warn('No SUPERUSER_PASSWORD in .env — seeded with the default. Change it on first sign-in.');
+        }
     }
 }
