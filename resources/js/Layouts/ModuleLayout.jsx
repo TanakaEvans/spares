@@ -1,6 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import { ArrowLeftRight, ChevronLeft, Home, LogOut, Menu, Settings, Wrench, X } from 'lucide-react';
+import { ArrowLeftRight, BookOpen, ChevronLeft, Home, LogOut, Menu, Settings, Wrench, X } from 'lucide-react';
 import FlashToasts from '@/Components/FlashToasts';
 import { PageGuidePanel, PageGuideTrigger, usePageGuide } from '@/Components/PageGuide';
 import CommandPalette from '@/Components/CommandPalette';
@@ -221,6 +221,7 @@ export default function ModuleLayout({ navConfig, title, breadcrumbs = [], child
                         </nav>
 
                         <div className="flex items-center gap-3 text-sm text-slate-500">
+                            <Link href={route('guide.index')} title="User Guide" className="hover:text-orange-600"><BookOpen className="w-5 h-5" /></Link>
                             <PageGuideTrigger open={guide.open} onToggle={guide.toggle} />
                             <NotificationBell />
                             <span className="hidden sm:inline">

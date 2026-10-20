@@ -657,6 +657,10 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         ]);
     })->name('search.global')->defaults('description', 'Global command palette search');
 
+    // In-app User Guide — step-by-step, page-by-page walkthroughs
+    Route::get('/guide', [\App\Http\Controllers\GuideController::class, 'index'])->name('guide.index')->defaults('description', 'User guide — how to use the system');
+    Route::get('/guide/{section}', [\App\Http\Controllers\GuideController::class, 'show'])->name('guide.show')->defaults('description', 'A section of the user guide');
+
     // In-app documentation viewer (page guides deep-link into the spec)
     Route::get('/help/docs/{path?}', [\App\Http\Controllers\HelpDocsController::class, 'show'])
         ->where('path', '.*')

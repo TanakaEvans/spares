@@ -1,5 +1,5 @@
-import { Head, router, usePage } from '@inertiajs/react';
-import { Wrench } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Wrench, BookOpen } from 'lucide-react';
 import FlashToasts from '@/Components/FlashToasts';
 import { PageGuidePanel, PageGuideTrigger, usePageGuide } from '@/Components/PageGuide';
 import CommandPalette from '@/Components/CommandPalette';
@@ -30,6 +30,7 @@ export default function AppLayout({ children, title = 'Dashboard', auth }) {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            <Link href={route('guide.index')} title="User Guide" className="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-white"><BookOpen className="w-5 h-5" /><span className="hidden lg:inline">Guide</span></Link>
                             <PageGuideTrigger open={guide.open} onToggle={guide.toggle} />
                             <NotificationBell dark />
                             <div className="text-sm text-slate-300">
