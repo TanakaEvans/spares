@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
 use App\Models\Branch;
 use App\Models\Department;
-use App\Models\User;
+use App\Models\Employee;
 use App\Models\Role;
+use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
 class EmployeeController extends Controller
@@ -89,7 +90,7 @@ class EmployeeController extends Controller
                         if (empty($value)) {
                             $fail('An email address is required when creating a system user account.');
                         }
-                        if (\App\Models\User::where('email', $value)->exists()) {
+                        if (User::where('email', $value)->exists()) {
                             $fail('This email address is already associated with an existing system user account.');
                         }
                     }
@@ -133,7 +134,7 @@ class EmployeeController extends Controller
                 }
 
                 $user = User::create([
-                    'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                    'name' => $validated['first_name'].' '.$validated['last_name'],
                     'email' => $validated['email'],
                     'username' => $username,
                     'password' => Hash::make($password),
@@ -145,7 +146,7 @@ class EmployeeController extends Controller
                 $userId = $user->id;
 
                 // Assign roles
-                if (!empty($request->role_ids)) {
+                if (! empty($request->role_ids)) {
                     $user->roles()->sync($request->role_ids);
                 }
             }
@@ -183,7 +184,7 @@ class EmployeeController extends Controller
             return redirect()->route('admin.employees.index')
                 ->with('success', 'Employee created successfully.');
 
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             DB::rollBack();
             if ($e->errorInfo[1] == 1062) {
                 // Determine which key caused the duplicate
@@ -198,13 +199,15 @@ class EmployeeController extends Controller
                         ->withInput();
                 }
             }
+
             return redirect()->back()
-                ->with('error', 'Database error: ' . $e->getMessage())
+                ->with('error', 'Database error: '.$e->getMessage())
                 ->withInput();
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'Error creating employee: ' . $e->getMessage())
+                ->with('error', 'Error creating employee: '.$e->getMessage())
                 ->withInput();
         }
     }
@@ -236,7 +239,7 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee)
     {
         $validated = $request->validate([
-            'employee_number' => 'required|string|max:50|unique:employees,employee_number,' . $employee->id,
+            'employee_number' => 'required|string|max:50|unique:employees,employee_number,'.$employee->id,
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
@@ -266,7 +269,7 @@ class EmployeeController extends Controller
         // Update user name if linked
         if ($employee->user) {
             $employee->user->update([
-                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'name' => $validated['first_name'].' '.$validated['last_name'],
                 'email' => $validated['email'],
             ]);
         }
@@ -295,8 +298,9 @@ class EmployeeController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'Error deleting employee: ' . $e->getMessage());
+                ->with('error', 'Error deleting employee: '.$e->getMessage());
         }
     }
 
@@ -355,7 +359,7 @@ class EmployeeController extends Controller
             ]);
 
             // Assign roles
-            if (!empty($request->role_ids)) {
+            if (! empty($request->role_ids)) {
                 $user->roles()->sync($request->role_ids);
             }
 
@@ -368,8 +372,9 @@ class EmployeeController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
-                ->with('error', 'Error creating user account: ' . $e->getMessage())
+                ->with('error', 'Error creating user account: '.$e->getMessage())
                 ->withInput();
         }
     }

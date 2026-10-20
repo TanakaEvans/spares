@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
+use App\Exceptions\UnpricedPartException;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -59,7 +60,7 @@ class PointOfSaleController extends Controller
                 try {
                     $price = $pricing->priceFor($p, $customer);
                     $priced = true;
-                } catch (\App\Exceptions\UnpricedPartException) {
+                } catch (UnpricedPartException) {
                     $price = 0.0;
                     $priced = false;
                 }

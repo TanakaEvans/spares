@@ -87,7 +87,7 @@ class BranchController extends Controller
         $validated = $request->validate([
             'company_id' => 'required|exists:companies,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:branches,code,' . $branch->id,
+            'code' => 'required|string|max:50|unique:branches,code,'.$branch->id,
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string',
@@ -126,7 +126,7 @@ class BranchController extends Controller
     public function toggleStatus(Branch $branch)
     {
         $branch->update([
-            'status' => $branch->status === 'active' ? 'inactive' : 'active'
+            'status' => $branch->status === 'active' ? 'inactive' : 'active',
         ]);
 
         return redirect()->back()

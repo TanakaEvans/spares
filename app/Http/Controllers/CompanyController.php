@@ -13,7 +13,7 @@ class CompanyController extends Controller
     {
         $company = Company::with('head')->first();
         $employees = Employee::where('status', 'active')->orderBy('first_name')->get();
-        
+
         return Inertia::render('Admin/Company/Index', [
             'company' => $company,
             'employees' => $employees,
@@ -65,7 +65,7 @@ class CompanyController extends Controller
 
         $company = Company::first();
 
-        if (!$company) {
+        if (! $company) {
             return redirect()->back()->with('error', 'Please create company details first.');
         }
 
@@ -76,10 +76,10 @@ class CompanyController extends Controller
             }
 
             $logo = $request->file('logo');
-            $logoName = 'company_logo_' . time() . '.' . $logo->getClientOriginalExtension();
+            $logoName = 'company_logo_'.time().'.'.$logo->getClientOriginalExtension();
             $logo->move(public_path('uploads/company'), $logoName);
-            
-            $company->update(['logo' => 'uploads/company/' . $logoName]);
+
+            $company->update(['logo' => 'uploads/company/'.$logoName]);
         }
 
         return redirect()->back()->with('success', 'Company logo updated successfully.');

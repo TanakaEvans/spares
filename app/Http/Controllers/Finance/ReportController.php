@@ -11,9 +11,7 @@ use Inertia\Response;
 
 class ReportController extends Controller
 {
-    public function __construct(private readonly LedgerReportService $reports)
-    {
-    }
+    public function __construct(private readonly LedgerReportService $reports) {}
 
     public function trialBalance(Request $request): Response
     {

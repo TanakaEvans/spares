@@ -215,7 +215,9 @@ class DemoDataSeeder extends Seeder
             $approved[] = ['part_id' => $pid, 'supplier_id' => $sid, 'is_preferred' => fake()->boolean(25), 'lead_time_days' => fake()->numberBetween(1, 30), 'created_at' => now(), 'updated_at' => now()];
         }
         foreach (array_chunk($approved, 500) as $c) {
-            DB::table('approved_suppliers')->insert($c);
+            // insertOrIgnore: SupplierCatalogueSeeder may already hold some of these
+            // part/supplier links, and the unique index would otherwise abort the run.
+            DB::table('approved_suppliers')->insertOrIgnore($c);
         }
     }
 

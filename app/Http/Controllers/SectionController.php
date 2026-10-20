@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Section;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Section;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,7 +15,7 @@ class SectionController extends Controller
         $sections = Section::with(['department', 'head'])->latest()->paginate(10);
         $departments = Department::where('status', 'active')->get();
         // Optimize: select only necessary fields for dropdown
-        $employees = Employee::select('id', 'first_name', 'last_name', 'employee_number')->get(); 
+        $employees = Employee::select('id', 'first_name', 'last_name', 'employee_number')->get();
 
         return Inertia::render('Admin/Sections/Index', [
             'sections' => $sections,
@@ -55,6 +55,7 @@ class SectionController extends Controller
     public function destroy(Section $section)
     {
         $section->delete();
+
         return back()->with('success', 'Section deleted successfully.');
     }
 }

@@ -12,9 +12,7 @@ use Inertia\Response;
 
 class NumberSequenceController extends Controller
 {
-    public function __construct(private readonly NumberSequenceService $sequences)
-    {
-    }
+    public function __construct(private readonly NumberSequenceService $sequences) {}
 
     public function index(): Response
     {
