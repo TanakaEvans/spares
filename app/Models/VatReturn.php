@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VatReturn extends Model
 {
@@ -19,4 +20,9 @@ class VatReturn extends Model
         'net_payable' => 'decimal:2',
         'submitted_at' => 'datetime',
     ];
+
+    public function preparedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'prepared_by');
+    }
 }

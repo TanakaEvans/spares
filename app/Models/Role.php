@@ -2,12 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends Model
 {
+    use Auditable;
+    /** Audited events (rule 10). */
+    protected static array $auditEvents = ['created', 'updated', 'deleted'];
+
     use HasFactory;
 
     protected $table = 'auth_roles';

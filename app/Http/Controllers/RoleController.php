@@ -137,9 +137,16 @@ class RoleController extends Controller
             'description' => $request->description,
         ]);
 
-        // Update route permissions
+        // Update route permissions (audited: rule 10 — a grant is an override of access)
         if ($request->has('route_ids')) {
+            $before = $role->systemRoutes()->pluck('name')->sort()->values()->all();
             $role->systemRoutes()->sync($request->route_ids ?? []);
+            $after = $role->systemRoutes()->pluck('name')->sort()->values()->all();
+            app(\App\Services\AuditLogService::class)->record(
+                'role.permissions_changed', $role,
+                ['routes' => $before], ['routes' => $after],
+                'Granted '.count(array_diff($after, $before)).', revoked '.count(array_diff($before, $after)),
+            );
         }
 
         return redirect()->route('auth.roles.index')

@@ -6,10 +6,17 @@ import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
 import PrintButton from '@/Components/PrintButton';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 export default function QuoteShow({ quote, repriceChanges }) {
     const [processing, setProcessing] = useState(false);
     const canConvert = quote.status === 'open' && !quote.is_expired;
+    const trace = [
+        { type: 'quote', current: true, label: quote.document_number },
+        quote.order ? { type: 'order', id: quote.order.id, label: quote.order.document_number } : { type: 'order', pending: true, label: 'Order' },
+        quote.invoice ? { type: 'invoice', id: quote.invoice.id, label: quote.invoice.document_number } : { type: 'invoice', pending: true, label: 'Invoice' },
+    ];
 
     function convert(reprice) {
         setProcessing(true);
@@ -36,8 +43,9 @@ export default function QuoteShow({ quote, repriceChanges }) {
                             <StatusBadge status={quote.status} />
                         </div>
                         <p className="mt-1 text-sm text-slate-500">
-                            {quote.customer && <Link href={route('customers.show', quote.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{quote.customer.name}</Link>}
+                            <EntityLink type="customer" id={quote.customer?.id} label={quote.customer?.name} className="font-medium" />
                             {' · '}{quote.document_date}{quote.expiry_date && ` · valid to ${quote.expiry_date}`}
+                            {quote.branch && <> · <EntityLink type="branch" id={quote.branch.id} label={quote.branch.name} muted /></>}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -80,7 +88,7 @@ export default function QuoteShow({ quote, repriceChanges }) {
                         <tbody className="divide-y divide-slate-50">
                             {quote.lines.map((l, i) => (
                                 <tr key={i}>
-                                    <td className="px-4 py-2.5"><Link href={route('inventory.parts.show', l.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{l.part_number}</Link><span className="block text-xs text-slate-400">{l.description}</span></td>
+                                    <td className="px-4 py-2.5"><EntityLink type="part" id={l.part_id} label={l.part_number ?? l.description} mono className="font-semibold" /><span className="block text-xs text-slate-400">{l.description}</span></td>
                                     <td className="px-2 py-2.5 text-right tabular-nums">{l.qty}</td>
                                     <td className="px-2 py-2.5 text-right tabular-nums text-slate-500">{l.unit_price.toFixed(2)}</td>
                                     <td className="px-2 py-2.5 text-right tabular-nums text-slate-500">{l.discount_pct > 0 ? `${l.discount_pct}%` : '—'}</td>
@@ -113,6 +121,15 @@ export default function QuoteShow({ quote, repriceChanges }) {
                         </div>
                     )}
                 </div>
+
+                <RelatedLinks
+                    trace={trace}
+                    groups={[
+                        { title: 'Customer', items: quote.customer ? [{ type: 'customer', id: quote.customer.id, label: quote.customer.name }] : [] },
+                        { title: 'Parts', items: quote.lines.filter((l) => l.part_id).map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+                        { title: 'Branch', items: quote.branch ? [{ type: 'branch', id: quote.branch.id, label: quote.branch.name }] : [] },
+                    ]}
+                />
             </div>
         </ModuleLayout>
     );

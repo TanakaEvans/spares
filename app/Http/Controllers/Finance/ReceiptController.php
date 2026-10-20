@@ -38,6 +38,48 @@ class ReceiptController extends Controller
         ]);
     }
 
+    public function show(CustomerReceipt $receipt): Response
+    {
+        $receipt->load([
+            'customer:id,name,customer_number',
+            'branch:id,name',
+            'receivedBy:id,name',
+            'journal:id,journal_number',
+            'allocations.invoice:id,document_number,document_date,total_incl,status',
+        ]);
+
+        return Inertia::render('Finance/Receipts/Show', [
+            'receipt' => [
+                'id' => $receipt->id,
+                'receipt_number' => $receipt->receipt_number,
+                'receipt_date' => $receipt->receipt_date->toDateString(),
+                'method' => $receipt->method,
+                'amount' => (float) $receipt->amount,
+                'allocated' => (float) $receipt->allocated,
+                'unallocated' => $receipt->unallocated(),
+                'reference' => $receipt->reference,
+                'notes' => $receipt->notes,
+                'posted_at' => $receipt->posted_at?->toDateTimeString(),
+                'customer' => $receipt->customer ? [
+                    'id' => $receipt->customer->id,
+                    'name' => $receipt->customer->name,
+                    'customer_number' => $receipt->customer->customer_number,
+                ] : null,
+                'branch' => $receipt->branch ? ['id' => $receipt->branch->id, 'name' => $receipt->branch->name] : null,
+                'received_by' => $receipt->receivedBy ? ['id' => $receipt->receivedBy->id, 'name' => $receipt->receivedBy->name] : null,
+                'journal' => $receipt->journal ? ['id' => $receipt->journal->id, 'journal_number' => $receipt->journal->journal_number] : null,
+                'allocations' => $receipt->allocations->map(fn ($a) => [
+                    'id' => $a->id,
+                    'document_id' => $a->document_id,
+                    'document_number' => $a->invoice?->document_number,
+                    'document_date' => $a->invoice?->document_date?->toDateString(),
+                    'document_total' => (float) ($a->invoice?->total_incl ?? 0),
+                    'amount' => (float) $a->amount,
+                ])->values(),
+            ],
+        ]);
+    }
+
     public function create(): Response
     {
         return Inertia::render('Finance/Receipts/Create', [

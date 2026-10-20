@@ -5,6 +5,8 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import StatusBadge from '@/Components/StatusBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 export default function JournalShow({ journal }) {
     const [open, setOpen] = useState(false);
@@ -37,10 +39,28 @@ export default function JournalShow({ journal }) {
                             <h1 className="text-xl font-bold text-slate-900">{journal.journal_number}</h1>
                             <StatusBadge status={journal.status} />
                         </div>
-                        <p className="mt-1 text-sm text-slate-500 capitalize">
-                            {journal.journal_type} · {journal.journal_date}{journal.reference && ` · ${journal.reference}`}{journal.branch && ` · ${journal.branch}`}
+                        <p className="mt-1 text-sm text-slate-500">
+                            <span className="capitalize">{journal.journal_type}</span> · {journal.journal_date}
+                            {journal.reference && <> · <span className="font-mono">{journal.reference}</span></>}
+                            {journal.branch && <> · <EntityLink type="branch" id={journal.branch_id} label={journal.branch} muted /></>}
+                            {journal.posted_by && <> · posted by <EntityLink type="user" id={journal.posted_by.id} label={journal.posted_by.name} muted /></>}
                         </p>
                         <p className="mt-1 text-sm text-slate-600">{journal.description}</p>
+                        {journal.source && (
+                            <p className="mt-1 text-sm text-slate-500">
+                                Source document: <EntityLink type={journal.source.type} id={journal.source.id} label={journal.source.label} mono className="font-semibold" />
+                            </p>
+                        )}
+                        {journal.reversing_journal && (
+                            <p className="mt-1 text-sm text-red-600">
+                                Reversed by <EntityLink type="journal" id={journal.reversing_journal.id} label={journal.reversing_journal.label} mono className="font-semibold" />
+                            </p>
+                        )}
+                        {journal.reversal_of && (
+                            <p className="mt-1 text-sm text-slate-500">
+                                Reversal of <EntityLink type="journal" id={journal.reversal_of.id} label={journal.reversal_of.label} mono className="font-semibold" />
+                            </p>
+                        )}
                     </div>
                     {journal.is_reversible && (
                         <button onClick={() => setOpen(true)} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
@@ -63,7 +83,11 @@ export default function JournalShow({ journal }) {
                         <tbody className="divide-y divide-slate-50">
                             {journal.lines.map((l, i) => (
                                 <tr key={i}>
-                                    <td className="px-4 py-2.5"><span className="font-mono text-slate-400">{l.account_code}</span> <span className="text-slate-700">{l.account_name}</span></td>
+                                    <td className="px-4 py-2.5">
+                                        <EntityLink type="gl_account" number={l.account_code} title={`GL enquiry — ${l.account_code}`}>
+                                            <span className="font-mono text-slate-400">{l.account_code}</span> <span>{l.account_name}</span>
+                                        </EntityLink>
+                                    </td>
                                     <td className="px-2 py-2.5 text-slate-500">{l.description}</td>
                                     <td className="px-2 py-2.5 text-right tabular-nums text-slate-700">{l.debit > 0 ? l.debit.toFixed(2) : ''}</td>
                                     <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">{l.credit > 0 ? l.credit.toFixed(2) : ''}</td>
@@ -79,6 +103,20 @@ export default function JournalShow({ journal }) {
                         </tfoot>
                     </table>
                 </div>
+
+                <RelatedLinks
+                    trace={[
+                        ...(journal.source ? [{ type: journal.source.type, id: journal.source.id, label: journal.source.label }] : []),
+                        { type: 'journal', id: journal.id, label: journal.journal_number, current: true },
+                        ...(journal.reversing_journal ? [{ type: 'journal', id: journal.reversing_journal.id, label: journal.reversing_journal.label }] : []),
+                    ]}
+                    groups={[
+                        { title: 'Source document', items: journal.source ? [{ ...journal.source, mono: true }] : [] },
+                        { title: 'Accounts', items: journal.lines.map((l) => ({ type: 'gl_account', number: l.account_code, label: `${l.account_code} ${l.account_name}` })) },
+                        { title: 'Posted by', items: journal.posted_by ? [{ type: 'user', id: journal.posted_by.id, label: journal.posted_by.name }] : [] },
+                        { title: 'Branch', items: journal.branch_id ? [{ type: 'branch', id: journal.branch_id, label: journal.branch }] : [] },
+                    ]}
+                />
             </div>
 
             <ConfirmDialog

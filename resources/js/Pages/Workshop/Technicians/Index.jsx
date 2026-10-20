@@ -3,6 +3,7 @@ import { Plus, HardHat } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function TechniciansIndex({ technicians, branches }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -31,7 +32,7 @@ export default function TechniciansIndex({ technicians, branches }) {
                             <tbody className="divide-y divide-slate-50">
                                 {technicians.map((t) => (
                                     <tr key={t.id} className={t.is_active ? '' : 'opacity-50'}>
-                                        <td className="px-4 py-2 font-semibold text-slate-800">{t.name}</td>
+                                        <td className="px-4 py-2"><EntityLink type="technician" id={t.id} label={t.name} className="font-semibold" /></td>
                                         <td className="px-2 py-2"><StatusBadge status={t.skill_level === 'master' ? 'special_order' : t.skill_level === 'apprentice' ? 'pending' : 'active'} label={t.skill_level} /></td>
                                         <td className="px-2 py-2 text-slate-500">{t.specialisations ?? '—'}</td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-500">{t.cost_rate.toFixed(2)}</td>

@@ -1,28 +1,56 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
+
 use App\Http\Controllers\Controller;
+use App\Services\AuditLogService;
+use App\Services\BackupService;
+use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+
+/**
+ * Backup Management (operations/backup-and-resilience.md): take a real
+ * database dump now, review the nightly ones, download for off-site copy.
+ */
 class BackupController extends Controller
 {
-    private function dir(): string { return storage_path('app/backups'); }
-    public function index(): Response
+    public function index(BackupService $backups, SettingsService $settings): Response
     {
-        File::ensureDirectoryExists($this->dir());
-        $files = collect(File::files($this->dir()))->sortByDesc(fn($f) => $f->getMTime())->map(fn($f) => [
-            'name' => $f->getFilename(), 'size_kb' => round($f->getSize() / 1024, 1),
-            'at' => date('Y-m-d H:i', $f->getMTime()),
-        ])->values();
-        return Inertia::render('Admin/Backups/Index', ['files' => $files]);
+        $files = $backups->list();
+
+        return Inertia::render('Admin/Backups/Index', [
+            'files' => $files,
+            'latest' => $files[0] ?? null,
+            'retentionDays' => (int) $settings->get('backup.retention_days'),
+            'maxAgeHours' => (int) $settings->get('backup.max_age_hours'),
+            'method' => $backups->mysqldumpBinary() ? 'mysqldump' : 'PHP dump',
+            'directory' => $backups->directory(),
+        ]);
     }
-    public function store(): RedirectResponse
+
+    public function store(BackupService $backups, AuditLogService $audit): RedirectResponse
     {
-        File::ensureDirectoryExists($this->dir());
-        $name = 'backup-'.date('Ymd-His').'.sql';
-        // Placeholder marker file — a real backup wires mysqldump in ops (backup-and-resilience.md).
-        File::put($this->dir().'/'.$name, "-- SparesPro DB snapshot placeholder created ".now()."\n-- Configure mysqldump in operations/backup-and-resilience.md\n");
-        return back()->with('success', "Backup {$name} created. Configure off-site copy in operations.");
+        try {
+            $file = $backups->run();
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Backup failed: '.$e->getMessage());
+        }
+
+        $audit->record('backup.taken', null, null, ['file' => basename($file), 'bytes' => filesize($file)], 'Manual backup');
+
+        return back()->with('success', 'Backup '.basename($file).' written ('.round(filesize($file) / 1024).' KB). Copy it off-site.');
+    }
+
+    public function download(string $file, BackupService $backups, AuditLogService $audit): BinaryFileResponse
+    {
+        $path = $backups->path($file);
+        abort_unless($path, 404);
+
+        $audit->record('backup.downloaded', null, null, ['file' => $file]);
+
+        return response()->download($path);
     }
 }

@@ -37,6 +37,7 @@ class SalesPostingService
         array $payments,
         ?int $userId = null,
         ?SalesDocument $parentOrder = null,
+        array $attributes = [],
     ): SalesDocument {
         if ($lines === []) {
             throw new InvalidArgumentException('An invoice needs at least one line.');
@@ -90,8 +91,8 @@ class SalesPostingService
             }
         }
 
-        return DB::transaction(function () use ($customer, $branchId, $computed, $payments, $userId, $parentOrder, $subtotal, $discountTotal, $vatTotal, $total, $accountAmount) {
-            $invoice = SalesDocument::create([
+        return DB::transaction(function () use ($customer, $branchId, $computed, $payments, $userId, $parentOrder, $subtotal, $discountTotal, $vatTotal, $total, $accountAmount, $attributes) {
+            $invoice = SalesDocument::create($attributes + [
                 'document_number' => $this->sequences->next('invoice', $branchId),
                 'document_type' => 'invoice',
                 'status' => 'posted',

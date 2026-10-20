@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
+import EntityLink from '@/Components/EntityLink';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
@@ -9,7 +10,7 @@ export default function CreditNoteCreate({ invoice }) {
     // Per invoice line: selected qty to credit + restock flag.
     const [rows, setRows] = useState(() => invoice.lines.map((l) => ({
         line_id: l.id, qty: 0, restock: true, max: l.qty_creditable,
-        part_number: l.part_number, description: l.description, unit_price: l.unit_price,
+        part_id: l.part_id, part_number: l.part_number, description: l.description, unit_price: l.unit_price,
     })));
     const form = useForm({ mode: 'refund_cash', reason: '' });
     const { data, setData, processing, errors } = form;
@@ -47,7 +48,7 @@ export default function CreditNoteCreate({ invoice }) {
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     Crediting against{' '}
                     <Link href={route('sales.invoices.show', invoice.id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{invoice.document_number}</Link>
-                    {' · '}{invoice.customer?.name}{' · '}{invoice.document_date}
+                    {' · '}<EntityLink type="customer" id={invoice.customer?.id} label={invoice.customer?.name} />{' · '}{invoice.document_date}
                 </div>
 
                 {Object.keys(errors).length > 0 && (
@@ -71,7 +72,7 @@ export default function CreditNoteCreate({ invoice }) {
                             {rows.map((r, i) => (
                                 <tr key={r.line_id}>
                                     <td className="px-4 py-2.5">
-                                        <span className="font-mono font-semibold text-slate-700">{r.part_number}</span>
+                                        <EntityLink type="part" id={r.part_id} label={r.part_number ?? r.description} mono className="font-semibold" />
                                         <span className="block text-xs text-slate-400">{r.description}</span>
                                     </td>
                                     <td className="px-2 py-2.5 text-right tabular-nums text-slate-500">{r.max}</td>

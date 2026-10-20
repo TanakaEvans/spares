@@ -41,6 +41,7 @@ const navConfig = {
             items: [
                 { label: 'System Health', route: 'admin.health', icon: HeartPulse },
                 { label: 'Activity Logs', route: 'system.logs', icon: ScrollText },
+                { label: 'Audit Trail', route: 'admin.audit-log.index', icon: History },
             ],
         },
     ],
@@ -61,12 +62,27 @@ const navConfig = {
                 { label: 'System Health', route: 'admin.health', icon: HeartPulse },
             ],
         },
+        audit: {
+            label: 'Audit Trail',
+            icon: History,
+            routePrefix: 'admin.audit-log',
+            work: [
+                { label: 'Audit Trail', route: 'admin.audit-log.index', icon: History },
+            ],
+            quickLinks: [
+                { label: 'Activity Log', route: 'system.logs', icon: ScrollText },
+                { label: 'Roles & Permissions', route: 'auth.roles.index', icon: UserCog },
+                { label: 'Configuration Centre', route: 'admin.settings.index', icon: Settings },
+                { label: 'System Health', route: 'admin.health', icon: HeartPulse },
+            ],
+        },
         logs: {
             label: 'Activity Log',
             icon: ScrollText,
             routePrefix: 'system.logs',
             work: [
                 { label: 'Activity Log', route: 'system.logs', icon: ScrollText },
+                { label: 'Audit Trail', route: 'admin.audit-log.index', icon: History },
             ],
             quickLinks: [
                 { label: 'System Health', route: 'admin.health', icon: HeartPulse },

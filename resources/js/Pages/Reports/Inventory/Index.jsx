@@ -1,9 +1,10 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/reports';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import { StatTile, LabelledBars } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 export default function InventoryReport({ stockValue, onHand, ageing, branches, filters }) {
     function apply(params) {
@@ -64,8 +65,8 @@ export default function InventoryReport({ stockValue, onHand, ageing, branches, 
                                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No stock matches.</td></tr>
                             ) : onHand.map((s, i) => (
                                 <tr key={i} className={`hover:bg-slate-50 ${s.below_reorder ? 'bg-amber-50/50' : ''}`}>
-                                    <td className="px-4 py-2"><span className="font-mono font-semibold text-slate-700">{s.part_number}</span><span className="block text-xs text-slate-400 truncate max-w-[18rem]">{s.description}</span></td>
-                                    <td className="px-2 py-2 text-slate-500">{s.branch}</td>
+                                    <td className="px-4 py-2"><EntityLink type="part" id={s.part_id} label={s.part_number} mono className="font-semibold" /><span className="block text-xs text-slate-400 truncate max-w-[18rem]">{s.description}</span></td>
+                                    <td className="px-2 py-2"><EntityLink type="branch" id={s.branch_id} label={s.branch} muted /></td>
                                     <td className={`px-2 py-2 text-right tabular-nums ${s.on_hand < 0 ? 'text-red-600' : 'text-slate-600'}`}>{s.on_hand}{s.below_reorder && <span className="ml-1 text-amber-600" title="Below reorder">▼</span>}</td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-500">{s.available}</td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-500">{s.avco.toFixed(2)}</td>

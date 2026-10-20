@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             // Identity & access
             SuperuserSeeder::class,        // company, main branch, roles, admin login
             SystemRouteSeeder::class,      // every route registered as a permission key
+            RolePermissionSeeder::class,   // default grants per role (additive, idempotent)
 
             // Finance backbone (ZAR)
             CurrencySeeder::class,

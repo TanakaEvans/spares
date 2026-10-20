@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Http\Controllers\Controller;
+use App\Models\GlJournal;
+use App\Models\JobCard;
+use App\Models\ReceiptAllocation;
 use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
 use Illuminate\Http\Request;
@@ -45,6 +48,7 @@ class InvoiceController extends Controller
 
         $invoice->load('customer:id,name,customer_number', 'branch:id,name',
             'salesperson:id,name', 'lines.part:id,part_number', 'payments',
+            'parent:id,document_number,document_type,parent_id', 'parent.parent:id,document_number,document_type',
             'children:id,document_number,document_type,parent_id,total_incl,document_date');
 
         return Inertia::render('Sales/Invoices/Show', [
@@ -55,6 +59,7 @@ class InvoiceController extends Controller
                     'id' => $c->id, 'document_number' => $c->document_number,
                     'document_date' => $c->document_date->toDateString(), 'total_incl' => (float) $c->total_incl,
                 ])->values(),
+            'related' => $this->related($invoice),
         ]);
     }
 
@@ -85,7 +90,9 @@ class InvoiceController extends Controller
             'status' => $invoice->status,
             'customer' => $invoice->customer?->only(['id', 'name', 'customer_number']),
             'branch' => $invoice->branch?->name,
+            'branch_id' => $invoice->branch_id,
             'salesperson' => $invoice->salesperson?->name,
+            'salesperson_id' => $invoice->salesperson_id,
             'document_date' => $invoice->document_date->toDateString(),
             'subtotal_excl' => (float) $invoice->subtotal_excl,
             'discount_amount' => (float) $invoice->discount_amount,
@@ -111,6 +118,50 @@ class InvoiceController extends Controller
                 'change_given' => (float) $p->change_given,
                 'reference' => $p->reference,
             ]),
+        ];
+    }
+
+    /**
+     * Everything this invoice is connected to (UI-13): the quote→order chain it
+     * came from, the credit notes and receipts raised against it, its GL
+     * journal and the workshop job that produced it.
+     *
+     * @return array<string,mixed>
+     */
+    private function related(SalesDocument $invoice): array
+    {
+        $order = $invoice->parent?->document_type === 'order' ? $invoice->parent : null;
+        $quote = $order?->parent?->document_type === 'quotation'
+            ? $order->parent
+            : ($invoice->parent?->document_type === 'quotation' ? $invoice->parent : null);
+
+        $receipts = ReceiptAllocation::query()
+            ->where('document_id', $invoice->id)
+            ->with('receipt:id,receipt_number,receipt_date,amount')
+            ->get()
+            ->map(fn (ReceiptAllocation $a) => [
+                'id' => $a->receipt_id,
+                'receipt_number' => $a->receipt?->receipt_number,
+                'receipt_date' => $a->receipt?->receipt_date?->toDateString(),
+                'amount' => (float) $a->amount,
+            ])
+            ->filter(fn ($r) => $r['receipt_number'] !== null)
+            ->values();
+
+        $journal = $invoice->gl_journal_id
+            ? GlJournal::query()->find($invoice->gl_journal_id, ['id', 'journal_number'])
+            : null;
+
+        $job = JobCard::query()
+            ->where('sales_document_id', $invoice->id)
+            ->first(['id', 'job_number', 'vehicle_id', 'technician_id']);
+
+        return [
+            'quote' => $quote?->only(['id', 'document_number']),
+            'order' => $order?->only(['id', 'document_number']),
+            'receipts' => $receipts,
+            'journal' => $journal?->only(['id', 'journal_number']),
+            'job' => $job?->only(['id', 'job_number']),
         ];
     }
 }

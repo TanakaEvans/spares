@@ -157,6 +157,12 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('health', [\App\Http\Controllers\Admin\HealthController::class, 'index'])
             ->name('health')
             ->defaults('description', 'System health & integrity dashboard');
+        Route::post('health/run', [\App\Http\Controllers\Admin\HealthController::class, 'run'])
+            ->name('health.run')->defaults('description', 'Run and record a full health check');
+        Route::get('backups/{file}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])
+            ->name('backups.download')->where('file', '[A-Za-z0-9._-]+')->defaults('description', 'Download a database backup');
+        Route::get('audit-log', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])
+            ->name('audit-log.index')->defaults('description', 'Audit trail — who changed what, when, before/after');
         Route::post('health/post-opening-stock', [\App\Http\Controllers\Admin\HealthController::class, 'postOpeningStock'])
             ->name('health.post-opening-stock')
             ->defaults('description', 'Post the opening inventory balance to the GL');
@@ -336,6 +342,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('brands', [\App\Http\Controllers\Inventory\PartBrandController::class, 'store'])->name('brands.store');
 
         Route::get('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'index'])->name('bins.index');
+        Route::get('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'show'])->name('bins.show')->defaults('description', 'Bin location detail — parts stored here');
         Route::post('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'store'])->name('bins.store');
 
         Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
@@ -343,9 +350,11 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::patch('stock/{level}/reorder-levels', [\App\Http\Controllers\Inventory\StockMovementController::class, 'updateReorderLevels'])->name('stock.reorder-levels');
 
         Route::get('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'adjustments'])->name('adjustments.index');
+        Route::get('adjustments/{adjustment}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'showAdjustment'])->name('adjustments.show')->defaults('description', 'Stock adjustment detail');
         Route::post('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeAdjustment'])->name('adjustments.store');
 
         Route::get('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'transfers'])->name('transfers.index');
+        Route::get('transfers/{transfer}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'showTransfer'])->name('transfers.show')->defaults('description', 'Stock transfer detail');
         Route::post('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeTransfer'])->name('transfers.store');
         Route::post('transfers/{transfer}/dispatch', [\App\Http\Controllers\Inventory\StockMovementController::class, 'dispatchTransfer'])->name('transfers.dispatch');
         Route::post('transfers/{transfer}/receive', [\App\Http\Controllers\Inventory\StockMovementController::class, 'receiveTransfer'])->name('transfers.receive');
@@ -399,15 +408,18 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('orders/{order}/print', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'print'])->name('orders.print');
 
         Route::get('grns', [\App\Http\Controllers\Purchasing\GrnController::class, 'index'])->name('grns.index');
+        Route::get('grns/{grn}', [\App\Http\Controllers\Purchasing\GrnController::class, 'show'])->name('grns.show')->defaults('description', 'Goods received note detail');
         Route::get('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'create'])->name('grns.create');
         Route::post('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'store'])->name('grns.store');
 
         Route::get('invoices', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('invoices/{supplierInvoice}', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'show'])->name('invoices.show')->defaults('description', 'Supplier invoice detail');
         Route::get('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'create'])->name('invoices.create');
         Route::post('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'store'])->name('invoices.store');
         Route::post('invoices/{invoice}/post', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'post'])->name('invoices.post');
 
         Route::get('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'index'])->name('returns.index');
+        Route::get('returns/{supplierReturn}', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'show'])->name('returns.show')->defaults('description', 'Supplier return detail');
         Route::get('returns/create', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'create'])->name('returns.create');
         Route::post('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'store'])->name('returns.store');
         Route::post('returns/{return}/ship', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'ship'])->name('returns.ship');
@@ -416,6 +428,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('supplier-credits', [\App\Http\Controllers\Purchasing\SupplierCreditController::class, 'index'])->name('supplier-credits.index')->defaults('description', 'Supplier credit notes');
 
         Route::get('imports', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'index'])->name('imports.index')->defaults('description', 'Import shipments');
+        Route::get('imports/{shipment}', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'show'])->name('imports.show')->defaults('description', 'Import shipment detail');
         Route::post('imports', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'store'])->name('imports.store')->defaults('description', 'Create an import shipment');
         Route::post('imports/{shipment}/transition', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'transition'])->name('imports.transition')->defaults('description', 'Update shipment status');
         Route::get('price-comparison', [\App\Http\Controllers\Purchasing\PriceComparisonController::class, 'index'])->name('price-comparison.index')->defaults('description', 'Supplier price comparison');
@@ -449,6 +462,8 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('pos/part-lookup', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'partLookup'])->name('pos.part-lookup')->defaults('description', 'Till part search');
         Route::get('pos/customer-lookup', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'customerLookup'])->name('pos.customer-lookup')->defaults('description', 'Till customer search');
         Route::post('pos', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'store'])->name('pos.store')->defaults('description', 'Post a counter sale');
+        Route::post('pos/verify-supervisor', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'approveDiscount'])->name('pos.verify-supervisor')->defaults('description', 'Till asks a supervisor to approve an over-limit discount');
+        Route::post('pos/approve-discount', [\App\Http\Controllers\Sales\PointOfSaleController::class, 'approveDiscount'])->name('pos.approve-discount')->defaults('description', 'Authority to approve over-limit till discounts (supervisor)');
 
         // Invoices
         Route::get('invoices', [\App\Http\Controllers\Sales\InvoiceController::class, 'index'])->name('invoices.index')->defaults('description', 'Tax invoices');
@@ -491,10 +506,12 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('promotions/{promotion}/toggle', [\App\Http\Controllers\Sales\PromotionController::class, 'toggle'])->name('promotions.toggle')->defaults('description', 'Activate/deactivate a promotion');
         // Lay-bys
         Route::get('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'index'])->name('laybys.index')->defaults('description', 'Lay-by management');
+        Route::get('laybys/{layby}', [\App\Http\Controllers\Sales\LaybyController::class, 'show'])->name('laybys.show')->defaults('description', 'Lay-by detail and payments');
         Route::post('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'store'])->name('laybys.store')->defaults('description', 'Create a lay-by');
         Route::post('laybys/{layby}/payment', [\App\Http\Controllers\Sales\LaybyController::class, 'addPayment'])->name('laybys.payment')->defaults('description', 'Record a lay-by payment');
         // Delivery notes
         Route::get('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'index'])->name('delivery-notes.index')->defaults('description', 'Delivery notes');
+        Route::get('delivery-notes/{deliveryNote}', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'show'])->name('delivery-notes.show')->defaults('description', 'Delivery note detail');
         Route::post('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'store'])->name('delivery-notes.store')->defaults('description', 'Create a delivery note');
         Route::post('delivery-notes/{deliveryNote}/transition', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'transition'])->name('delivery-notes.transition')->defaults('description', 'Update delivery status');
     });
@@ -516,12 +533,14 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Accounts receivable
         Route::get('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'index'])->name('receipts.index')->defaults('description', 'Customer receipts & AR ageing');
+        Route::get('receipts/{receipt}', [\App\Http\Controllers\Finance\ReceiptController::class, 'show'])->name('receipts.show')->defaults('description', 'Customer receipt detail and allocations');
         Route::get('receipts/create', [\App\Http\Controllers\Finance\ReceiptController::class, 'create'])->name('receipts.create')->defaults('description', 'Capture a customer receipt');
         Route::get('receipts/customer-lookup', [\App\Http\Controllers\Finance\ReceiptController::class, 'customerLookup'])->name('receipts.customer-lookup')->defaults('description', 'Customer & open-invoice lookup');
         Route::post('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'store'])->name('receipts.store')->defaults('description', 'Post a customer receipt');
 
         // Accounts payable + payment run
         Route::get('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'index'])->name('payments.index')->defaults('description', 'Supplier payments & AP ageing');
+        Route::get('payments/{payment}', [\App\Http\Controllers\Finance\PaymentController::class, 'show'])->name('payments.show')->defaults('description', 'Supplier payment detail and allocations');
         Route::get('payments/create', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('payments.create')->defaults('description', 'Capture a supplier payment');
         Route::get('payments/supplier-lookup', [\App\Http\Controllers\Finance\PaymentController::class, 'supplierLookup'])->name('payments.supplier-lookup')->defaults('description', 'Supplier & open-invoice lookup');
         Route::post('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('payments.store')->defaults('description', 'Post a supplier payment');
@@ -564,6 +583,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('labour/{labourCode}/rates', [\App\Http\Controllers\Workshop\LabourCodeController::class, 'storeRate'])->name('labour.rates.store')->defaults('description', 'Set a make-specific rate');
 
         Route::get('technicians', [\App\Http\Controllers\Workshop\TechnicianController::class, 'index'])->name('technicians.index')->defaults('description', 'Technicians');
+        Route::get('technicians/{technician}', [\App\Http\Controllers\Workshop\TechnicianController::class, 'show'])->name('technicians.show')->defaults('description', 'Technician profile, jobs and time');
         Route::post('technicians', [\App\Http\Controllers\Workshop\TechnicianController::class, 'store'])->name('technicians.store')->defaults('description', 'Add a technician');
         Route::patch('technicians/{technician}', [\App\Http\Controllers\Workshop\TechnicianController::class, 'update'])->name('technicians.update')->defaults('description', 'Update a technician');
 
@@ -584,6 +604,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('jobs/{job}/invoice', [\App\Http\Controllers\Workshop\JobCardController::class, 'invoice'])->name('jobs.invoice')->defaults('description', 'Invoice a completed job');
 
         Route::get('warranty', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'index'])->name('warranty.index')->defaults('description', 'Warranty claims');
+        Route::get('warranty/{claim}', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'show'])->name('warranty.show')->defaults('description', 'Warranty claim detail');
         Route::post('warranty', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'store'])->name('warranty.store')->defaults('description', 'Raise a warranty claim');
         Route::post('warranty/{warrantyClaim}/transition', [\App\Http\Controllers\Workshop\WarrantyClaimController::class, 'transition'])->name('warranty.transition')->defaults('description', 'Progress a warranty claim');
     });

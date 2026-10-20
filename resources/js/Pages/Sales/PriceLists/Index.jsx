@@ -3,6 +3,7 @@ import { Plus, ListOrdered, AlertTriangle, Star } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function PriceListsIndex({ priceLists, unpricedCount }) {
     const { data, setData, post, processing, errors, reset } = useForm({ name: '', type: 'custom' });
@@ -46,10 +47,10 @@ export default function PriceListsIndex({ priceLists, unpricedCount }) {
                             {priceLists.map((p) => (
                                 <tr key={p.id} className="hover:bg-slate-50">
                                     <td className="px-4 py-2.5">
-                                        <Link href={route('sales.price-lists.show', p.id)} className="inline-flex items-center gap-2 font-semibold text-slate-800 hover:text-orange-600">
+                                        <span className="inline-flex items-center gap-2">
                                             {p.is_default && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
-                                            {p.name}
-                                        </Link>
+                                            <EntityLink type="price_list" id={p.id} label={p.name} className="font-semibold" />
+                                        </span>
                                     </td>
                                     <td className="px-4 py-2.5 capitalize text-slate-500">{p.type}</td>
                                     <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">{p.items_count}</td>

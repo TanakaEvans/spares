@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Search, Trash2, ScanBarcode, UserRound, X, AlertTriangle, Banknote } from 'lucide-react';
+import { Search, Trash2, ScanBarcode, UserRound, X, AlertTriangle, Banknote, PauseCircle, PlayCircle, ShieldCheck, Keyboard } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
@@ -9,12 +9,17 @@ const money = (n) => Number(n || 0).toFixed(2);
 
 /** Debounced JSON GET against a Ziggy route. */
 function useLookup(routeName, extra = {}) {
-    return async (q) => {
-        const params = new URLSearchParams({ q, ...extra });
+    return async (q, more = {}) => {
+        const params = new URLSearchParams({ q, ...extra, ...more });
         const res = await fetch(route(routeName) + '?' + params, { headers: { Accept: 'application/json' } });
         return res.json();
     };
 }
+
+/* Suspended carts live in the browser of this till (2.1: suspend/recall holds no stock). */
+const suspendKey = (branchId) => `pos.suspended.${branchId}`;
+const readSuspended = (branchId) => { try { return JSON.parse(localStorage.getItem(suspendKey(branchId)) || '[]'); } catch { return []; } };
+const writeSuspended = (branchId, list) => { try { localStorage.setItem(suspendKey(branchId), JSON.stringify(list)); } catch { /* storage unavailable */ } };
 
 export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
     const { errors } = usePage().props;
@@ -24,6 +29,10 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
     const [results, setResults] = useState([]);
     const [highlight, setHighlight] = useState(0);
     const [tenderOpen, setTenderOpen] = useState(false);
+    const [recallOpen, setRecallOpen] = useState(false);
+    const [suspended, setSuspended] = useState(() => readSuspended(branch.id));
+    const [customerOpenRequest, setCustomerOpenRequest] = useState(0);
+    const [notice, setNotice] = useState(null);
     const scanRef = useRef(null);
     const timer = useRef(null);
     const partLookup = useLookup('sales.pos.part-lookup', { customer_id: customer.id });
@@ -44,7 +53,7 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
         return () => clearTimeout(timer.current);
     }, [query, customer.id]);
 
-    function addPart(part) {
+    const addPart = useCallback((part) => {
         setLines((prev) => {
             const existing = prev.find((l) => l.part_id === part.id);
             if (existing) {
@@ -58,12 +67,37 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
         setQuery('');
         setResults([]);
         scanRef.current?.focus();
+    }, []);
+
+    /**
+     * Scanner-safe Enter: a barcode scanner types the code and sends Enter inside
+     * the debounce window, so on Enter we ask the server for an exact match
+     * immediately instead of relying on the (possibly empty) result list.
+     */
+    async function addExact(q) {
+        try {
+            const json = await partLookup(q, { exact: 1 });
+            const hit = (json.parts ?? [])[0];
+            if (hit) { addPart(hit); return true; }
+        } catch { /* fall through */ }
+        setNotice(`No part matches "${q}" — try the OEM number or a description word.`);
+        return false;
     }
 
     function onKey(e) {
         if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight((h) => Math.min(h + 1, results.length - 1)); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight((h) => Math.max(h - 1, 0)); }
-        else if (e.key === 'Enter' && results[highlight]) { e.preventDefault(); addPart(results[highlight]); }
+        else if (e.key === 'Enter') {
+            e.preventDefault();
+            const q = query.trim();
+            if (results.length > 0 && results[highlight] && q.length >= 2) {
+                const exact = results.find((p) => p.part_number.toLowerCase() === q.toLowerCase());
+                addPart(exact ?? results[highlight]);
+            } else if (q.length >= 2) {
+                clearTimeout(timer.current);
+                addExact(q);
+            }
+        }
         else if (e.key === 'Escape') { setQuery(''); setResults([]); }
     }
 
@@ -85,6 +119,58 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
     const hasUnpriced = lines.some((l) => !l.priced);
     const canCharge = lines.length > 0 && !hasUnpriced;
 
+    // ── Suspend / recall ────────────────────────────────────────────────
+    function suspendSale() {
+        if (lines.length === 0) return;
+        const entry = { id: Date.now(), at: new Date().toISOString(), customer, lines };
+        const next = [entry, ...readSuspended(branch.id)].slice(0, 20);
+        writeSuspended(branch.id, next);
+        setSuspended(next);
+        setLines([]);
+        setCustomer({ ...walkIn, is_walk_in: true });
+        setNotice(`Sale suspended (${entry.lines.length} line${entry.lines.length === 1 ? '' : 's'}). Press F9 to recall.`);
+        scanRef.current?.focus();
+    }
+
+    async function recallSale(entry) {
+        const next = readSuspended(branch.id).filter((s) => s.id !== entry.id);
+        writeSuspended(branch.id, next);
+        setSuspended(next);
+        setCustomer(entry.customer);
+        // Re-validate price and availability for every line (2.1 rule 5).
+        const refreshed = [];
+        let changed = false;
+        for (const l of entry.lines) {
+            try {
+                const json = await partLookup(l.part_number, { exact: 1, customer_id: entry.customer.id });
+                const hit = (json.parts ?? [])[0];
+                if (hit) {
+                    if (hit.price !== l.unit_price) changed = true;
+                    refreshed.push({ ...l, unit_price: hit.price, priced: hit.priced, on_hand: hit.on_hand });
+                    continue;
+                }
+            } catch { /* keep stale line */ }
+            refreshed.push(l);
+        }
+        setLines(refreshed);
+        setRecallOpen(false);
+        setNotice(changed ? 'Recalled — some prices changed since the sale was suspended; check the cart.' : 'Sale recalled.');
+        scanRef.current?.focus();
+    }
+
+    // ── Keyboard shortcuts (2.1: operable without a mouse) ───────────────
+    useEffect(() => {
+        function onGlobalKey(e) {
+            if (e.key === 'F2') { e.preventDefault(); setCustomerOpenRequest((n) => n + 1); }
+            else if (e.key === 'F4') { e.preventDefault(); if (canCharge) setTenderOpen(true); }
+            else if (e.key === 'F8') { e.preventDefault(); suspendSale(); }
+            else if (e.key === 'F9') { e.preventDefault(); setRecallOpen((o) => !o); }
+            else if (e.key === 'Escape') { setTenderOpen(false); setRecallOpen(false); setNotice(null); }
+        }
+        window.addEventListener('keydown', onGlobalKey);
+        return () => window.removeEventListener('keydown', onGlobalKey);
+    });
+
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -97,6 +183,12 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
                 <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                     <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{errors.sale || errors.discount || errors.lines}</span>
+                </div>
+            )}
+            {notice && (
+                <div className="mb-4 flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
+                    <span>{notice}</span>
+                    <button onClick={() => setNotice(null)} aria-label="Dismiss" className="text-slate-300 hover:text-slate-600"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
@@ -140,6 +232,11 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
                             <div className="flex h-64 flex-col items-center justify-center text-center text-slate-400">
                                 <ScanBarcode className="w-10 h-10 mb-3" />
                                 <p className="text-sm">Scan or search to start a sale.</p>
+                                {suspended.length > 0 && (
+                                    <button onClick={() => setRecallOpen(true)} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">
+                                        <PlayCircle className="w-4 h-4" /> Recall a suspended sale ({suspended.length})
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <table className="w-full text-sm">
@@ -187,11 +284,20 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
                             </table>
                         )}
                     </div>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
+                        <span className="inline-flex items-center gap-1"><Keyboard className="w-3.5 h-3.5" /> Shortcuts:</span>
+                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F2</kbd> customer</span>
+                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F4</kbd> take payment</span>
+                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F8</kbd> suspend</span>
+                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F9</kbd> recall</span>
+                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">Esc</kbd> close</span>
+                    </div>
                 </div>
 
                 {/* Sale panel */}
                 <div className="space-y-4">
-                    <CustomerPicker customer={customer} walkIn={walkIn} onChange={setCustomer} />
+                    <CustomerPicker customer={customer} walkIn={walkIn} onChange={setCustomer} openRequest={customerOpenRequest} />
 
                     <div className="rounded-xl border border-slate-100 bg-white p-5 space-y-2">
                         <div className="flex justify-between text-sm text-slate-500"><span>Subtotal (excl)</span><span className="tabular-nums">{money(subtotal)}</span></div>
@@ -206,11 +312,26 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
                             className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-base font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <Banknote className="w-5 h-5" />
-                            Charge {money(total)}
+                            Charge <MoneyDisplay amount={total} />
                         </button>
+                        <div className="flex gap-2 pt-1">
+                            <button type="button" onClick={suspendSale} disabled={lines.length === 0}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                                <PauseCircle className="w-4 h-4" /> Suspend
+                            </button>
+                            <button type="button" onClick={() => setRecallOpen(true)} disabled={suspended.length === 0}
+                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                                <PlayCircle className="w-4 h-4" /> Recall{suspended.length > 0 ? ` (${suspended.length})` : ''}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {recallOpen && (
+                <RecallPanel suspended={suspended} onRecall={recallSale} onClose={() => setRecallOpen(false)}
+                    onDiscard={(entry) => { const next = readSuspended(branch.id).filter((s) => s.id !== entry.id); writeSuspended(branch.id, next); setSuspended(next); }} />
+            )}
 
             {tenderOpen && (
                 <TenderDialog
@@ -225,12 +346,45 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
     );
 }
 
-function CustomerPicker({ customer, walkIn, onChange }) {
+function RecallPanel({ suspended, onRecall, onDiscard, onClose }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Suspended sales">
+            <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
+            <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold text-slate-900">Suspended sales</h2>
+                    <button onClick={onClose} aria-label="Close" className="text-slate-300 hover:text-slate-600"><X className="w-5 h-5" /></button>
+                </div>
+                {suspended.length === 0 ? (
+                    <p className="text-sm text-slate-400">Nothing suspended on this till.</p>
+                ) : (
+                    <ul className="divide-y divide-slate-100">
+                        {suspended.map((s) => (
+                            <li key={s.id} className="flex items-center gap-3 py-2.5">
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-slate-800 truncate">{s.customer?.name ?? 'Cash Customer'}</div>
+                                    <div className="text-xs text-slate-400">{s.lines.length} line{s.lines.length === 1 ? '' : 's'} · {new Date(s.at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</div>
+                                </div>
+                                <button onClick={() => onDiscard(s)} className="text-xs text-slate-400 hover:text-red-600">Discard</button>
+                                <button onClick={() => onRecall(s)} className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700">Recall</button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+                <p className="text-xs text-slate-400">Suspended sales hold no stock; prices and availability are re-checked on recall.</p>
+            </div>
+        </div>
+    );
+}
+
+function CustomerPicker({ customer, walkIn, onChange, openRequest = 0 }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const lookup = useLookup('sales.pos.customer-lookup');
     const timer = useRef(null);
+
+    useEffect(() => { if (openRequest > 0) setOpen(true); }, [openRequest]);
 
     useEffect(() => {
         clearTimeout(timer.current);
@@ -262,11 +416,11 @@ function CustomerPicker({ customer, walkIn, onChange }) {
                 <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
                     <div className="flex justify-between">
                         <span className="text-slate-500">Account balance</span>
-                        <span className="tabular-nums font-semibold text-slate-800">{money(customer.ar_balance ?? 0)}</span>
+                        <span className="tabular-nums font-semibold text-slate-800"><MoneyDisplay amount={customer.ar_balance ?? 0} /></span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-slate-500">Available credit</span>
-                        <span className={`tabular-nums font-semibold ${(customer.available_credit ?? 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}>{money(customer.available_credit ?? 0)}</span>
+                        <span className={`tabular-nums font-semibold ${(customer.available_credit ?? 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}><MoneyDisplay amount={customer.available_credit ?? 0} /></span>
                     </div>
                     {customer.on_hold && <div className="mt-1 text-xs font-medium text-amber-600">On credit hold — account sales blocked.</div>}
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium">
@@ -284,6 +438,7 @@ function CustomerPicker({ customer, walkIn, onChange }) {
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } }}
                             placeholder="Search customer…" aria-label="Search customer"
                             className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-1.5 text-sm"
                         />
@@ -311,7 +466,7 @@ function CustomerPicker({ customer, walkIn, onChange }) {
                 </div>
             ) : (
                 <button onClick={() => setOpen(true)} className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700">
-                    Change customer →
+                    Change customer → <span className="text-xs text-slate-400">(F2)</span>
                 </button>
             )}
         </div>
@@ -322,6 +477,9 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
     const [payments, setPayments] = useState([{ method: 'cash', amount: total, tendered: total, reference: '' }]);
     const [processing, setProcessing] = useState(false);
     const [error, setError] = useState(null);
+    const [supervisor, setSupervisor] = useState({ username: '', password: '' });
+    const [approver, setApprover] = useState(null);     // name once verified
+    const [verifying, setVerifying] = useState(false);
 
     const paid = Math.round(payments.reduce((n, p) => n + Number(p.amount || 0), 0) * 100) / 100;
     const balance = Math.round((total - paid) * 100) / 100;
@@ -335,9 +493,22 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
         setPayments((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
     };
 
+    /** Check the supervisor's credentials now so the cashier gets an immediate answer. */
+    async function verifySupervisor() {
+        setVerifying(true); setError(null);
+        try {
+            const res = await window.axios.post(route('sales.pos.verify-supervisor'), supervisor);
+            setApprover(res.data.approver);
+        } catch (e) {
+            setApprover(null);
+            setError(e.response?.data?.message ?? 'Could not verify the supervisor.');
+        } finally { setVerifying(false); }
+    }
+
     function submit() {
         if (payments.some((p) => Number(p.amount || 0) <= 0)) { setError('Every payment line needs an amount greater than 0 — remove any blank line.'); return; }
         if (Math.abs(balance) > 0.001) { setError('Payments must equal the total.'); return; }
+        if (needsApproval && !approver) { setError('A supervisor must approve the over-limit discount before the sale can post.'); return; }
         setProcessing(true);
         router.post(route('sales.pos.store'), {
             customer_id: customer.id,
@@ -347,7 +518,8 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
                 tendered: p.method === 'cash' ? Number(p.tendered || p.amount) : null,
                 reference: p.reference || null,
             })),
-            discount_approved: needsApproval,
+            supervisor_username: needsApproval ? supervisor.username : null,
+            supervisor_password: needsApproval ? supervisor.password : null,
         }, {
             onError: (errs) => { setError(Object.values(errs)[0]); setProcessing(false); },
             onFinish: () => setProcessing(false),
@@ -367,7 +539,7 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
                     </div>
                     <div className="text-right">
                         <div className="text-xs uppercase tracking-wide text-slate-400">Total due</div>
-                        <div className="text-4xl font-bold tabular-nums text-slate-900">{money(total)}</div>
+                        <div className="text-4xl font-bold tabular-nums text-slate-900"><MoneyDisplay amount={total} /></div>
                     </div>
                 </div>
 
@@ -455,7 +627,37 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
                 </div>
 
                 {needsApproval && (
-                    <p className="text-sm text-amber-600">A line discount exceeds {maxDiscount}% — posting records a supervisor override.</p>
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 space-y-3">
+                        <div className="flex items-start gap-2 text-sm text-amber-800">
+                            <ShieldCheck className="w-5 h-5 shrink-0" />
+                            <span>A line discount exceeds {maxDiscount}%. A supervisor must enter <strong>their own</strong> username and password to approve it; the approval is recorded on the invoice and in the audit trail.</span>
+                        </div>
+                        {approver ? (
+                            <div className="flex items-center justify-between rounded-lg bg-white border border-emerald-200 px-3 py-2 text-sm">
+                                <span className="text-emerald-700 font-medium">Approved by {approver}</span>
+                                <button type="button" onClick={() => { setApprover(null); setSupervisor({ username: '', password: '' }); }} className="text-xs text-slate-400 hover:text-slate-600">Change</button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap items-end gap-3">
+                                <label className="flex-1 min-w-[10rem]">
+                                    <span className="block text-xs font-medium text-amber-800 mb-1">Supervisor username</span>
+                                    <input value={supervisor.username} autoComplete="off" onChange={(e) => setSupervisor((s) => ({ ...s, username: e.target.value }))}
+                                        aria-label="Supervisor username" className={method} />
+                                </label>
+                                <label className="flex-1 min-w-[10rem]">
+                                    <span className="block text-xs font-medium text-amber-800 mb-1">Supervisor password</span>
+                                    <input type="password" value={supervisor.password} autoComplete="new-password"
+                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); verifySupervisor(); } }}
+                                        onChange={(e) => setSupervisor((s) => ({ ...s, password: e.target.value }))}
+                                        aria-label="Supervisor password" className={method} />
+                                </label>
+                                <button type="button" onClick={verifySupervisor} disabled={verifying || !supervisor.username || !supervisor.password}
+                                    className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-40">
+                                    {verifying ? 'Checking…' : 'Approve'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 )}
                 {error && <p className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</p>}
 
@@ -463,7 +665,7 @@ function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
                     <button onClick={onClose} className="rounded-lg px-5 py-3 text-base font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
                     <button
                         onClick={submit}
-                        disabled={processing || Math.abs(balance) > 0.001 || accountBlocked}
+                        disabled={processing || Math.abs(balance) > 0.001 || accountBlocked || (needsApproval && !approver)}
                         className="rounded-lg bg-orange-600 px-8 py-3 text-base font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         {processing ? 'Posting…' : 'Complete sale'}

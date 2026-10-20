@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { FolderTree, Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import StatusBadge from '@/Components/StatusBadge';
 
@@ -40,7 +41,7 @@ export default function CategoriesIndex({ categories }) {
                         {roots.map((root) => (
                             <li key={root.id}>
                                 <div className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-slate-50">
-                                    <span className="font-semibold text-slate-800">{root.name}</span>
+                                    <EntityLink type="category" id={root.id} label={root.name} className="font-semibold" title="Parts in this category" />
                                     <span className="font-mono text-xs text-slate-400">{root.code}</span>
                                     {!root.is_active && <StatusBadge status="inactive" />}
                                 </div>
@@ -48,14 +49,14 @@ export default function CategoriesIndex({ categories }) {
                                     {childrenOf(root.id).map((child) => (
                                         <li key={child.id}>
                                             <div className="flex items-center gap-2 py-1 px-2 rounded hover:bg-slate-50">
-                                                <span className="text-slate-700">{child.name}</span>
+                                                <EntityLink type="category" id={child.id} label={child.name} title="Parts in this category" />
                                                 <span className="font-mono text-xs text-slate-300">{child.code}</span>
                                             </div>
                                             {childrenOf(child.id).length > 0 && (
                                                 <ul className="ml-5 border-l border-slate-100 pl-3">
                                                     {childrenOf(child.id).map((g) => (
                                                         <li key={g.id} className="flex items-center gap-2 py-1 px-2 rounded hover:bg-slate-50">
-                                                            <span className="text-slate-500">{g.name}</span>
+                                                            <EntityLink type="category" id={g.id} label={g.name} muted title="Parts in this category" />
                                                             <span className="font-mono text-xs text-slate-300">{g.code}</span>
                                                         </li>
                                                     ))}

@@ -31,6 +31,11 @@ class SupplierReturn extends Model
         return $this->hasMany(SupplierReturnLine::class, 'return_id');
     }
 
+    public function glJournal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'gl_journal_id');
+    }
+
     public function totalValue(): float
     {
         return round($this->lines->sum(fn ($l) => (float) $l->qty * (float) $l->unit_cost), 2);

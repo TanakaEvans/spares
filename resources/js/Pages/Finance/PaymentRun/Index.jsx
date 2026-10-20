@@ -5,6 +5,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import EntityLink from '@/Components/EntityLink';
 
 const money = (n) => Number(n || 0).toFixed(2);
 
@@ -81,8 +82,8 @@ export default function PaymentRunIndex({ dueInvoices, branches }) {
                             ) : dueInvoices.map((inv) => (
                                 <tr key={inv.id} className="hover:bg-slate-50">
                                     <td className="px-4 py-2"><input type="checkbox" checked={!!selected[inv.id]} onChange={(e) => setSelected((prev) => ({ ...prev, [inv.id]: e.target.checked }))} aria-label={`Select ${inv.invoice_number}`} className="rounded border-slate-300 text-orange-600 focus:ring-orange-500" /></td>
-                                    <td className="px-2 py-2 font-mono text-slate-700">{inv.invoice_number}</td>
-                                    <td className="px-2 py-2 text-slate-600">{inv.supplier}</td>
+                                    <td className="px-2 py-2"><EntityLink type="supplier_invoice" id={inv.id} label={inv.invoice_number} mono /></td>
+                                    <td className="px-2 py-2"><EntityLink type="supplier" id={inv.supplier_id} label={inv.supplier} muted /></td>
                                     <td className="px-2 py-2 tabular-nums text-slate-400">{inv.due_date ?? '—'}</td>
                                     <td className="px-4 py-2 text-right tabular-nums text-slate-700">{money(inv.outstanding)}</td>
                                 </tr>

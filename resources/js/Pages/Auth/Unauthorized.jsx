@@ -10,7 +10,7 @@ export default function Unauthorized({ routeDescription }) {
 
     return (
         <>
-            <Head title="Access Denied | Value Chain Management" />
+            <Head title="Access Denied" />
 
             <div className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden text-white font-sans selection:bg-red-500 selection:text-white">
                 {/* Global styles since we're using a specific font */}

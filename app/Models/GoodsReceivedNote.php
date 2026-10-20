@@ -36,6 +36,22 @@ class GoodsReceivedNote extends Model
         return $this->hasMany(GrnLine::class, 'grn_id');
     }
 
+    public function receivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'received_by');
+    }
+
+    public function glJournal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'gl_journal_id');
+    }
+
+    /** Supplier invoices captured against this receipt (3-way match). */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(SupplierInvoice::class, 'grn_id');
+    }
+
     public function acceptedValue(): float
     {
         return round($this->lines->sum(fn ($l) => (float) $l->qty_received * (float) $l->unit_cost), 2);

@@ -6,6 +6,7 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function OrdersIndex({ orders, filters }) {
     function filter(params) {
@@ -31,8 +32,8 @@ export default function OrdersIndex({ orders, filters }) {
                 </div>
                 <DataTable
                     columns={[
-                        { key: 'document_number', label: 'Order', render: (d) => <span className="font-mono font-semibold text-slate-800">{d.document_number}</span> },
-                        { key: 'customer', label: 'Customer', render: (d) => <span className="text-slate-700">{d.customer}</span> },
+                        { key: 'document_number', label: 'Order', render: (d) => <EntityLink type="order" id={d.id} label={d.document_number} mono className="font-semibold" /> },
+                        { key: 'customer', label: 'Customer', render: (d) => <EntityLink type="customer" id={d.customer_id} label={d.customer} /> },
                         { key: 'document_date', label: 'Date', render: (d) => <span className="tabular-nums text-slate-500">{d.document_date}</span> },
                         { key: 'total_incl', label: 'Total', align: 'right', render: (d) => <MoneyDisplay amount={d.total_incl} /> },
                         { key: 'status', label: 'Status', render: (d) => <StatusBadge status={d.status} /> },

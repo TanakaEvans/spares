@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 
 export default function CompanyIndex({ auth, company, employees = [] }) {
     const [isEditing, setIsEditing] = useState(!company);
+    const { currency } = usePage().props;
 
     const { data, setData, post, processing, errors } = useForm({
         name: company?.name || '',
@@ -19,7 +20,6 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
         state: company?.state || '',
         country: company?.country || 'Zimbabwe',
         postal_code: company?.postal_code || '',
-        currency: company?.currency || 'USD',
         bank_name: company?.bank_name || '',
         bank_branch_code: company?.bank_branch_code || '',
         bank_account_name: company?.bank_account_name || '',
@@ -218,23 +218,15 @@ export default function CompanyIndex({ auth, company, employees = [] }) {
                                 />
                             </div>
 
-                            {/* Currency */}
+                            {/* Base currency — captured once in the Configuration Centre (10.12); shown here read-only. */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Currency
+                                    Base currency
                                 </label>
-                                <select
-                                    value={data.currency}
-                                    onChange={(e) => setData('currency', e.target.value)}
-                                    disabled={!isEditing}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent disabled:bg-gray-100"
-                                >
-                                    <option value="USD">USD - US Dollar</option>
-                                    <option value="ZWL">ZWL - Zimbabwe Dollar</option>
-                                    <option value="ZAR">ZAR - South African Rand</option>
-                                    <option value="EUR">EUR - Euro</option>
-                                    <option value="GBP">GBP - British Pound</option>
-                                </select>
+                                <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 flex items-center justify-between">
+                                    <span>{currency?.code} — {currency?.symbol}</span>
+                                    <Link href={route('admin.settings.index')} className="text-xs font-medium text-orange-600 hover:text-orange-700">Configuration Centre →</Link>
+                                </div>
                             </div>
 
                             {/* Company Head */}

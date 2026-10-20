@@ -1,10 +1,11 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { ScrollText } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
 import DataTable from '@/Components/DataTable';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function SystemLogs({ journals, filters, types }) {
     function filter(params) {
@@ -35,11 +36,12 @@ export default function SystemLogs({ journals, filters, types }) {
                 <DataTable
                     columns={[
                         { key: 'at', label: 'When', render: (j) => <span className="tabular-nums text-slate-500">{j.at}</span> },
-                        { key: 'user', label: 'User', render: (j) => <span className="text-slate-700">{j.user}</span> },
+                        { key: 'user', label: 'User', render: (j) => <EntityLink type="user" id={j.user_id} label={j.user} /> },
                         { key: 'type', label: 'Event', render: (j) => <StatusBadge status={j.type === 'manual' ? 'submitted' : j.type === 'opening' ? 'special_order' : 'posted'} label={j.type} /> },
                         { key: 'description', label: 'Description', render: (j) => <span className="text-slate-600">{j.description}</span> },
-                        { key: 'journal_number', label: 'Journal', render: (j) => <Link href={route('finance.journals.show', j.id)} onClick={(e) => e.stopPropagation()} className="font-mono text-slate-500 hover:text-orange-600">{j.journal_number}</Link> },
-                        { key: 'branch', label: 'Branch', render: (j) => <span className="text-slate-400">{j.branch ?? '—'}</span> },
+                        { key: 'source', label: 'Document', render: (j) => j.source ? <EntityLink type={j.source.type} id={j.source.id} label={j.source.label} mono /> : <span className="text-slate-300">—</span> },
+                        { key: 'journal_number', label: 'Journal', render: (j) => <EntityLink type="journal" id={j.id} label={j.journal_number} mono muted /> },
+                        { key: 'branch', label: 'Branch', render: (j) => <EntityLink type="branch" id={j.branch_id} label={j.branch ?? '—'} muted /> },
                     ]}
                     rows={journals.data}
                     pagination={journals}

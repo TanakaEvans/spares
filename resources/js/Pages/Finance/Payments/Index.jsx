@@ -3,6 +3,7 @@ import { Plus, Rows3, Play } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 export default function PaymentsIndex({ payments, ageing, filters }) {
     const { rows, totals } = ageing;
@@ -51,7 +52,7 @@ export default function PaymentsIndex({ payments, ageing, filters }) {
                                 <tr><td colSpan={6} className="px-4 py-6 text-center text-slate-400">Nothing outstanding.</td></tr>
                             ) : rows.map((r) => (
                                 <tr key={r.supplier_id} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2"><Link href={route('suppliers.show', r.supplier_id)} className="font-medium text-slate-700 hover:text-orange-600">{r.supplier}</Link></td>
+                                    <td className="px-4 py-2"><EntityLink type="supplier" id={r.supplier_id} label={r.supplier} className="font-medium" /></td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.current.toFixed(2)}</td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.b30.toFixed(2)}</td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.b60.toFixed(2)}</td>
@@ -91,9 +92,9 @@ export default function PaymentsIndex({ payments, ageing, filters }) {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {payments.data.map((p) => (
-                                    <tr key={p.id} className="hover:bg-slate-50">
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{p.payment_number}</td>
-                                        <td className="px-2 py-2"><Link href={route('suppliers.show', p.supplier_id)} className="text-slate-700 hover:text-orange-600">{p.supplier}</Link></td>
+                                    <tr key={p.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => router.visit(route('finance.payments.show', p.id))}>
+                                        <td className="px-4 py-2"><EntityLink type="payment" id={p.id} label={p.payment_number} mono className="font-semibold" /></td>
+                                        <td className="px-2 py-2"><EntityLink type="supplier" id={p.supplier_id} label={p.supplier} /></td>
                                         <td className="px-2 py-2 tabular-nums text-slate-500">{p.payment_date}</td>
                                         <td className="px-2 py-2 capitalize text-slate-500">{p.method}</td>
                                         <td className="px-2 py-2 font-mono text-xs text-slate-400">{p.batch_ref ?? '—'}</td>

@@ -2,6 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
+import EntityLink from '@/Components/EntityLink';
 import StatusBadge from '@/Components/StatusBadge';
 
 export default function BulletinsIndex({ bulletins, makes }) {
@@ -21,7 +22,9 @@ export default function BulletinsIndex({ bulletins, makes }) {
                                 <h3 className="text-sm font-semibold text-slate-800">{b.title}</h3>
                                 <StatusBadge status={badge[b.category] ?? 'submitted'} label={b.category.replace('_', ' ')} />
                             </div>
-                            <div className="text-xs text-slate-400 mt-0.5">{b.make ?? 'All makes'} · {b.at}</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                                {b.make_id ? <EntityLink type="make" id={b.make_id} label={b.make} params={{ make_id: b.make_id }} muted /> : 'All makes'} · {b.at}
+                            </div>
                             <p className="text-sm text-slate-600 mt-2 whitespace-pre-line">{b.body}</p>
                         </div>
                     ))}

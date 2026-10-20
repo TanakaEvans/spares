@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
+    use Auditable;
+
+    /** Audited events (rule 10). */
+    protected static array $auditEvents = ['created', 'updated', 'deleted'];
+
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -50,6 +56,27 @@ class Supplier extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(SupplierInvoice::class);
+    }
+
+    public function grns(): HasMany
+    {
+        return $this->hasMany(GoodsReceivedNote::class);
+    }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SupplierReturn::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
+    /** Parts this supplier is approved (or preferred) for. */
+    public function approvedParts(): HasMany
+    {
+        return $this->hasMany(ApprovedSupplier::class);
     }
 
     public function currency(): BelongsTo

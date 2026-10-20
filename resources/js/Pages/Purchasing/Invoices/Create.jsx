@@ -3,6 +3,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import FormField from '@/Components/FormField';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 // Capture the supplier's invoice against a GRN — the 3-way match runs on save.
 export default function InvoiceCreate({ grn }) {
@@ -31,16 +32,19 @@ export default function InvoiceCreate({ grn }) {
             <div className="max-w-3xl grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-                        What we received — {grn.grn_number}
+                        What we received — <EntityLink type="grn" id={grn.id} label={grn.grn_number} mono />
                     </h2>
-                    <p className="text-sm text-slate-500 mb-3">
-                        {grn.supplier} · PO {grn.po_number} · {grn.received_date}
+                    <p className="text-sm text-slate-500 mb-3 flex flex-wrap items-center gap-x-1.5">
+                        <EntityLink type="supplier" id={grn.supplier_id} label={grn.supplier} />
+                        <span>· PO</span>
+                        <EntityLink type="purchase_order" id={grn.po_id} label={grn.po_number} mono />
+                        <span>· {grn.received_date}</span>
                     </p>
                     <table className="w-full text-sm">
                         <tbody className="divide-y divide-slate-50">
                             {grn.lines.map((l, i) => (
                                 <tr key={i}>
-                                    <td className="py-1.5 font-mono text-slate-700">{l.part_number}</td>
+                                    <td className="py-1.5"><EntityLink type="part" id={l.part_id} label={l.part_number} mono /></td>
                                     <td className="py-1.5 text-right tabular-nums text-slate-500">{l.qty_received} × <MoneyDisplay amount={l.unit_cost} /></td>
                                     <td className="py-1.5 text-right tabular-nums"><MoneyDisplay amount={l.line_total} /></td>
                                 </tr>

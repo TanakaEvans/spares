@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { CalendarClock } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
+
+const showHref = (id) => (route().has('sales.laybys.show') ? route('sales.laybys.show', id) : null);
 
 export default function LaybysIndex({ laybys, customers, branches, minDepositPct }) {
     const { data, setData, post, processing, reset } = useForm({ customer_id: '', branch_id: branches[0]?.id ?? '', total: '', deposit: '', notes: '' });
@@ -30,8 +33,12 @@ export default function LaybysIndex({ laybys, customers, branches, minDepositPct
                             <tbody className="divide-y divide-slate-50">
                                 {laybys.data.map((l) => (
                                     <tr key={l.id}>
-                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">{l.layby_number}</td>
-                                        <td className="px-2 py-2 text-slate-600">{l.customer}</td>
+                                        <td className="px-4 py-2 font-mono font-semibold text-slate-800">
+                                            {showHref(l.id)
+                                                ? <Link href={showHref(l.id)} className="hover:text-orange-600 hover:underline underline-offset-2 decoration-orange-300">{l.layby_number}</Link>
+                                                : l.layby_number}
+                                        </td>
+                                        <td className="px-2 py-2 text-slate-600"><EntityLink type="customer" id={l.customer_id} label={l.customer} /></td>
                                         <td className="px-2 py-2 text-right tabular-nums"><MoneyDisplay amount={l.total} /></td>
                                         <td className="px-2 py-2 text-right tabular-nums font-medium">{l.balance.toFixed(2)}</td>
                                         <td className="px-2 py-2"><StatusBadge status={l.status === 'active' ? 'in_progress' : l.status} /></td>

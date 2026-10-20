@@ -6,6 +6,8 @@ import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
 import ConfirmDialog from '@/Components/ConfirmDialog';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 const money = (n) => Number(n || 0).toFixed(2);
 
@@ -13,6 +15,13 @@ export default function OrderShow({ order }) {
     const [tenderOpen, setTenderOpen] = useState(false);
     const [cancelOpen, setCancelOpen] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const trace = [
+        order.from_quote ? { type: 'quote', id: order.from_quote.id, label: order.from_quote.document_number } : null,
+        { type: 'order', current: true, label: order.document_number },
+        order.invoice
+            ? { type: 'invoice', id: order.invoice.id, label: order.invoice.document_number }
+            : order.status === 'cancelled' ? null : { type: 'invoice', pending: true, label: 'Invoice' },
+    ].filter(Boolean);
 
     function cancel() {
         setCancelling(true);
@@ -39,9 +48,10 @@ export default function OrderShow({ order }) {
                             <StatusBadge status={order.status} />
                         </div>
                         <p className="mt-1 text-sm text-slate-500">
-                            {order.customer && <Link href={route('customers.show', order.customer.id)} className="font-medium text-slate-600 hover:text-orange-600">{order.customer.name}</Link>}
+                            <EntityLink type="customer" id={order.customer?.id} label={order.customer?.name} className="font-medium" />
                             {' · '}{order.document_date}
-                            {order.from_quote && <> · from <Link href={route('sales.quotes.show', order.from_quote.id)} className="font-mono text-slate-600 hover:text-orange-600">{order.from_quote.document_number}</Link></>}
+                            {order.branch && <> · <EntityLink type="branch" id={order.branch.id} label={order.branch.name} muted /></>}
+                            {order.from_quote && <> · from <EntityLink type="quote" id={order.from_quote.id} label={order.from_quote.document_number} mono /></>}
                         </p>
                     </div>
                     <div className="flex gap-2">
@@ -81,7 +91,7 @@ export default function OrderShow({ order }) {
                         <tbody className="divide-y divide-slate-50">
                             {order.lines.map((l, i) => (
                                 <tr key={i}>
-                                    <td className="px-4 py-2.5"><Link href={route('inventory.parts.show', l.part_id)} className="font-mono font-semibold text-slate-700 hover:text-orange-600">{l.part_number}</Link><span className="block text-xs text-slate-400">{l.description}</span></td>
+                                    <td className="px-4 py-2.5"><EntityLink type="part" id={l.part_id} label={l.part_number ?? l.description} mono className="font-semibold" /><span className="block text-xs text-slate-400">{l.description}</span></td>
                                     <td className="px-2 py-2.5 text-right tabular-nums">{l.qty}</td>
                                     <td className="px-2 py-2.5 text-right tabular-nums text-slate-500">{l.unit_price.toFixed(2)}</td>
                                     <td className="px-4 py-2.5 text-right tabular-nums font-medium"><MoneyDisplay amount={l.line_total_incl} /></td>
@@ -98,6 +108,15 @@ export default function OrderShow({ order }) {
                         <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-900"><dt>Total</dt><dd className="tabular-nums"><MoneyDisplay amount={order.total_incl} /></dd></div>
                     </dl>
                 </div>
+
+                <RelatedLinks
+                    trace={trace}
+                    groups={[
+                        { title: 'Customer', items: order.customer ? [{ type: 'customer', id: order.customer.id, label: order.customer.name }] : [] },
+                        { title: 'Parts', items: order.lines.filter((l) => l.part_id).map((l) => ({ type: 'part', id: l.part_id, label: l.part_number, mono: true })) },
+                        { title: 'Branch', items: order.branch ? [{ type: 'branch', id: order.branch.id, label: order.branch.name }] : [] },
+                    ]}
+                />
             </div>
 
             {tenderOpen && <FulfilDialog order={order} onClose={() => setTenderOpen(false)} />}

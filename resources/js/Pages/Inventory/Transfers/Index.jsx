@@ -4,6 +4,7 @@ import { Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import PartLinePicker from '@/Components/PartLinePicker';
 import StatusBadge from '@/Components/StatusBadge';
@@ -37,10 +38,22 @@ export default function TransfersIndex({ transfers, branches }) {
                 <div className="xl:col-span-2">
                     <DataTable
                         columns={[
-                            { key: 'transfer_number', label: 'Number', render: (t) => <span className="font-mono font-semibold text-slate-800">{t.transfer_number}</span> },
-                            { key: 'from', label: 'From', render: (t) => <span className="text-slate-500">{t.from}</span> },
-                            { key: 'to', label: 'To', render: (t) => <span className="text-slate-500">{t.to}</span> },
-                            { key: 'lines', label: 'Lines', render: (t) => <span className="text-xs text-slate-400">{t.lines}</span> },
+                            { key: 'transfer_number', label: 'Number', render: (t) => <EntityLink type="transfer" id={t.id} label={t.transfer_number} mono className="font-semibold" /> },
+                            { key: 'from', label: 'From', render: (t) => <EntityLink type="branch" id={t.from_branch_id} label={t.from} muted /> },
+                            { key: 'to', label: 'To', render: (t) => <EntityLink type="branch" id={t.to_branch_id} label={t.to} muted /> },
+                            {
+                                key: 'lines', label: 'Lines',
+                                render: (t) => (
+                                    <span className="text-xs text-slate-400">
+                                        {t.lines.map((l, i) => (
+                                            <span key={l.part_id ?? i}>
+                                                {i > 0 && ', '}
+                                                <EntityLink type="part" id={l.part_id} label={l.part_number} mono muted /> ×{l.qty}
+                                            </span>
+                                        ))}
+                                    </span>
+                                ),
+                            },
                             { key: 'status', label: 'Status', render: (t) => <StatusBadge status={t.status} /> },
                             {
                                 key: 'actions', label: '',
@@ -68,6 +81,7 @@ export default function TransfersIndex({ transfers, branches }) {
                         ]}
                         rows={transfers.data}
                         pagination={transfers}
+                        rowHref={(t) => route('inventory.transfers.show', t.id)}
                         emptyTitle="No transfers yet"
                         emptyMessage="Move stock between branches — dispatch reduces the source, receive lands it at the destination."
                     />

@@ -3,8 +3,9 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
-function Section({ title, rows, total, extra }) {
+function Section({ title, rows, total, extra, linkParams }) {
     return (
         <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
             <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50"><h2 className="text-sm font-semibold text-slate-700">{title}</h2></div>
@@ -12,7 +13,11 @@ function Section({ title, rows, total, extra }) {
                 <tbody className="divide-y divide-slate-50">
                     {rows.map((r) => (
                         <tr key={r.account_code}>
-                            <td className="px-4 py-2"><span className="font-mono text-slate-400">{r.account_code}</span> <span className="text-slate-700">{r.name}</span></td>
+                            <td className="px-4 py-2">
+                                <EntityLink type="gl_account" number={r.account_code} params={linkParams} title={`GL enquiry — ${r.account_code}`}>
+                                    <span className="font-mono text-slate-400">{r.account_code}</span> <span>{r.name}</span>
+                                </EntityLink>
+                            </td>
                             <td className="px-4 py-2 text-right tabular-nums text-slate-700"><MoneyDisplay amount={r.amount} /></td>
                         </tr>
                     ))}
@@ -63,13 +68,14 @@ export default function BalanceSheet({ report, filters, branches }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                    <Section title="Assets" rows={report.assets} total={report.total_assets} />
+                    <Section title="Assets" rows={report.assets} total={report.total_assets} linkParams={{ to: filters.to, branch_id: filters.branch_id ?? '' }} />
                     <div className="space-y-4">
-                        <Section title="Liabilities" rows={report.liabilities} total={report.total_liabilities} />
+                        <Section title="Liabilities" rows={report.liabilities} total={report.total_liabilities} linkParams={{ to: filters.to, branch_id: filters.branch_id ?? '' }} />
                         <Section
                             title="Equity"
                             rows={report.equity}
                             total={report.total_equity}
+                            linkParams={{ to: filters.to, branch_id: filters.branch_id ?? '' }}
                             extra={{ label: 'Retained earnings (current year)', amount: report.retained_current_year }}
                         />
                     </div>

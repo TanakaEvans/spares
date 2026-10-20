@@ -10,8 +10,17 @@ window.route = (name, params, absolute) => {
   return ziggyRoute(name, params, absolute, window.Ziggy);
 };
 
+// The window title carries the business name captured under System Admin › Company.
+const brand = () => {
+  try {
+    const el = document.getElementById('app');
+    const company = el ? JSON.parse(el.dataset.page).props.company : null;
+    return company?.trading_name || company?.name || 'SparesPro';
+  } catch { return 'SparesPro'; }
+};
+
 createInertiaApp({
-  title: (title) => `${title} - SparesPro`,
+  title: (title) => `${title} - ${brand()}`,
   resolve: name => {
     const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
     return pages[`./Pages/${name}.jsx`]

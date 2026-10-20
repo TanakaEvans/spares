@@ -4,6 +4,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/reports';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import { StatTile } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 const money = (n) => Number(n || 0).toFixed(2);
 
@@ -78,7 +79,7 @@ export default function CashupIndex({ cashup, branches, filters }) {
                                 <tbody className="divide-y divide-slate-50">
                                     {cashup.by_cashier.map((c, i) => (
                                         <tr key={i}>
-                                            <td className="px-4 py-2 text-slate-700">{c.cashier}</td>
+                                            <td className="px-4 py-2"><EntityLink type="user" id={c.user_id} label={c.cashier} /></td>
                                             <td className="px-2 py-2 text-right tabular-nums text-slate-500">{money(c.cash)}</td>
                                             <td className="px-2 py-2 text-right tabular-nums text-slate-500">{money(c.card)}</td>
                                             <td className="px-2 py-2 text-right tabular-nums text-slate-500">{money(c.eft)}</td>

@@ -5,6 +5,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import FormField from '@/Components/FormField';
+import EntityLink from '@/Components/EntityLink';
 
 // The receiving screen (Module 3.3): count what arrived, reject damage,
 // assign bins, POST — stock, AVCO and GL update in one atomic posting.
@@ -65,7 +66,9 @@ export default function GrnCreate({ order, bins }) {
                 )}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6">
                     <h1 className="text-xl font-bold text-slate-900">
-                        Receiving against <span className="font-mono">{order.po_number}</span> — {order.supplier}
+                        Receiving against <EntityLink type="purchase_order" id={order.id} label={order.po_number} mono />
+                        {' — '}
+                        <EntityLink type="supplier" id={order.supplier_id} label={order.supplier} />
                     </h1>
                     <p className="text-sm text-slate-500 mt-1">
                         Count what physically arrived. Rejected items never enter stock. Posting is final —
@@ -101,7 +104,7 @@ export default function GrnCreate({ order, bins }) {
                                 return (
                                     <tr key={meta.po_line_id} className={over ? 'bg-amber-50/60' : ''}>
                                         <td className="px-6 py-2.5">
-                                            <span className="font-mono font-semibold text-slate-800">{meta.part_number}</span>
+                                            <EntityLink type="part" id={meta.part_id} label={meta.part_number} mono className="font-semibold" />
                                             <span className="block text-xs text-slate-400">{meta.description}</span>
                                         </td>
                                         <td className="px-3 py-2.5 text-right tabular-nums">{meta.qty_ordered}</td>

@@ -31,7 +31,9 @@ class CrossReferenceController extends Controller
                     'part_number' => $p->part_number,
                     'oem_number' => $p->oem_number,
                     'description' => $p->description,
+                    'brand_id' => $p->brand_id,
                     'brand' => $p->brand?->name,
+                    'category_id' => $p->category_id,
                     'category' => $p->category?->name,
                     'is_active' => $p->is_active,
                     'qty_available' => (float) $p->stockLevels->sum(
@@ -39,6 +41,7 @@ class CrossReferenceController extends Controller
                     ),
                     'references' => $p->crossReferences->map(fn ($x) => [
                         'number' => $x->reference_number,
+                        'brand_id' => $x->brand_id,
                         'brand' => $x->brand?->name,
                         'type' => $x->type,
                     ]),

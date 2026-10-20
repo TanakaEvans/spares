@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
-use App\Models\Part;
 use App\Models\StockTake;
 use App\Models\StockTakeLine;
 use App\Services\SettingsService;
@@ -28,10 +27,12 @@ class StockTakeController extends Controller
                 ->through(fn (StockTake $t) => [
                     'id' => $t->id,
                     'take_number' => $t->take_number,
+                    'branch_id' => $t->branch_id,
                     'branch' => $t->branch?->name,
                     'type' => $t->type,
                     'status' => $t->status,
                     'lines_count' => $t->lines_count,
+                    'started_by_id' => $t->started_by,
                     'started_by' => $t->startedBy?->name,
                     'created_at' => $t->created_at->toDateString(),
                 ]),
@@ -73,19 +74,25 @@ class StockTakeController extends Controller
 
     public function show(StockTake $stockTake, SettingsService $settings): Response
     {
-        $stockTake->load('branch:id,name', 'lines.part:id,part_number,description');
+        $stockTake->load('branch:id,name', 'startedBy:id,name', 'adjustment:id,adjustment_number,gl_journal_id', 'lines.part:id,part_number,description');
         $recountValue = (float) $settings->get('inventory.stock_take_variance_recount_value', $stockTake->branch_id);
 
         return Inertia::render('Inventory/StockTakes/Show', [
             'take' => [
                 'id' => $stockTake->id,
                 'take_number' => $stockTake->take_number,
+                'branch_id' => $stockTake->branch_id,
                 'branch' => $stockTake->branch?->name,
                 'type' => $stockTake->type,
                 'status' => $stockTake->status,
+                'started_by_id' => $stockTake->started_by,
+                'started_by' => $stockTake->startedBy?->name,
                 'adjustment_id' => $stockTake->adjustment_id,
+                'adjustment_number' => $stockTake->adjustment?->adjustment_number,
+                'journal_id' => $stockTake->adjustment?->gl_journal_id,
                 'lines' => $stockTake->lines->map(fn (StockTakeLine $l) => [
                     'id' => $l->id,
+                    'part_id' => $l->part_id,
                     'part_number' => $l->part?->part_number,
                     'description' => $l->part?->description,
                     'system_qty' => (float) $l->system_qty,

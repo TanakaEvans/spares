@@ -23,7 +23,9 @@ class SupplierReturnController extends Controller
                 ->through(fn (SupplierReturn $r) => [
                     'id' => $r->id,
                     'return_number' => $r->return_number,
+                    'supplier_id' => $r->supplier_id,
                     'supplier' => $r->supplier?->name,
+                    'branch_id' => $r->branch_id,
                     'branch' => $r->branch?->name,
                     'reason' => $r->reason,
                     'status' => $r->status,
@@ -66,6 +68,46 @@ class SupplierReturnController extends Controller
 
         return redirect()->route('purchasing.returns.index')
             ->with('success', "Return {$return->return_number} created — request an RMA from the supplier, then ship.");
+    }
+
+    public function show(SupplierReturn $supplierReturn): Response
+    {
+        $supplierReturn->load([
+            'supplier:id,name', 'branch:id,name', 'glJournal:id,journal_number',
+            'lines.part:id,part_number,description',
+        ]);
+
+        return Inertia::render('Purchasing/Returns/Show', [
+            'supplierReturn' => [
+                'id' => $supplierReturn->id,
+                'return_number' => $supplierReturn->return_number,
+                'status' => $supplierReturn->status,
+                'reason' => $supplierReturn->reason,
+                'notes' => $supplierReturn->notes,
+                'supplier_rma' => $supplierReturn->supplier_rma,
+                'credit_note_ref' => $supplierReturn->credit_note_ref,
+                'credit_total' => $supplierReturn->credit_total !== null ? (float) $supplierReturn->credit_total : null,
+                'shipped_at' => $supplierReturn->shipped_at?->toDateTimeString(),
+                'created_at' => $supplierReturn->created_at?->toDateString(),
+                'supplier_id' => $supplierReturn->supplier_id,
+                'supplier' => $supplierReturn->supplier?->name,
+                'branch_id' => $supplierReturn->branch_id,
+                'branch' => $supplierReturn->branch?->name,
+                'gl_journal_id' => $supplierReturn->gl_journal_id,
+                'journal_number' => $supplierReturn->glJournal?->journal_number,
+                'value' => $supplierReturn->totalValue(),
+                'lines' => $supplierReturn->lines->map(fn ($l) => [
+                    'id' => $l->id,
+                    'part_id' => $l->part_id,
+                    'part_number' => $l->part?->part_number,
+                    'description' => $l->part?->description,
+                    'qty' => (float) $l->qty,
+                    'unit_cost' => (float) $l->unit_cost,
+                    'condition' => $l->condition,
+                    'line_total' => round((float) $l->qty * (float) $l->unit_cost, 2),
+                ]),
+            ],
+        ]);
     }
 
     public function ship(Request $request, SupplierReturn $return, StockMovementService $service): RedirectResponse

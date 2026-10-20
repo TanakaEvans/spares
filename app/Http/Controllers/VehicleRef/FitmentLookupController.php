@@ -29,8 +29,20 @@ class FitmentLookupController extends Controller
         $results = null;
 
         if ($makeId) {
-            $partIds = PartFitment::forVehicle($makeId, $modelId, $variantId, $year)
-                ->pluck('part_id')->unique();
+            $fitments = PartFitment::forVehicle($makeId, $modelId, $variantId, $year)
+                ->with('make:id,name', 'model:id,name')
+                ->get();
+            $partIds = $fitments->pluck('part_id')->unique();
+            // Which model(s) each part's matching fitment names — null model = whole make.
+            $fitsByPart = $fitments->groupBy('part_id')->map(fn ($g) => $g
+                ->map(fn (PartFitment $f) => [
+                    'model_id' => $f->model_id,
+                    'label' => trim(($f->make?->name ?? '').' '.($f->model?->name ?? 'all models')),
+                    'years' => trim(($f->year_from ?? '').'–'.($f->year_to ?? ''), '–') ?: null,
+                    'engine_code' => $f->engine_code,
+                ])
+                ->unique(fn ($f) => $f['model_id'].'|'.$f['years'].'|'.$f['engine_code'])
+                ->values());
 
             $parts = Part::with(['category:id,name', 'brand:id,name', 'stockLevels'])
                 ->whereIn('id', $partIds)
@@ -45,8 +57,10 @@ class FitmentLookupController extends Controller
                     'id' => $p->id,
                     'part_number' => $p->part_number,
                     'description' => $p->description,
+                    'brand_id' => $p->brand_id,
                     'brand' => $p->brand?->name,
                     'is_oem' => $p->is_oem,
+                    'fits' => $fitsByPart->get($p->id, collect())->values(),
                     'qty_available' => (float) $p->stockLevels->sum(
                         fn ($l) => (float) $l->qty_on_hand - (float) $l->qty_reserved
                     ),

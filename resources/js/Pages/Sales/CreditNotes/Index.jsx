@@ -5,6 +5,7 @@ import navConfig from '@/nav/sales';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 export default function CreditNotesIndex({ creditNotes, filters }) {
     return (
@@ -24,9 +25,9 @@ export default function CreditNotesIndex({ creditNotes, filters }) {
                 />
                 <DataTable
                     columns={[
-                        { key: 'document_number', label: 'Credit Note', render: (d) => <span className="font-mono font-semibold text-slate-800">{d.document_number}</span> },
-                        { key: 'customer', label: 'Customer', render: (d) => <span className="text-slate-700">{d.customer}</span> },
-                        { key: 'against', label: 'Against', render: (d) => <span className="font-mono text-slate-500">{d.against ?? '—'}</span> },
+                        { key: 'document_number', label: 'Credit Note', render: (d) => <EntityLink type="credit_note" id={d.id} label={d.document_number} mono className="font-semibold" /> },
+                        { key: 'customer', label: 'Customer', render: (d) => <EntityLink type="customer" id={d.customer_id} label={d.customer} /> },
+                        { key: 'against', label: 'Against', render: (d) => <EntityLink type="invoice" id={d.against_id} label={d.against} mono muted /> },
                         { key: 'document_date', label: 'Date', render: (d) => <span className="tabular-nums text-slate-500">{d.document_date}</span> },
                         { key: 'credit_mode', label: 'Refund', render: (d) => <span className="text-slate-500">{d.credit_mode === 'refund_cash' ? 'Cash' : 'To account'}</span> },
                         { key: 'total_incl', label: 'Amount', align: 'right', render: (d) => <span className="text-red-600"><MoneyDisplay amount={d.total_incl} /></span> },

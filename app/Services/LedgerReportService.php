@@ -164,6 +164,7 @@ class LedgerReportService
             if (in_array($account->type, ['revenue', 'expense'], true)) {
                 // Roll P&L into retained earnings (revenue − expenses).
                 $netProfit += $account->type === 'revenue' ? $amount : -$amount;
+
                 continue;
             }
             if (abs($amount) < 0.005) {
@@ -220,8 +221,8 @@ class LedgerReportService
             ->whereDate('j.journal_date', '<=', $to)
             ->when($branchId, fn ($q) => $q->where('j.branch_id', $branchId))
             ->orderBy('j.journal_date')->orderBy('j.id')->orderBy('l.id')
-            ->get(['j.journal_number', 'j.journal_date', 'j.description as jdesc', 'j.reference',
-                'l.description', 'l.debit', 'l.credit']);
+            ->get(['j.id as journal_id', 'j.journal_number', 'j.journal_date', 'j.description as jdesc', 'j.reference',
+                'j.source_type', 'j.source_id', 'l.description', 'l.debit', 'l.credit']);
 
         $running = $opening;
         $sign = $account->normal_balance === 'debit' ? 1 : -1;
@@ -229,7 +230,10 @@ class LedgerReportService
         foreach ($lines as $l) {
             $running = round($running + $sign * ((float) $l->debit - (float) $l->credit), 2);
             $rows[] = [
+                'journal_id' => (int) $l->journal_id,
                 'journal_number' => $l->journal_number,
+                'source_type' => $l->source_type,
+                'source_id' => $l->source_id !== null ? (int) $l->source_id : null,
                 'date' => Carbon::parse($l->journal_date)->toDateString(),
                 'description' => $l->description ?: $l->jdesc,
                 'reference' => $l->reference,

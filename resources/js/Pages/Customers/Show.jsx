@@ -6,6 +6,8 @@ import navConfig from '@/nav/customers';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
 import PrintButton from '@/Components/PrintButton';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
 
 function Stat({ label, children }) {
     return (
@@ -16,8 +18,9 @@ function Stat({ label, children }) {
     );
 }
 
-export default function CustomerShow({ customer, documents }) {
+export default function CustomerShow({ customer, documents, related = {} }) {
     const [holdOpen, setHoldOpen] = useState(false);
+    const rel = { vehicles: [], jobs: [], receipts: [], laybys: [], delivery_notes: [], comms_count: 0, ...related };
     const holdForm = useForm({ on_hold: !customer.on_hold, hold_reason: '' });
 
     function submitHold(e) {
@@ -108,8 +111,8 @@ export default function CustomerShow({ customer, documents }) {
                     <div className="rounded-xl border border-slate-100 bg-white p-4">
                         <div className="text-xs uppercase tracking-wider text-slate-400 mb-2">Pricing</div>
                         <dl className="space-y-1 text-slate-600">
-                            <div className="flex justify-between"><dt className="text-slate-400">Group</dt><dd>{customer.group ?? '—'}</dd></div>
-                            <div className="flex justify-between"><dt className="text-slate-400">Effective price list</dt><dd>{customer.effective_price_list ?? '—'}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Group</dt><dd>{customer.group ? <Link href={route('customers.groups.index')} className="text-slate-600 hover:text-orange-600 hover:underline underline-offset-2 decoration-orange-300">{customer.group}</Link> : '—'}</dd></div>
+                            <div className="flex justify-between"><dt className="text-slate-400">Effective price list</dt><dd><EntityLink type="price_list" id={customer.effective_price_list_id} label={customer.effective_price_list ?? '—'} /></dd></div>
                             <div className="flex justify-between"><dt className="text-slate-400">VAT number</dt><dd>{customer.vat_number ?? '—'}</dd></div>
                         </dl>
                     </div>
@@ -141,14 +144,13 @@ export default function CustomerShow({ customer, documents }) {
                             <tbody className="divide-y divide-slate-50">
                                 {documents.map((d) => {
                                     const isCredit = d.document_type === 'credit_note';
-                                    const href = isCredit ? route('sales.credit-notes.show', d.id) : route('sales.invoices.show', d.id);
                                     return (
                                         <tr key={`${d.document_type}-${d.id}`} className="hover:bg-slate-50">
                                             <td className="px-4 py-2.5">
-                                                <Link href={href} className="inline-flex items-center gap-2 font-mono font-semibold text-slate-700 hover:text-orange-600">
+                                                <span className="inline-flex items-center gap-2">
                                                     {isCredit ? <Undo2 className="w-3.5 h-3.5 text-slate-400" /> : <Receipt className="w-3.5 h-3.5 text-slate-400" />}
-                                                    {d.document_number}
-                                                </Link>
+                                                    <EntityLink type={isCredit ? 'credit_note' : 'invoice'} id={d.id} label={d.document_number} mono className="font-semibold" />
+                                                </span>
                                             </td>
                                             <td className="px-4 py-2.5 tabular-nums text-slate-500">{d.document_date}</td>
                                             <td className="px-4 py-2.5 text-right tabular-nums">
@@ -163,6 +165,27 @@ export default function CustomerShow({ customer, documents }) {
                         </table>
                     )}
                 </div>
+
+                <RelatedLinks
+                    groups={[
+                        { title: 'Vehicles', items: rel.vehicles.map((v) => ({ type: 'vehicle', id: v.id, label: v.label })) },
+                        { title: 'Job cards', items: rel.jobs.map((j) => ({ type: 'job', id: j.id, label: j.label, mono: true })) },
+                        { title: 'Receipts', items: rel.receipts.map((r) => ({ type: 'receipt', id: r.id, label: `${r.label} · ${Number(r.amount).toFixed(2)}`, mono: true })) },
+                        { title: 'Lay-bys', items: rel.laybys.map((l) => ({ type: 'layby', id: l.id, label: l.label, mono: true })) },
+                        { title: 'Delivery notes', items: rel.delivery_notes.map((d) => ({ type: 'delivery_note', id: d.id, label: d.label, mono: true })) },
+                        { title: 'Pricing', items: [
+                            ...(customer.effective_price_list_id ? [{ type: 'price_list', id: customer.effective_price_list_id, label: customer.effective_price_list }] : []),
+                        ] },
+                    ]}
+                />
+
+                {!customer.is_walk_in && (
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                        <a href={route('customers.statement', customer.id)} target="_blank" rel="noreferrer" className="font-medium text-orange-600 hover:text-orange-700">Statement (PDF) ↗</a>
+                        <Link href={route('customers.comms.index')} className="font-medium text-orange-600 hover:text-orange-700">Comms log{rel.comms_count > 0 ? ` (${rel.comms_count})` : ''} →</Link>
+                        <Link href={route('finance.receipts.index')} className="font-medium text-orange-600 hover:text-orange-700">Take a payment →</Link>
+                    </div>
+                )}
             </div>
 
             {holdOpen && (

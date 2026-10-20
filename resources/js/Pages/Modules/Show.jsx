@@ -2,11 +2,16 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { getModule } from '@/modules';
+import { useCan } from '@/lib/can';
 
 export default function ModuleShow({ auth, moduleKey }) {
     const module = getModule(moduleKey);
+    const { can } = useCan();
 
     if (!module) return null;
+
+    // Only the sub-modules this user may open (UI mirrors the server-side matrix).
+    const subModules = module.subModules.filter((sub) => !sub.route || can(sub.route));
 
     const Icon = module.icon;
 
@@ -47,10 +52,10 @@ export default function ModuleShow({ auth, moduleKey }) {
                 {/* Sub-module cards */}
                 <div>
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-4">
-                        Sub-modules ({module.subModules.length})
+                        Sub-modules ({subModules.length})
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {module.subModules.map((sub) => {
+                        {subModules.map((sub) => {
                             const SubIcon = sub.icon;
                             const isActive = sub.active && sub.route && route().has(sub.route);
                             const card = (

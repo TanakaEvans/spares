@@ -15,6 +15,7 @@ The living checklists for building SparesPro. The [implementation plan](../imple
 | 08-vehicle-reference.md | Module 8 — Vehicle & Parts Reference | 1 (technical bulletins in 6) | [tasks/08-vehicle-reference.md](08-vehicle-reference.md) |
 | 09-reports.md | Module 9 — Reports & Analytics | 6 | [tasks/09-reports.md](09-reports.md) |
 | 10-system-admin.md | Module 10 — System Administration (extensions) | 0 → 7 (incremental) | [tasks/10-system-admin.md](10-system-admin.md) |
+| 11-go-live-hardening.md | Phase 8 — pre-deployment hardening from the [2026-10-20 audit](../audit/2026-10-20-pre-deployment-audit.md) | 8 | [tasks/11-go-live-hardening.md](11-go-live-hardening.md) |
 
 Each module also carries a **Deferred (Phase 6)** section for items the plan pushes out (promotions, lay-bys, loyalty, requisitions, import shipments, serial/batch, supplier performance, price comparison, technical bulletins, communication log).
 

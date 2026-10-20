@@ -31,8 +31,10 @@ class VehicleController extends Controller
                     'id' => $v->id,
                     'registration' => $v->registration,
                     'make_model' => trim(($v->make?->name ?? '').' '.($v->model?->name ?? '')) ?: '—',
+                    'model_id' => $v->model_id,
                     'year' => $v->year,
                     'customer' => $v->customer?->name,
+                    'customer_id' => $v->customer_id,
                 ]),
             'filters' => $request->only('search'),
         ]);
@@ -94,7 +96,7 @@ class VehicleController extends Controller
         $vehicle->load('customer:id,name,customer_number', 'make:id,name', 'model:id,name', 'variant:id,name');
 
         $history = VehicleServiceHistory::where('vehicle_id', $vehicle->id)
-            ->with('jobCard:id,job_number')
+            ->with('jobCard:id,job_number,status,technician_id,sales_document_id', 'jobCard.technician:id,name', 'jobCard.invoice:id,document_number')
             ->orderByDesc('service_date')->get()
             ->map(fn (VehicleServiceHistory $h) => [
                 'id' => $h->id,
@@ -103,6 +105,11 @@ class VehicleController extends Controller
                 'summary' => $h->summary,
                 'job_number' => $h->jobCard?->job_number,
                 'job_card_id' => $h->job_card_id,
+                'job_status' => $h->jobCard?->status,
+                'technician' => $h->jobCard?->technician?->name,
+                'technician_id' => $h->jobCard?->technician_id,
+                'invoice_number' => $h->jobCard?->invoice?->document_number,
+                'invoice_id' => $h->jobCard?->sales_document_id,
             ]);
 
         return Inertia::render('Workshop/Vehicles/Show', [
@@ -111,7 +118,9 @@ class VehicleController extends Controller
                 'registration' => $vehicle->registration,
                 'vin' => $vehicle->vin,
                 'make' => $vehicle->make?->name,
+                'make_id' => $vehicle->make_id,
                 'model' => $vehicle->model?->name,
+                'model_id' => $vehicle->model_id,
                 'variant' => $vehicle->variant?->name,
                 'year' => $vehicle->year,
                 'engine_code' => $vehicle->engine_code,

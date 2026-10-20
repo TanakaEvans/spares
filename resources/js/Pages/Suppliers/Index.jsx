@@ -6,6 +6,7 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function SuppliersIndex({ suppliers, filters }) {
     return (
@@ -60,8 +61,8 @@ export default function SuppliersIndex({ suppliers, filters }) {
 
                 <DataTable
                     columns={[
-                        { key: 'supplier_number', label: 'Number', render: (s) => <span className="font-mono text-slate-500">{s.supplier_number}</span> },
-                        { key: 'name', label: 'Supplier', render: (s) => <span className="font-medium text-slate-800">{s.name}</span> },
+                        { key: 'supplier_number', label: 'Number', render: (s) => <EntityLink type="supplier" id={s.id} label={s.supplier_number} mono muted /> },
+                        { key: 'name', label: 'Supplier', render: (s) => <EntityLink type="supplier" id={s.id} label={s.name} className="font-medium" /> },
                         { key: 'type', label: 'Type', render: (s) => <span className="capitalize text-slate-500">{s.type}</span> },
                         { key: 'phone', label: 'Phone', render: (s) => <span className="text-slate-500">{s.phone}</span> },
                         { key: 'lead_time_days', label: 'Lead', align: 'right', render: (s) => <span className="text-slate-500">{s.lead_time_days}d</span> },

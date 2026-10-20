@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import EntityLink from '@/Components/EntityLink';
 
 export default function GlIndex({ accounts, account, movements, filters }) {
     function apply(params) {
@@ -45,6 +46,7 @@ export default function GlIndex({ accounts, account, movements, filters }) {
                                 <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
                                     <th className="px-4 py-2">Date</th>
                                     <th className="px-2 py-2">Journal</th>
+                                    <th className="px-2 py-2">Source</th>
                                     <th className="px-2 py-2">Description</th>
                                     <th className="px-2 py-2 text-right">Debit</th>
                                     <th className="px-2 py-2 text-right">Credit</th>
@@ -53,11 +55,12 @@ export default function GlIndex({ accounts, account, movements, filters }) {
                             </thead>
                             <tbody className="divide-y divide-slate-50">
                                 {movements.rows.length === 0 ? (
-                                    <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No movements in this range.</td></tr>
+                                    <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No movements in this range.</td></tr>
                                 ) : movements.rows.map((r, i) => (
                                     <tr key={i} className="hover:bg-slate-50">
                                         <td className="px-4 py-2 tabular-nums text-slate-500">{r.date}</td>
-                                        <td className="px-2 py-2 font-mono text-slate-500">{r.journal_number}</td>
+                                        <td className="px-2 py-2"><EntityLink type="journal" id={r.journal_id} label={r.journal_number} mono muted /></td>
+                                        <td className="px-2 py-2">{r.source ? <EntityLink type={r.source.type} id={r.source.id} label={r.source.label} mono /> : <span className="text-slate-300">—</span>}</td>
                                         <td className="px-2 py-2 text-slate-600">{r.description}{r.reference && <span className="text-slate-400"> · {r.reference}</span>}</td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.debit > 0 ? r.debit.toFixed(2) : ''}</td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-600">{r.credit > 0 ? r.credit.toFixed(2) : ''}</td>

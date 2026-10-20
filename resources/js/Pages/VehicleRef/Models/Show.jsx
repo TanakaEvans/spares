@@ -1,11 +1,14 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Car, Plus, Search } from 'lucide-react';
+import { ArrowLeft, Car, PackageSearch, Plus, Search } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
+import RelatedLinks from '@/Components/RelatedLinks';
+import StatusBadge from '@/Components/StatusBadge';
 import FormField from '@/Components/FormField';
 
-export default function ModelShow({ model }) {
+export default function ModelShow({ model, fittingParts = [], fittingPartsTotal = 0 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '', engine_code: '', engine_size_cc: '', fuel_type: '',
         transmission: '', drive: '', year_from: '', year_to: '',
@@ -48,7 +51,9 @@ export default function ModelShow({ model }) {
                                 <Car className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900">{model.make?.name} {model.name}</h1>
+                                <h1 className="text-2xl font-bold text-slate-900">
+                                    <EntityLink type="make" id={model.make_id} label={model.make?.name} params={{ make_id: model.make_id }} className="text-slate-900" title="All models of this make" /> {model.name}
+                                </h1>
                                 <p className="text-sm text-slate-500 capitalize">
                                     {model.body_type} · {model.year_from ?? '?'}–{model.year_to ?? 'now'} · {model.variants.length} variant{model.variants.length === 1 ? '' : 's'}
                                 </p>
@@ -69,7 +74,7 @@ export default function ModelShow({ model }) {
                         <DataTable
                             columns={[
                                 { key: 'name', label: 'Variant', render: (v) => <span className="font-medium text-slate-800">{v.name}</span> },
-                                { key: 'engine_code', label: 'Engine', render: (v) => <span className="font-mono text-slate-500">{v.engine_code}</span> },
+                                { key: 'engine_code', label: 'Engine', render: (v) => <EntityLink type="engine" number={v.engine_code} label={v.engine_code} mono muted title="Engine code" /> },
                                 { key: 'engine_size_cc', label: 'CC', align: 'right' },
                                 { key: 'fuel_type', label: 'Fuel', render: (v) => <span className="capitalize text-slate-500">{v.fuel_type}</span> },
                                 { key: 'transmission', label: 'Trans', render: (v) => <span className="capitalize text-slate-500">{v.transmission}</span> },
@@ -133,6 +138,53 @@ export default function ModelShow({ model }) {
                         </button>
                     </form>
                 </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div className="flex items-center justify-between px-6 pt-4 pb-2 border-b border-slate-50">
+                        <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            <PackageSearch className="w-4 h-4" />
+                            Parts that fit ({fittingPartsTotal})
+                        </h2>
+                        {fittingPartsTotal > fittingParts.length && (
+                            <Link href={route('vehicle-ref.fitment', { make_id: model.make_id, model_id: model.id })} className="text-xs font-medium text-orange-700 hover:underline">
+                                Full fitment lookup
+                            </Link>
+                        )}
+                    </div>
+                    {fittingParts.length === 0 ? (
+                        <p className="px-6 py-8 text-center text-sm text-slate-400">No fitments recorded for this model yet — add them on each part's Fitments tab.</p>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <tbody className="divide-y divide-slate-50">
+                                {fittingParts.map((p) => (
+                                    <tr key={p.id} className="hover:bg-slate-50/70">
+                                        <td className="px-6 py-2.5 w-44"><EntityLink type="part" id={p.id} label={p.part_number} mono className="font-semibold" /></td>
+                                        <td className="px-3 py-2.5 text-slate-700">{p.description}</td>
+                                        <td className="px-3 py-2.5 w-32"><EntityLink type="brand" id={p.brand_id} label={p.brand} muted /></td>
+                                        <td className="px-3 py-2.5 w-40"><EntityLink type="category" id={p.category_id} label={p.category} muted /></td>
+                                        <td className="px-3 py-2.5 w-20">{!p.is_active && <StatusBadge status="inactive" />}</td>
+                                        <td className="px-6 py-2.5 w-32 text-right tabular-nums">
+                                            {p.qty_available > 0
+                                                ? <span className="text-green-700 font-semibold">{p.qty_available} in stock</span>
+                                                : <span className="text-slate-400">out of stock</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+
+                <RelatedLinks
+                    groups={[
+                        { title: 'Make', items: [{ type: 'make', id: model.make_id, label: model.make?.name, params: { make_id: model.make_id } }] },
+                        {
+                            title: 'Engine codes',
+                            items: [...new Set(model.variants.map((v) => v.engine_code).filter(Boolean))].map((code) => ({ type: 'engine', number: code, label: code, mono: true })),
+                        },
+                        { title: 'Fitting parts', items: fittingParts.slice(0, 30).map((p) => ({ type: 'part', id: p.id, label: p.part_number, mono: true })) },
+                    ]}
+                />
             </div>
         </ModuleLayout>
     );

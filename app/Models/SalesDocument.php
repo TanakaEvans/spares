@@ -13,7 +13,7 @@ class SalesDocument extends Model
 
     protected $fillable = [
         'document_number', 'document_type', 'status', 'customer_id', 'branch_id',
-        'salesperson_id', 'document_date', 'expiry_date', 'parent_id',
+        'salesperson_id', 'discount_approved_by', 'document_date', 'expiry_date', 'parent_id',
         'subtotal_excl', 'discount_amount', 'vat_amount', 'total_incl',
         'gl_journal_id', 'credit_mode', 'reason', 'notes', 'posted_at',
     ];
@@ -41,6 +41,12 @@ class SalesDocument extends Model
     public function salesperson(): BelongsTo
     {
         return $this->belongsTo(User::class, 'salesperson_id');
+    }
+
+    /** Supervisor who approved an over-limit discount on this invoice (2.1 rule 3). */
+    public function discountApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'discount_approved_by');
     }
 
     public function lines(): HasMany

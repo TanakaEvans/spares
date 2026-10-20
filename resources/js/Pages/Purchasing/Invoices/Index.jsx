@@ -5,6 +5,7 @@ import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import StatusBadge from '@/Components/StatusBadge';
+import EntityLink from '@/Components/EntityLink';
 
 export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
     return (
@@ -55,9 +56,9 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
 
                 <DataTable
                     columns={[
-                        { key: 'supplier_ref', label: 'Supplier Ref', render: (i) => <span className="font-mono font-semibold text-slate-800">{i.supplier_ref}</span> },
-                        { key: 'supplier', label: 'Supplier', render: (i) => <span className="text-slate-700">{i.supplier}</span> },
-                        { key: 'grn_number', label: 'GRN', render: (i) => <span className="font-mono text-slate-500">{i.grn_number}</span> },
+                        { key: 'supplier_ref', label: 'Supplier Ref', render: (i) => <EntityLink type="supplier_invoice" id={i.id} label={i.supplier_ref} mono className="font-semibold" /> },
+                        { key: 'supplier', label: 'Supplier', render: (i) => <EntityLink type="supplier" id={i.supplier_id} label={i.supplier} /> },
+                        { key: 'grn_number', label: 'GRN', render: (i) => <EntityLink type="grn" id={i.grn_id} label={i.grn_number} mono muted /> },
                         { key: 'invoice_date', label: 'Date', render: (i) => <span className="tabular-nums text-slate-500">{i.invoice_date}</span> },
                         { key: 'due_date', label: 'Due', render: (i) => <span className="tabular-nums text-slate-500">{i.due_date}</span> },
                         { key: 'total', label: 'Total', align: 'right', render: (i) => <MoneyDisplay amount={i.total} /> },
@@ -84,6 +85,7 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
                     ]}
                     rows={invoices.data}
                     pagination={invoices}
+                    rowHref={(i) => route('purchasing.invoices.show', i.id)}
                     emptyTitle="No supplier invoices"
                     emptyMessage="Capture an invoice against a posted GRN — 3-way matching runs automatically."
                 />

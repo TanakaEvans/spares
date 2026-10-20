@@ -3,11 +3,21 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import RelatedLinks from '@/Components/RelatedLinks';
 import StatusBadge from '@/Components/StatusBadge';
 
-const TABS = ['Stock', 'Fitments', 'Cross-refs', 'Supersession'];
+const TABS = ['Stock', 'Movements', 'Fitments', 'Cross-refs', 'Supersession'];
+
+// Ledger reference → EntityLink type is resolved server-side (PartController::recentMovements);
+// the page only renders what it is handed.
+const MOVEMENT_TYPE_LABEL = {
+    PURCHASE_RECEIPT: 'Goods received', SALE: 'Sold', RETURN_IN: 'Returned in', RETURN_OUT: 'Returned to supplier',
+    ADJUSTMENT_IN: 'Adjustment +', ADJUSTMENT_OUT: 'Adjustment −', TRANSFER_IN: 'Transfer in', TRANSFER_OUT: 'Transfer out',
+    OPENING_BALANCE: 'Opening balance', JOB_CARD_OUT: 'Issued to job',
+};
 
 export default function PartShow({ part, options }) {
     const [tab, setTab] = useState('Stock');
@@ -40,7 +50,9 @@ export default function PartShow({ part, options }) {
                             </div>
                             <p className="text-slate-700 mt-1">{part.description}</p>
                             <p className="text-sm text-slate-400 mt-0.5">
-                                {part.brand}{part.category ? ` · ${part.category}` : ''}{part.unit ? ` · per ${part.unit}` : ''}
+                                <EntityLink type="brand" id={part.brand_id} label={part.brand} muted title="Brand" />
+                                {part.category ? <> · <EntityLink type="category" id={part.category_id} label={part.category} muted title="Parts in this category" /></> : null}
+                                {part.unit ? ` · per ${part.unit}` : ''}
                                 {part.oem_number ? ` · OEM ${part.oem_number}` : ''}
                             </p>
                         </div>
@@ -106,11 +118,102 @@ export default function PartShow({ part, options }) {
                 </div>
 
                 {tab === 'Stock' && <StockTab part={part} />}
+                {tab === 'Movements' && <MovementsTab part={part} />}
                 {tab === 'Fitments' && <FitmentsTab part={part} makes={options.makes} />}
                 {tab === 'Cross-refs' && <CrossRefsTab part={part} brands={options.brands} />}
                 {tab === 'Supersession' && <SupersessionTab part={part} />}
+
+                <RelatedLinks groups={relatedGroups(part)} />
             </div>
         </ModuleLayout>
+    );
+}
+
+// Everything this part touches, with ids so each is a real link (UI-13).
+function relatedGroups(part) {
+    const stockItems = part.stock.flatMap((l) => [
+        { type: 'stock', number: part.part_number, label: `${l.branch}: ${l.qty_available} avail` },
+        ...(l.bin_id ? [{ type: 'bin', id: l.bin_id, label: `bin ${l.bin}`, mono: true }] : []),
+    ]);
+    const suppliers = [...part.suppliers]
+        .sort((a, b) => Number(b.is_preferred) - Number(a.is_preferred))
+        .map((s) => ({ type: 'supplier', id: s.id, label: s.is_preferred ? `${s.name} ★` : s.name }));
+    const fitments = part.fitments
+        .filter((f) => f.model_id)
+        .map((f) => ({ type: 'model', id: f.model_id, label: `${f.make} ${f.model}${f.years ? ` (${f.years})` : ''}` }));
+    const makeOnly = part.fitments
+        .filter((f) => !f.model_id && f.make_id)
+        .map((f) => ({ type: 'make', id: f.make_id, label: `${f.make} (all models)`, params: { make_id: f.make_id } }));
+    const crossRefs = part.cross_references.flatMap((x) => [
+        ...(x.part_id ? [{ type: 'part', id: x.part_id, label: x.part_number, mono: true }] : []),
+        ...(x.brand_id ? [{ type: 'brand', id: x.brand_id, label: `${x.brand} ${x.number}` }] : []),
+    ]);
+    const chain = [
+        ...(part.superseded_by ? [{ type: 'part', id: part.superseded_by.id, label: `→ ${part.superseded_by.part_number}`, mono: true }] : []),
+        ...part.supersedes.map((s) => ({ type: 'part', id: s.id, label: `← ${s.part_number}`, mono: true })),
+    ];
+
+    return [
+        { title: 'Stock per branch', items: stockItems },
+        { title: 'Suppliers', items: suppliers },
+        { title: 'Price lists', items: part.price_lists.map((p) => ({ type: 'price_list', id: p.id, label: `${p.name}` })) },
+        { title: 'Fits these vehicles', items: [...fitments, ...makeOnly] },
+        { title: 'Cross-references', items: crossRefs },
+        { title: 'Supersession chain', items: chain },
+        { title: 'Category', items: part.category_id ? [{ type: 'category', id: part.category_id, label: part.category }] : [] },
+        { title: 'Brand', items: part.brand_id ? [{ type: 'brand', id: part.brand_id, label: part.brand }] : [] },
+    ];
+}
+
+function MovementsTab({ part }) {
+    return (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            {part.movements.length === 0 ? (
+                <p className="px-6 py-10 text-center text-sm text-slate-400">
+                    No movements yet — every receipt, sale, adjustment and transfer will show here from the stock ledger.
+                </p>
+            ) : (
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                            <th className="px-6 py-3">Date</th>
+                            <th className="px-3 py-3">Type</th>
+                            <th className="px-3 py-3">Branch</th>
+                            <th className="px-3 py-3 text-right">Qty</th>
+                            <th className="px-3 py-3 text-right">Unit cost</th>
+                            <th className="px-3 py-3 text-right">Balance</th>
+                            <th className="px-6 py-3">Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                        {part.movements.map((m) => (
+                            <tr key={m.id}>
+                                <td className="px-6 py-2.5 tabular-nums text-slate-500 whitespace-nowrap">{m.date}</td>
+                                <td className="px-3 py-2.5">
+                                    <span className="text-slate-700">{MOVEMENT_TYPE_LABEL[m.type] ?? m.type}</span>
+                                    {m.notes && <span className="block text-xs text-slate-400 truncate max-w-[16rem]" title={m.notes}>{m.notes}</span>}
+                                </td>
+                                <td className="px-3 py-2.5"><EntityLink type="branch" id={m.branch_id} label={m.branch} muted /></td>
+                                <td className={`px-3 py-2.5 text-right tabular-nums font-semibold ${m.qty < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                    {m.qty > 0 ? '+' : ''}{m.qty}
+                                </td>
+                                <td className="px-3 py-2.5 text-right tabular-nums"><MoneyDisplay amount={m.unit_cost} /></td>
+                                <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">{m.running_balance}</td>
+                                <td className="px-6 py-2.5">
+                                    {m.reference
+                                        ? <EntityLink type={m.reference.type} id={m.reference.id} label={m.reference.label} mono />
+                                        : <span className="text-slate-400">{m.reference_text ?? '—'}</span>}
+                                    {m.reference_extra && (
+                                        <span className="text-xs text-slate-400"> · <EntityLink type={m.reference_extra.type} id={m.reference_extra.id} label={m.reference_extra.label} mono muted /></span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            )}
+            <p className="px-6 py-2 text-xs text-slate-400 border-t border-slate-50">Last {part.movements.length} ledger entries, newest first. The ledger is append-only — nothing here can be edited.</p>
+        </div>
     );
 }
 
@@ -135,9 +238,9 @@ function StockTab({ part }) {
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                         {part.stock.map((l, i) => (
-                            <tr key={i}>
-                                <td className="px-6 py-2.5 font-medium text-slate-700">{l.branch}</td>
-                                <td className="px-3 py-2.5 font-mono text-slate-500">{l.bin ?? '—'}</td>
+                            <tr key={l.id ?? i}>
+                                <td className="px-6 py-2.5"><EntityLink type="branch" id={l.branch_id} label={l.branch} className="font-medium" /></td>
+                                <td className="px-3 py-2.5"><EntityLink type="bin" id={l.bin_id} label={l.bin ?? '—'} mono muted /></td>
                                 <td className="px-3 py-2.5 text-right tabular-nums">{l.qty_on_hand}</td>
                                 <td className="px-3 py-2.5 text-right tabular-nums text-slate-400">{l.qty_reserved}</td>
                                 <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-green-700">{l.qty_available}</td>
@@ -168,12 +271,12 @@ function FitmentsTab({ part, makes }) {
                             {part.fitments.map((f) => (
                                 <tr key={f.id}>
                                     <td className="px-6 py-2.5">
-                                        <span className="font-medium text-slate-800">{f.make}</span>
-                                        {f.model && <span className="text-slate-600"> {f.model}</span>}
+                                        <EntityLink type="make" id={f.make_id} label={f.make} params={f.make_id ? { make_id: f.make_id } : undefined} className="font-medium" title="Models of this make" />
+                                        {f.model && <> <EntityLink type="model" id={f.model_id} label={f.model} className="text-slate-600" /></>}
                                         {f.variant && <span className="text-slate-400"> · {f.variant}</span>}
                                     </td>
                                     <td className="px-3 py-2.5 tabular-nums text-slate-500">{f.years ?? 'all years'}</td>
-                                    <td className="px-3 py-2.5 font-mono text-slate-500">{f.engine_code}</td>
+                                    <td className="px-3 py-2.5"><EntityLink type="engine" number={f.engine_code} label={f.engine_code} mono muted /></td>
                                     <td className="px-6 py-2.5 text-right">
                                         <button
                                             onClick={() => router.delete(route('inventory.parts.fitments.destroy', [part.id, f.id]), { preserveScroll: true })}
@@ -247,8 +350,12 @@ function CrossRefsTab({ part, brands }) {
                         <tbody className="divide-y divide-slate-50">
                             {part.cross_references.map((x) => (
                                 <tr key={x.id}>
-                                    <td className="px-6 py-2.5 font-mono font-semibold text-slate-800">{x.number}</td>
-                                    <td className="px-3 py-2.5 text-slate-500">{x.brand ?? '—'}</td>
+                                    <td className="px-6 py-2.5">
+                                        {x.part_id
+                                            ? <EntityLink type="part" id={x.part_id} label={x.number} mono className="font-semibold" title={`Catalogue part ${x.part_number}`} />
+                                            : <span className="font-mono font-semibold text-slate-800">{x.number}</span>}
+                                    </td>
+                                    <td className="px-3 py-2.5"><EntityLink type="brand" id={x.brand_id} label={x.brand ?? '—'} muted /></td>
                                     <td className="px-3 py-2.5"><StatusBadge status={x.type === 'oem' ? 'posted' : 'draft'} label={x.type} /></td>
                                     <td className="px-6 py-2.5 text-right">
                                         <button

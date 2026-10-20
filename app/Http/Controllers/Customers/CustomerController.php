@@ -5,7 +5,12 @@ namespace App\Http\Controllers\Customers;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
+use App\Models\CustomerNote;
 use App\Models\CustomerReceipt;
+use App\Models\CustomerVehicle;
+use App\Models\DeliveryNote;
+use App\Models\JobCard;
+use App\Models\Layby;
 use App\Models\PriceList;
 use App\Models\SalesDocument;
 use App\Models\SalesPayment;
@@ -93,8 +98,11 @@ class CustomerController extends Controller
                 'address' => $customer->address,
                 'city' => $customer->city,
                 'group' => $customer->group?->name,
+                'group_id' => $customer->customer_group_id,
                 'price_list' => $customer->priceList?->name,
+                'price_list_id' => $customer->price_list_id,
                 'effective_price_list' => $customer->effectivePriceList()?->name,
+                'effective_price_list_id' => $customer->effectivePriceList()?->id,
                 'payment_terms_days' => $customer->payment_terms_days,
                 'credit_limit' => (float) $customer->credit_limit,
                 'on_hold' => $customer->on_hold,
@@ -113,7 +121,34 @@ class CustomerController extends Controller
                 'total_incl' => (float) $d->total_incl,
                 'credit_mode' => $d->credit_mode,
             ]),
+            'related' => $this->related($customer),
         ]);
+    }
+
+    /**
+     * Everything else this customer touches (UI-13 "Connected to" card):
+     * vehicles, workshop jobs, receipts, lay-bys, delivery notes and the
+     * comms log — the ten most recent of each, with ids so they link.
+     *
+     * @return array<string,mixed>
+     */
+    private function related(Customer $customer): array
+    {
+        $recent = fn ($query) => $query->where('customer_id', $customer->id)->latest('id')->limit(10)->get();
+
+        return [
+            'vehicles' => $recent(CustomerVehicle::query()->with('make:id,name', 'model:id,name'))
+                ->map(fn (CustomerVehicle $v) => ['id' => $v->id, 'label' => $v->label()])->values(),
+            'jobs' => $recent(JobCard::query())
+                ->map(fn (JobCard $j) => ['id' => $j->id, 'label' => $j->job_number, 'status' => $j->status])->values(),
+            'receipts' => $recent(CustomerReceipt::query())
+                ->map(fn (CustomerReceipt $r) => ['id' => $r->id, 'label' => $r->receipt_number, 'amount' => (float) $r->amount])->values(),
+            'laybys' => $recent(Layby::query())
+                ->map(fn (Layby $l) => ['id' => $l->id, 'label' => $l->layby_number, 'status' => $l->status])->values(),
+            'delivery_notes' => $recent(DeliveryNote::query())
+                ->map(fn (DeliveryNote $d) => ['id' => $d->id, 'label' => $d->delivery_number, 'status' => $d->status])->values(),
+            'comms_count' => CustomerNote::query()->where('customer_id', $customer->id)->count(),
+        ];
     }
 
     public function edit(Customer $customer): Response

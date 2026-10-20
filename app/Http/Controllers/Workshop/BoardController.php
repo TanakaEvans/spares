@@ -26,8 +26,11 @@ class BoardController extends Controller
                 'id' => $j->id,
                 'job_number' => $j->job_number,
                 'customer' => $j->customer?->name,
+                'customer_id' => $j->customer_id,
                 'vehicle' => $j->vehicle?->registration,
+                'vehicle_id' => $j->vehicle_id,
                 'technician' => $j->technician?->name,
+                'technician_id' => $j->technician_id,
                 'promised_at' => $j->promised_at?->toDateTimeString(),
             ])->values();
         }

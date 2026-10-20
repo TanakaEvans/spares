@@ -3,6 +3,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/reports';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import { StatTile } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 export default function WorkshopReport({ productivity, profitability, branches, filters }) {
     function apply(params) {
@@ -38,12 +39,14 @@ export default function WorkshopReport({ productivity, profitability, branches, 
                 <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-slate-100"><h2 className="text-sm font-semibold text-slate-700">Job profitability</h2></div>
                     <table className="w-full text-sm">
-                        <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Job</th><th className="px-2 py-2">Customer</th><th className="px-2 py-2 text-right">Cost</th><th className="px-2 py-2 text-right">Billed</th><th className="px-4 py-2 text-right">Margin</th></tr></thead>
+                        <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Job</th><th className="px-2 py-2">Customer</th><th className="px-2 py-2">Technician</th><th className="px-2 py-2">Invoice</th><th className="px-2 py-2 text-right">Cost</th><th className="px-2 py-2 text-right">Billed</th><th className="px-4 py-2 text-right">Margin</th></tr></thead>
                         <tbody className="divide-y divide-slate-50">
-                            {profitability.length === 0 ? <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No invoiced jobs in range.</td></tr> : profitability.map((j, i) => (
-                                <tr key={i} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2 font-mono font-semibold text-slate-700">{j.job_number}</td>
-                                    <td className="px-2 py-2 text-slate-600">{j.customer}</td>
+                            {profitability.length === 0 ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No invoiced jobs in range.</td></tr> : profitability.map((j, i) => (
+                                <tr key={j.job_id ?? i} className="hover:bg-slate-50">
+                                    <td className="px-4 py-2"><EntityLink type="job" id={j.job_id} label={j.job_number} mono className="font-semibold" /></td>
+                                    <td className="px-2 py-2"><EntityLink type="customer" id={j.customer_id} label={j.customer} /></td>
+                                    <td className="px-2 py-2"><EntityLink type="technician" id={j.technician_id} label={j.technician ?? '—'} muted /></td>
+                                    <td className="px-2 py-2"><EntityLink type="invoice" id={j.invoice_id} label={j.invoice_number ?? '—'} mono muted /></td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-500"><MoneyDisplay amount={j.cost} /></td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-700"><MoneyDisplay amount={j.billed} /></td>
                                     <td className={`px-4 py-2 text-right tabular-nums font-medium ${j.margin_pct >= 30 ? 'text-emerald-600' : j.margin_pct >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{j.margin_pct}%</td>

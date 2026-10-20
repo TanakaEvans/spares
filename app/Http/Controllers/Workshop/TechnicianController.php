@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Workshop;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\JobCard;
+use App\Models\JobCardLabour;
 use App\Models\Technician;
+use App\Models\TechnicianTimeLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,6 +34,61 @@ class TechnicianController extends Controller
                     'active_jobs' => (int) ($active[$t->id] ?? 0),
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
+        ]);
+    }
+
+    public function show(Technician $technician): Response
+    {
+        $technician->load('branch:id,name');
+
+        $jobs = JobCard::with('customer:id,name', 'vehicle:id,registration', 'invoice:id,document_number')
+            ->where('technician_id', $technician->id)
+            ->latest('id')->limit(20)->get()
+            ->map(fn (JobCard $j) => [
+                'id' => $j->id,
+                'job_number' => $j->job_number,
+                'status' => $j->status,
+                'customer' => $j->customer?->name,
+                'customer_id' => $j->customer_id,
+                'vehicle' => $j->vehicle?->registration,
+                'vehicle_id' => $j->vehicle_id,
+                'invoice_id' => $j->sales_document_id,
+                'invoice_number' => $j->invoice?->document_number,
+                'opened_at' => $j->created_at->toDateString(),
+                'completed_at' => $j->completed_at?->toDateString(),
+            ]);
+
+        $statusCounts = JobCard::where('technician_id', $technician->id)
+            ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+
+        $timeLogs = TechnicianTimeLog::where('technician_id', $technician->id)
+            ->selectRaw('COUNT(*) as entries, COALESCE(SUM(minutes), 0) as minutes, MAX(clock_on) as last_clock_on')
+            ->first();
+
+        $hoursBooked = (float) JobCardLabour::where('technician_id', $technician->id)->sum('hours');
+
+        return Inertia::render('Workshop/Technicians/Show', [
+            'technician' => [
+                'id' => $technician->id,
+                'name' => $technician->name,
+                'employee_id' => $technician->employee_id,
+                'skill_level' => $technician->skill_level,
+                'specialisations' => $technician->specialisations,
+                'cost_rate' => (float) $technician->cost_rate,
+                'is_active' => $technician->is_active,
+                'branch' => $technician->branch?->name,
+                'branch_id' => $technician->branch_id,
+            ],
+            'jobs' => $jobs,
+            'productivity' => [
+                'jobs_total' => (int) $statusCounts->sum(),
+                'jobs_completed' => (int) ($statusCounts['completed'] ?? 0) + (int) ($statusCounts['invoiced'] ?? 0) + (int) ($statusCounts['closed'] ?? 0),
+                'jobs_active' => (int) ($statusCounts['allocated'] ?? 0) + (int) ($statusCounts['in_progress'] ?? 0) + (int) ($statusCounts['quality_check'] ?? 0),
+                'hours_booked' => round($hoursBooked, 2),
+                'hours_logged' => round(((int) ($timeLogs->minutes ?? 0)) / 60, 2),
+                'time_log_entries' => (int) ($timeLogs->entries ?? 0),
+                'last_clock_on' => $timeLogs?->last_clock_on,
+            ],
         ]);
     }
 

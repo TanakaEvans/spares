@@ -1,8 +1,9 @@
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
 import SearchInput from '@/Components/SearchInput';
 
@@ -40,11 +41,29 @@ export default function EnginesIndex({ engines, makes, filters }) {
                     />
                     <DataTable
                         columns={[
-                            { key: 'code', label: 'Code', render: (e) => <span className="font-mono font-semibold text-slate-800">{e.code}</span> },
-                            { key: 'make', label: 'Make', render: (e) => <span className="text-slate-500">{e.make?.name ?? '—'}</span> },
+                            { key: 'code', label: 'Code', render: (e) => <EntityLink type="engine" number={e.code} label={e.code} mono className="font-semibold" title="Filter engine codes" /> },
+                            { key: 'make', label: 'Make', render: (e) => <EntityLink type="make" id={e.make_id} label={e.make?.name ?? '—'} params={e.make_id ? { make_id: e.make_id } : undefined} muted /> },
                             { key: 'description', label: 'Description', render: (e) => <span className="text-slate-600">{e.description}</span> },
                             { key: 'capacity_cc', label: 'CC', align: 'right' },
                             { key: 'fuel_type', label: 'Fuel', render: (e) => <span className="capitalize text-slate-500">{e.fuel_type}</span> },
+                            {
+                                key: 'usage', label: 'Used by', align: 'right',
+                                render: (e) => (
+                                    <span className="text-xs text-slate-500 whitespace-nowrap">
+                                        {e.models_count > 0 ? (
+                                            <Link href={route('vehicle-ref.models.index', { search: e.code })} onClick={(ev) => ev.stopPropagation()} className="hover:text-orange-600 hover:underline">
+                                                {e.models_count} model{e.models_count === 1 ? '' : 's'}
+                                            </Link>
+                                        ) : <span className="text-slate-300">no models</span>}
+                                        {' · '}
+                                        {e.parts_count > 0 && e.make_id ? (
+                                            <Link href={route('vehicle-ref.fitment', { make_id: e.make_id })} onClick={(ev) => ev.stopPropagation()} className="hover:text-orange-600 hover:underline">
+                                                {e.parts_count} part{e.parts_count === 1 ? '' : 's'}
+                                            </Link>
+                                        ) : <span className={e.parts_count > 0 ? '' : 'text-slate-300'}>{e.parts_count > 0 ? `${e.parts_count} parts` : 'no parts'}</span>}
+                                    </span>
+                                ),
+                            },
                         ]}
                         rows={engines.data}
                         pagination={engines}

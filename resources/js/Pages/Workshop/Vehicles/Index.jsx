@@ -4,6 +4,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
 import DataTable from '@/Components/DataTable';
 import SearchInput from '@/Components/SearchInput';
+import EntityLink from '@/Components/EntityLink';
 
 export default function VehiclesIndex({ vehicles, filters }) {
     return (
@@ -22,10 +23,10 @@ export default function VehiclesIndex({ vehicles, filters }) {
                 </div>
                 <DataTable
                     columns={[
-                        { key: 'registration', label: 'Registration', render: (v) => <span className="font-mono font-semibold text-slate-800">{v.registration}</span> },
-                        { key: 'make_model', label: 'Vehicle', render: (v) => <span className="text-slate-700">{v.make_model}</span> },
+                        { key: 'registration', label: 'Registration', render: (v) => <EntityLink type="vehicle" id={v.id} label={v.registration} mono className="font-semibold" /> },
+                        { key: 'make_model', label: 'Vehicle', render: (v) => <EntityLink type="model" id={v.model_id} label={v.make_model} /> },
                         { key: 'year', label: 'Year', render: (v) => <span className="tabular-nums text-slate-500">{v.year ?? '—'}</span> },
-                        { key: 'customer', label: 'Owner', render: (v) => <span className="text-slate-600">{v.customer}</span> },
+                        { key: 'customer', label: 'Owner', render: (v) => <EntityLink type="customer" id={v.customer_id} label={v.customer} muted /> },
                     ]}
                     rows={vehicles.data}
                     pagination={vehicles}

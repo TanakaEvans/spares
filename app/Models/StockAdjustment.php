@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StockAdjustment extends Model
 {
@@ -23,5 +24,21 @@ class StockAdjustment extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(StockAdjustmentLine::class, 'adjustment_id');
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'gl_journal_id');
+    }
+
+    /** The stock take that produced this adjustment, if any. */
+    public function stockTake(): HasOne
+    {
+        return $this->hasOne(StockTake::class, 'adjustment_id');
     }
 }

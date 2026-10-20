@@ -3,6 +3,7 @@ import { Plus, ClipboardCheck } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
+import EntityLink from '@/Components/EntityLink';
 import StatusBadge from '@/Components/StatusBadge';
 
 export default function StockTakesIndex({ takes, filters }) {
@@ -28,11 +29,11 @@ export default function StockTakesIndex({ takes, filters }) {
                 </div>
                 <DataTable
                     columns={[
-                        { key: 'take_number', label: 'Number', render: (t) => <span className="font-mono font-semibold text-slate-800">{t.take_number}</span> },
-                        { key: 'branch', label: 'Branch', render: (t) => <span className="text-slate-700">{t.branch}</span> },
+                        { key: 'take_number', label: 'Number', render: (t) => <EntityLink type="stock_take" id={t.id} label={t.take_number} mono className="font-semibold" /> },
+                        { key: 'branch', label: 'Branch', render: (t) => <EntityLink type="branch" id={t.branch_id} label={t.branch} /> },
                         { key: 'type', label: 'Type', render: (t) => <span className="capitalize text-slate-500">{t.type}</span> },
                         { key: 'lines_count', label: 'Lines', align: 'right', render: (t) => <span className="tabular-nums text-slate-500">{t.lines_count}</span> },
-                        { key: 'started_by', label: 'Started by', render: (t) => <span className="text-slate-500">{t.started_by ?? '—'}</span> },
+                        { key: 'started_by', label: 'Started by', render: (t) => <EntityLink type="user" id={t.started_by_id} label={t.started_by ?? '—'} muted /> },
                         { key: 'created_at', label: 'Date', render: (t) => <span className="tabular-nums text-slate-500">{t.created_at}</span> },
                         { key: 'status', label: 'Status', render: (t) => <StatusBadge status={t.status} /> },
                     ]}

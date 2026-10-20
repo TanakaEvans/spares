@@ -25,6 +25,48 @@ class BinLocationController extends Controller
         ]);
     }
 
+    /** Everything stored in one bin: every stock level pointing at it, with value at AVCO. */
+    public function show(BinLocation $bin): Response
+    {
+        $bin->load('branch:id,name,code');
+
+        $levels = $bin->stockLevels()
+            ->with('part:id,part_number,description')
+            ->get()
+            ->sortBy(fn ($l) => $l->part?->part_number)
+            ->values()
+            ->map(fn ($l) => [
+                'id' => $l->id,
+                'part_id' => $l->part_id,
+                'part_number' => $l->part?->part_number,
+                'description' => $l->part?->description,
+                'qty_on_hand' => (float) $l->qty_on_hand,
+                'qty_reserved' => (float) $l->qty_reserved,
+                'qty_available' => (float) $l->qty_on_hand - (float) $l->qty_reserved,
+                'average_cost' => (float) $l->average_cost,
+                'stock_value' => round((float) $l->qty_on_hand * (float) $l->average_cost, 2),
+                'last_movement_at' => $l->last_movement_at?->toDateTimeString(),
+            ]);
+
+        return Inertia::render('Inventory/Bins/Show', [
+            'bin' => [
+                'id' => $bin->id,
+                'code' => $bin->code,
+                'notes' => $bin->notes,
+                'is_active' => $bin->is_active,
+                'branch_id' => $bin->branch_id,
+                'branch' => $bin->branch?->name,
+                'branch_code' => $bin->branch?->code,
+            ],
+            'levels' => $levels,
+            'totals' => [
+                'parts' => $levels->count(),
+                'qty_on_hand' => (float) $levels->sum('qty_on_hand'),
+                'stock_value' => round((float) $levels->sum('stock_value'), 2),
+            ],
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([

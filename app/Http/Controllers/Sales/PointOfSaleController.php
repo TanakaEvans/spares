@@ -11,6 +11,7 @@ use App\Models\StockLevel;
 use App\Services\PricingService;
 use App\Services\SalesPostingService;
 use App\Services\SettingsService;
+use App\Services\SupervisorApprovalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,13 @@ class PointOfSaleController extends Controller
             return response()->json(['parts' => []]);
         }
 
-        $parts = Part::search($q)->active()->limit(8)->get()
+        // exact=1: a scanned barcode / typed part number followed by Enter — one
+        // hit on part number or either barcode, no fuzzy matching.
+        $parts = ($request->boolean('exact')
+            ? Part::query()->where(fn ($x) => $x->where('part_number', $q)
+                ->orWhere('barcode_ean', $q)->orWhere('barcode_code128', $q))->limit(1)
+            : Part::search($q)->limit(8))
+            ->active()->get()
             ->map(function (Part $p) use ($pricing, $customer, $branch) {
                 try {
                     $price = $pricing->priceFor($p, $customer);
@@ -113,22 +120,38 @@ class PointOfSaleController extends Controller
             'payments.*.amount' => ['required', 'numeric', 'gt:0'],
             'payments.*.tendered' => ['nullable', 'numeric', 'min:0'],
             'payments.*.reference' => ['nullable', 'string', 'max:100'],
-            'discount_approved' => ['nullable', 'boolean'],
+            'supervisor_username' => ['nullable', 'string', 'max:150'],
+            'supervisor_password' => ['nullable', 'string', 'max:200'],
         ]);
 
         $branch = $this->activeBranch($request);
         $customer = Customer::findOrFail($data['customer_id']);
         $maxDiscount = (float) $settings->get('sales.max_discount_without_approval', $branch->id);
 
-        // Resolve authoritative prices server-side; enforce the discount gate.
+        // Over-limit discounts need a supervisor's own credentials (2.1 rule 3) —
+        // verified server-side, recorded on the invoice and in the audit log.
+        $overLimit = array_values(array_filter($data['lines'], fn ($l) => (float) ($l['discount_pct'] ?? 0) > $maxDiscount));
+        $approver = null;
+        if ($overLimit !== []) {
+            try {
+                $approver = app(SupervisorApprovalService::class)->approve(
+                    $data['supervisor_username'] ?? null,
+                    $data['supervisor_password'] ?? null,
+                    'sales.pos.approve-discount',
+                    'sales.discount_override',
+                    ['max_discount_pct' => $maxDiscount, 'customer_id' => $customer->id,
+                        'lines' => array_map(fn ($l) => ['part_id' => $l['part_id'], 'qty' => $l['qty'], 'discount_pct' => $l['discount_pct']], $overLimit)],
+                    $request->user()->id,
+                );
+            } catch (DomainException $e) {
+                return back()->withErrors(['discount' => $e->userMessage()]);
+            }
+        }
+
+        // Resolve authoritative prices server-side.
         $lines = [];
         foreach ($data['lines'] as $line) {
             $discount = (float) ($line['discount_pct'] ?? 0);
-            if ($discount > $maxDiscount && ! ($data['discount_approved'] ?? false)) {
-                return back()->withErrors([
-                    'discount' => "A discount of {$discount}% exceeds the {$maxDiscount}% limit — a supervisor must approve it.",
-                ]);
-            }
 
             try {
                 $unitPrice = $pricing->priceFor((int) $line['part_id'], $customer);
@@ -145,7 +168,8 @@ class PointOfSaleController extends Controller
         }
 
         try {
-            $invoice = $sales->postInvoice($customer, $branch->id, $lines, $data['payments'], $request->user()->id);
+            $invoice = $sales->postInvoice($customer, $branch->id, $lines, $data['payments'], $request->user()->id, null,
+                $approver ? ['discount_approved_by' => $approver->id] : []);
         } catch (DomainException $e) {
             return back()->withErrors(['sale' => $e->userMessage()]);
         } catch (\InvalidArgumentException $e) {
@@ -154,6 +178,26 @@ class PointOfSaleController extends Controller
 
         return redirect()->route('sales.invoices.show', $invoice)
             ->with('success', "Invoice {$invoice->document_number} posted — ".number_format((float) $invoice->total_incl, 2).'.');
+    }
+
+    /**
+     * Pre-check a supervisor's credentials from the tender dialog so the cashier
+     * gets an immediate answer; the sale POST verifies again before posting.
+     */
+    public function approveDiscount(Request $request, SupervisorApprovalService $approvals): JsonResponse
+    {
+        $data = $request->validate([
+            'username' => ['required', 'string', 'max:150'],
+            'password' => ['required', 'string', 'max:200'],
+        ]);
+
+        try {
+            $approver = $approvals->verify($data['username'], $data['password'], 'sales.pos.approve-discount', $request->user()->id);
+        } catch (DomainException $e) {
+            return response()->json(['ok' => false, 'message' => $e->userMessage()], 422);
+        }
+
+        return response()->json(['ok' => true, 'approver' => $approver->name]);
     }
 
     private function activeBranch(Request $request): Branch

@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/reports';
 import { StatTile, LineChart, LabelledBars, HBarList } from '@/Components/Charts';
+import EntityLink from '@/Components/EntityLink';
 
 export default function Dashboard({ kpis, salesTrend, arAgeing, topParts, salesByCategory, branches, filters }) {
     return (
@@ -52,11 +53,19 @@ export default function Dashboard({ kpis, salesTrend, arAgeing, topParts, salesB
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="rounded-xl border border-slate-100 bg-white p-5">
                         <h2 className="text-sm font-semibold text-slate-700 mb-3">Top parts by value (MTD)</h2>
-                        <HBarList data={topParts.map((p) => ({ label: p.part_number, value: p.revenue }))} labelKey="label" valueKey="value" />
+                        <HBarList
+                            data={topParts.map((p) => ({ id: p.part_id, label: p.part_number, description: p.description, value: p.revenue }))}
+                            labelKey="label" valueKey="value"
+                            renderLabel={(p) => <EntityLink type="part" id={p.id} label={p.label} mono title={p.description} />}
+                        />
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-white p-5">
                         <h2 className="text-sm font-semibold text-slate-700 mb-3">Sales by category (MTD)</h2>
-                        <HBarList data={salesByCategory.map((c) => ({ label: c.category, value: c.revenue }))} labelKey="label" valueKey="value" />
+                        <HBarList
+                            data={salesByCategory.map((c) => ({ id: c.category_id, label: c.category, value: c.revenue }))}
+                            labelKey="label" valueKey="value"
+                            renderLabel={(c) => <EntityLink type="category" id={c.id} label={c.label} />}
+                        />
                     </div>
                 </div>
             </div>

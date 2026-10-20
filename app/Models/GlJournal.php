@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class GlJournal extends Model
 {
@@ -32,5 +33,22 @@ class GlJournal extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function postedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'posted_by');
+    }
+
+    /** The equal-and-opposite journal that reversed this one (if any). */
+    public function reversingJournal(): BelongsTo
+    {
+        return $this->belongsTo(GlJournal::class, 'reversing_journal_id');
+    }
+
+    /** The original journal this one reverses (if this is a reversal). */
+    public function reversalOf(): HasOne
+    {
+        return $this->hasOne(GlJournal::class, 'reversing_journal_id');
     }
 }

@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
+import EntityLink from '@/Components/EntityLink';
 
 export default function TrialBalance({ report, filters, branches }) {
     function apply(params) {
@@ -43,7 +44,11 @@ export default function TrialBalance({ report, filters, branches }) {
                         <tbody className="divide-y divide-slate-50">
                             {report.rows.map((r) => (
                                 <tr key={r.account_code} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2"><span className="font-mono text-slate-400">{r.account_code}</span> <span className="text-slate-700">{r.name}</span></td>
+                                    <td className="px-4 py-2">
+                                        <EntityLink type="gl_account" number={r.account_code} params={{ to: filters.to, branch_id: filters.branch_id ?? '' }} title={`GL enquiry — ${r.account_code}`}>
+                                            <span className="font-mono text-slate-400">{r.account_code}</span> <span>{r.name}</span>
+                                        </EntityLink>
+                                    </td>
                                     <td className="px-2 py-2 text-right tabular-nums text-slate-700">{r.debit > 0 ? r.debit.toFixed(2) : ''}</td>
                                     <td className="px-4 py-2 text-right tabular-nums text-slate-700">{r.credit > 0 ? r.credit.toFixed(2) : ''}</td>
                                 </tr>

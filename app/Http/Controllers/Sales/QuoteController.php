@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
@@ -34,6 +35,7 @@ class QuoteController extends Controller
                     'id' => $d->id,
                     'document_number' => $d->document_number,
                     'customer' => $d->customer?->name,
+                    'customer_id' => $d->customer_id,
                     'document_date' => $d->document_date->toDateString(),
                     'expiry_date' => $d->expiry_date?->toDateString(),
                     'total_incl' => (float) $d->total_incl,
@@ -61,7 +63,7 @@ class QuoteController extends Controller
             'lines.*.discount_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
-        $branch = \App\Models\Branch::where('is_main_branch', true)->first() ?? \App\Models\Branch::firstOrFail();
+        $branch = Branch::where('is_main_branch', true)->first() ?? Branch::firstOrFail();
         $customer = Customer::findOrFail($data['customer_id']);
 
         try {
@@ -77,12 +79,18 @@ class QuoteController extends Controller
     public function show(SalesDocument $quote, SalesQuoteService $quotes): Response
     {
         abort_unless($quote->document_type === 'quotation', 404);
-        $quote->load('customer:id,name,customer_number', 'lines.part:id,part_number', 'children:id,document_number,document_type,parent_id');
+        $quote->load('customer:id,name,customer_number', 'branch:id,name', 'lines.part:id,part_number',
+            'children:id,document_number,document_type,parent_id',
+            'children.children:id,document_number,document_type,parent_id');
+
+        $order = $quote->children->firstWhere('document_type', 'order');
+        $invoice = $order?->children->firstWhere('document_type', 'invoice');
 
         return Inertia::render('Sales/Quotes/Show', [
             'quote' => [
                 'id' => $quote->id,
                 'document_number' => $quote->document_number,
+                'branch' => $quote->branch?->only(['id', 'name']),
                 'status' => $quote->isExpired() && $quote->status === 'open' ? 'expired' : $quote->status,
                 'customer' => $quote->customer?->only(['id', 'name', 'customer_number']),
                 'document_date' => $quote->document_date->toDateString(),
@@ -91,7 +99,8 @@ class QuoteController extends Controller
                 'subtotal_excl' => (float) $quote->subtotal_excl,
                 'vat_amount' => (float) $quote->vat_amount,
                 'total_incl' => (float) $quote->total_incl,
-                'order' => $quote->children->firstWhere('document_type', 'order')?->only(['id', 'document_number']),
+                'order' => $order?->only(['id', 'document_number']),
+                'invoice' => $invoice?->only(['id', 'document_number']),
                 'lines' => $quote->lines->map(fn ($l) => [
                     'part_id' => $l->part_id,
                     'part_number' => $l->part?->part_number,
