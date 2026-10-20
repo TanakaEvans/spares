@@ -48,7 +48,9 @@ class PeriodController extends Controller
         }
 
         $period->update([
-            'status' => match ($action) { 'close' => 'closed', 'reopen' => 'open', 'lock' => 'locked' },
+            'status' => match ($action) {
+                'close' => 'closed', 'reopen' => 'open', 'lock' => 'locked'
+            },
             'closed_by' => in_array($action, ['close', 'lock'], true) ? $request->user()->id : null,
             'closed_at' => in_array($action, ['close', 'lock'], true) ? now() : null,
         ]);

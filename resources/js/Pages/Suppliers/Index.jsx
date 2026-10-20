@@ -66,7 +66,7 @@ export default function SuppliersIndex({ suppliers, filters }) {
                         { key: 'type', label: 'Type', render: (s) => <span className="capitalize text-slate-500">{s.type}</span> },
                         { key: 'phone', label: 'Phone', render: (s) => <span className="text-slate-500">{s.phone}</span> },
                         { key: 'lead_time_days', label: 'Lead', align: 'right', render: (s) => <span className="text-slate-500">{s.lead_time_days}d</span> },
-                        { key: 'purchase_orders_count', label: 'POs', align: 'right' },
+                        { key: 'purchase_orders_count', label: 'Orders', align: 'right' },
                         { key: 'ap_balance', label: 'AP Balance', align: 'right', render: (s) => <MoneyDisplay amount={s.ap_balance} /> },
                         { key: 'is_active', label: 'Status', render: (s) => <StatusBadge status={s.is_active ? 'active' : 'inactive'} /> },
                     ]}

@@ -1,13 +1,13 @@
 # About this page
 
-The part hub: identity, live stock per branch, the last 15 ledger movements, fitments, cross-references and supersession — plus a **Connected to** card linking everything the part touches.
+The part hub — everything the business knows about one part, with a link to every record that touches it.
 
-## How it works
-- **Stock** lists on-hand / reserved / available and AVCO per branch; branch and bin are links.
-- **Movements** is the stock ledger, newest first. Each row's reference opens the source document (invoice, credit note, GRN, adjustment, transfer, job card, supplier return); a stock-take adjustment also links the take.
-- **Connected to** groups: stock per branch (→ stock list and bin), approved suppliers (★ = preferred), price lists it is priced on, vehicles it fits, cross-reference parts and brands, the supersession chain, category and brand.
-- Fitments, cross-references and supersession are edited on their tabs; identity fields via **Edit**.
+## What you can reach from here
+- **Stock & bins** — quantity on hand per branch and where it lives; click through to the stock list or the bin.
+- **Suppliers** — who supplies it (the preferred one first) and the cost on their price list.
+- **Fits these vehicles** — the makes and models it's listed against; each opens the model.
+- **Cross-references & supersession** — equivalent and replacement parts, each linked.
+- **Recent movements** — the last stock-ledger entries, each linked back to the invoice, GRN, adjustment, transfer, job card or stock take that caused it.
 
-## Watch out
-- Stock figures are never edited here — they move only through posted documents, which is why the Movements tab always explains the balance.
-- A superseded part shows an amber banner; sell the replacement, not the old number.
+## Related
+- [Stock Levels](route:inventory.stock.index) · [Reorder Report](route:inventory.reorder.index) · [Parts Catalogue](route:inventory.parts.index)

@@ -110,3 +110,7 @@ Skip this whole phase if the client has no workshop — nothing else depends on 
 
 ## Deferred (Phase 6)
 - [ ] Workshop report suite (9.7 productivity, technician efficiency, comeback rate) — tracked in [tasks/09-reports.md](09-reports.md)
+
+## Follow-ups found during the hyperlink/detail-page pass (2026-10-20)
+- [ ] Warranty "Raise a claim" form should capture the `part_id` (the column exists; the form never sets it, so the part link on the claim is blank until populated)
+- [ ] No writer for `technician_time_logs` yet — the technician detail page shows hours *booked* from labour lines but "hours logged" reads 0 (relates to deferred 4.x clock-on/off KPIs)

@@ -13,9 +13,7 @@ use Inertia\Response;
 
 class CurrencyController extends Controller
 {
-    public function __construct(private readonly CurrencyService $currency)
-    {
-    }
+    public function __construct(private readonly CurrencyService $currency) {}
 
     public function index(): Response
     {

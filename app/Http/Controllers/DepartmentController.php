@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Department;
 use App\Models\Branch;
+use App\Models\Department;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -81,7 +81,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:departments,code,' . $department->id,
+            'code' => 'required|string|max:50|unique:departments,code,'.$department->id,
             'description' => 'nullable|string',
             'head_id' => 'nullable|exists:employees,id',
             'status' => 'required|in:active,inactive',
@@ -109,7 +109,7 @@ class DepartmentController extends Controller
     public function toggleStatus(Department $department)
     {
         $department->update([
-            'status' => $department->status === 'active' ? 'inactive' : 'active'
+            'status' => $department->status === 'active' ? 'inactive' : 'active',
         ]);
 
         return redirect()->back()

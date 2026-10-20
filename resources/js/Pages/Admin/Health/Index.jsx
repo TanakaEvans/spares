@@ -14,7 +14,7 @@ const OVERALL = {
     fail: { dot: 'bg-red-500', label: 'Integrity failure — act now', tone: 'text-red-700 bg-red-50 border-red-200' },
 };
 
-export default function HealthIndex({ groups, summary, ranAt }) {
+export default function HealthIndex({ groups, summary, ranAt, lastScheduled }) {
     const overall = OVERALL[summary.overall];
 
     return (
@@ -36,10 +36,16 @@ export default function HealthIndex({ groups, summary, ranAt }) {
                             </div>
                         </div>
                     </div>
-                    <button onClick={() => router.reload()} className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                        <RefreshCw className="w-4 h-4" /> Run all checks
+                    <button onClick={() => router.post(route('admin.health.run'))} className="inline-flex items-center gap-2 rounded-lg bg-white border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                        <RefreshCw className="w-4 h-4" /> Run &amp; record checks
                     </button>
                 </div>
+
+                {lastScheduled && (
+                    <p className="text-xs text-slate-400">
+                        Last recorded run ({lastScheduled.trigger}): <span className={lastScheduled.overall === 'fail' ? 'text-red-600 font-medium' : lastScheduled.overall === 'warn' ? 'text-amber-600' : 'text-emerald-600'}>{lastScheduled.overall}</span> · {lastScheduled.at}
+                    </p>
+                )}
 
                 {Object.entries(groups).map(([group, checks]) => (
                     <div key={group} className="rounded-xl border border-slate-100 bg-white overflow-hidden">

@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
-use App\Models\SystemRoute;
 use App\Models\SystemModule;
+use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
@@ -23,7 +24,7 @@ class RoleController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -33,7 +34,7 @@ class RoleController extends Controller
             'roles' => $roles,
             'filters' => [
                 'search' => $request->search,
-            ]
+            ],
         ]);
     }
 
@@ -50,7 +51,7 @@ class RoleController extends Controller
         });
 
         return inertia('Roles/Create', [
-            'routesByModule' => $routesByModule
+            'routesByModule' => $routesByModule,
         ]);
     }
 
@@ -77,7 +78,7 @@ class RoleController extends Controller
         }
 
         return redirect()->route('auth.roles.index')
-            ->with('success', 'Role created successfully with ' . count($request->route_ids ?? []) . ' permissions assigned.');
+            ->with('success', 'Role created successfully with '.count($request->route_ids ?? []).' permissions assigned.');
     }
 
     /**
@@ -96,7 +97,7 @@ class RoleController extends Controller
 
         return inertia('Roles/Show', [
             'role' => $role,
-            'routesByModule' => $routesByModule
+            'routesByModule' => $routesByModule,
         ]);
     }
 
@@ -116,7 +117,7 @@ class RoleController extends Controller
         return inertia('Roles/Edit', [
             'role' => $role,
             'routesByModule' => $routesByModule,
-            'assignedRouteIds' => $assignedRouteIds
+            'assignedRouteIds' => $assignedRouteIds,
         ]);
     }
 
@@ -126,7 +127,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:100', 'unique:auth_roles,name,' . $role->id],
+            'name' => ['required', 'string', 'max:100', 'unique:auth_roles,name,'.$role->id],
             'description' => ['nullable', 'string', 'max:255'],
             'route_ids' => ['array'],
             'route_ids.*' => ['exists:system_routes,id'],
@@ -142,7 +143,7 @@ class RoleController extends Controller
             $before = $role->systemRoutes()->pluck('name')->sort()->values()->all();
             $role->systemRoutes()->sync($request->route_ids ?? []);
             $after = $role->systemRoutes()->pluck('name')->sort()->values()->all();
-            app(\App\Services\AuditLogService::class)->record(
+            app(AuditLogService::class)->record(
                 'role.permissions_changed', $role,
                 ['routes' => $before], ['routes' => $after],
                 'Granted '.count(array_diff($after, $before)).', revoked '.count(array_diff($before, $after)),
@@ -150,7 +151,7 @@ class RoleController extends Controller
         }
 
         return redirect()->route('auth.roles.index')
-            ->with('success', 'Role updated successfully with ' . count($request->route_ids ?? []) . ' permissions.');
+            ->with('success', 'Role updated successfully with '.count($request->route_ids ?? []).' permissions.');
     }
 
     /**
@@ -175,20 +176,21 @@ class RoleController extends Controller
         return redirect()->route('auth.roles.index')
             ->with('success', 'Role deleted successfully.');
     }
+
     /**
      * Show the bulk assign roles form.
      */
     public function bulkAssign()
     {
         $roles = Role::orderBy('name')->get();
-        $users = \App\Models\User::with('roles')
+        $users = User::with('roles')
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         return inertia('Roles/BulkAssign', [
             'roles' => $roles,
-            'users' => $users
+            'users' => $users,
         ]);
     }
 
@@ -209,7 +211,7 @@ class RoleController extends Controller
         $assignedCount = 0;
 
         foreach ($userIds as $userId) {
-            $user = \App\Models\User::find($userId);
+            $user = User::find($userId);
             if ($user) {
                 // Sync without detaching existing roles? Or attach?
                 // The request implies "Assign", usually meaning "Add to existing".
@@ -230,14 +232,14 @@ class RoleController extends Controller
     {
         $roles = Role::orderBy('name')->get();
         // Only get users who actually have roles
-        $users = \App\Models\User::with('roles')
+        $users = User::with('roles')
             ->has('roles')
             ->orderBy('name')
             ->get();
 
         return inertia('Roles/BulkRemove', [
             'roles' => $roles,
-            'users' => $users
+            'users' => $users,
         ]);
     }
 
@@ -258,7 +260,7 @@ class RoleController extends Controller
         $processedCount = 0;
 
         foreach ($userIds as $userId) {
-            $user = \App\Models\User::find($userId);
+            $user = User::find($userId);
             if ($user) {
                 // Detach the selected roles
                 $user->roles()->detach($roleIds);
@@ -275,12 +277,12 @@ class RoleController extends Controller
      */
     public function usersReport()
     {
-        $users = \App\Models\User::with('roles')->paginate(20);
+        $users = User::with('roles')->paginate(20);
         $roles = Role::all();
 
         return inertia('Roles/UsersReport', [
             'users' => $users,
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 }

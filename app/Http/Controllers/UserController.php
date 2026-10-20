@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules;
 
@@ -25,8 +25,8 @@ class UserController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('username', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%");
                 });
             }
 
@@ -52,10 +52,11 @@ class UserController extends Controller
                     'search' => $request->search,
                     'status' => $request->status,
                     'role' => $request->role,
-                ]
+                ],
             ]);
         } catch (\Exception $e) {
-            Log::error('Users index error: ' . $e->getMessage());
+            Log::error('Users index error: '.$e->getMessage());
+
             return inertia('Admin/Users/Index', [
                 'users' => collect([]),
                 'roles' => collect([]),
@@ -64,7 +65,7 @@ class UserController extends Controller
                     'status' => '',
                     'role' => '',
                 ],
-                'error' => 'Error loading users: ' . $e->getMessage()
+                'error' => 'Error loading users: '.$e->getMessage(),
             ]);
         }
     }
@@ -75,8 +76,9 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::all();
+
         return inertia('Admin/Users/Create', [
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -122,8 +124,9 @@ class UserController extends Controller
     public function show(User $user)
     {
         $user->load('roles');
+
         return inertia('Admin/Users/Show', [
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -137,7 +140,7 @@ class UserController extends Controller
 
         return inertia('Admin/Users/Edit', [
             'user' => $user,
-            'roles' => $roles
+            'roles' => $roles,
         ]);
     }
 
@@ -148,8 +151,8 @@ class UserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'string', 'email', 'max:150', 'unique:auth_users,email,' . $user->id],
-            'username' => ['required', 'string', 'max:100', 'unique:auth_users,username,' . $user->id],
+            'email' => ['required', 'string', 'email', 'max:150', 'unique:auth_users,email,'.$user->id],
+            'username' => ['required', 'string', 'max:100', 'unique:auth_users,username,'.$user->id],
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
             'status' => ['required', 'in:active,inactive'],
             'roles' => ['array'],

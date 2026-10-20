@@ -41,6 +41,9 @@ class DemoUsersSeeder extends Seeder
                     'email' => $u['username'].'@sparespro.local',
                     'password' => Hash::make(self::DEMO_PASSWORD),
                     'status' => 'active',
+                    // Demo logins skip the forced first-login password change (the real
+                    // admin from SuperuserSeeder still has it). Demo data is dev-only.
+                    'password_changed_at' => now(),
                 ]
             );
 
