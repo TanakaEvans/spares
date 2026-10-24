@@ -14,12 +14,20 @@ ENG-CLG-RAD,Radiators,ENG-CLG,21
 ENG-CLG-WPP,Water Pumps,ENG-CLG,22
 ENG-CLG-THS,Thermostats,ENG-CLG,23
 ENG-CLG-HOS,Hoses & Pipes,ENG-CLG,24
+ENG-INT,Engine Internals,ENG,25
+ENG-BRG,Engine Bearings,ENG,26
+ENG-VLV,Valves & Valve Train,ENG,27
+ENG-LUB,Oil Pumps & Lubrication,ENG,28
+ENG-FUE,Fuel System,ENG,29
+ENG-TRB,Turbochargers,ENG,29
 BRK,Brakes,,30
 BRK-PAD,Brake Pads,BRK,31
 BRK-DSC,Brake Discs,BRK,32
 BRK-SHO,Brake Shoes,BRK,33
 BRK-CYL,Brake Cylinders & Calipers,BRK,34
 BRK-HYD,Brake Hydraulics,BRK,35
+BRK-DRM,Brake Drums,BRK,36
+BRK-HWR,Brake Hardware & Cables,BRK,37
 SUS,Suspension & Steering,,40
 SUS-SHK,Shock Absorbers,SUS,41
 SUS-BJT,Ball Joints,SUS,42
@@ -27,6 +35,7 @@ SUS-TRE,Tie Rod Ends,SUS,43
 SUS-BSH,Bushes & Arms,SUS,44
 SUS-WBR,Wheel Bearings,SUS,45
 SUS-CVJ,CV Joints & Driveshafts,SUS,46
+SUS-STR,Steering,SUS,47
 ELE,Electrical,,50
 ELE-BAT,Batteries,ELE,51
 ELE-ALT,Alternators,ELE,52
@@ -34,12 +43,17 @@ ELE-STR,Starters,ELE,53
 ELE-PLG,Spark & Glow Plugs,ELE,54
 ELE-SEN,Sensors,ELE,55
 ELE-LMP,Bulbs & Lighting,ELE,56
+ELE-IGN,Ignition,ELE,57
+ELE-SWT,Switches,ELE,58
+ELE-FUS,"Fuses, Relays & Flashers",ELE,59
 TRN,Transmission & Clutch,,60
 TRN-CLU,Clutch Kits,TRN,61
 TRN-GBX,Gearbox Parts,TRN,62
+TRN-DRV,Propshaft & Driveline,TRN,63
 BLT,Belts & Tensioners,,70
 BLT-FAN,Fan Belts,BLT,71
 BLT-TIM,Timing Belts & Kits,BLT,72
+BLT-TEN,Belt Tensioners & Idlers,BLT,73
 OIL,Oils & Lubricants,,80
 OIL-ENG,Engine Oils,OIL,81
 OIL-GBX,Gear & Diff Oils,OIL,82
@@ -47,8 +61,13 @@ OIL-GRS,Greases & Additives,OIL,83
 BOD,Body & Accessories,,90
 BOD-MIR,Mirrors,BOD,91
 BOD-WIP,Wiper Blades,BOD,92
+BOD-DOR,"Doors, Windows & Trim",BOD,93
+BOD-CBL,Control Cables,BOD,94
 EXH,Exhaust Systems,,95
 TYR,Tyres & Wheels,,96
 TYR-TYR,Tyres,TYR,97
 TYR-RIM,Rims & Wheel Nuts,TYR,98
+TLS,Tools & Workshop,,98
+AST,Vehicle-Specific Assortments,,98
 USED,Used Parts,,99
+MISC,Unclassified,,100

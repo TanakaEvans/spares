@@ -20,20 +20,20 @@ Welcome to the system. This page gets you from your first login to a business th
 
 ## 3. Set up the business (admin, once)
 
-Do these in order before you start trading. They live under **System Administration** (see (guide:system-admin) for detail).
+Do these in order before you start trading. They live under **System Administration** (see [system-admin guide](guide:system-admin) for detail).
 
-1. **Company details** — your name, address, VAT and registration numbers, and **banking details** (these print on every invoice and statement). (route:admin.company.index)
-2. **Check the settings** — VAT rate, document numbering, pricing rules. (route:admin.settings.index)
-3. **Add your staff** as users and give each a role (Cashier, Buyer, Accountant, Workshop, Manager…). (route:auth.users.index)
-4. **Workshop labour rates** — if you run a workshop, set your hourly rates. (route:workshop.labour.index)
+1. **Company details** — your name, address, VAT and registration numbers, and **banking details** (these print on every invoice and statement). [(open)](route:admin.company.index)
+2. **Check the settings** — VAT rate, document numbering, pricing rules. [(open)](route:admin.settings.index)
+3. **Add your staff** as users and give each a role (Cashier, Buyer, Accountant, Workshop, Manager…). [(open)](route:auth.users.index)
+4. **Workshop labour rates** — if you run a workshop, set your hourly rates. [(open)](route:workshop.labour.index)
 
 ## 4. Load your data
 
-Now bring in your real parts, stock, suppliers and customers from Excel — see the full walkthrough in (guide:data-upload). Then you're ready to trade: start selling in (guide:sales).
+Now bring in your real parts, stock, suppliers and customers from Excel — see the full walkthrough in [data-upload guide](guide:data-upload). Then you're ready to trade: start selling in [sales guide](guide:sales).
 
 ## Where to next
 
-- Selling at the till → (guide:sales)
-- Loading stock → (guide:data-upload)
-- Buying stock → (guide:purchasing)
-- The money side → (guide:finance)
+- Selling at the till → [sales guide](guide:sales)
+- Loading stock → [data-upload guide](guide:data-upload)
+- Buying stock → [purchasing guide](guide:purchasing)
+- The money side → [finance guide](guide:finance)

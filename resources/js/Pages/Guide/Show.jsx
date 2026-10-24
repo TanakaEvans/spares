@@ -7,7 +7,10 @@ import { ArrowLeft, ArrowRight, BookOpen } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 
 export default function GuideShow({ auth, section, content, prev, next, toc }) {
-    const html = useMemo(() => DOMPurify.sanitize(marked.parse(content ?? '')), [content]);
+    const html = useMemo(() => DOMPurify.sanitize(marked.parse(content ?? ''), {
+        // Keep the in-app link schemes — route:name and guide:name resolve in onClick.
+        ALLOWED_URI_REGEXP: /^(?:route:|guide:|doc:|https?:|mailto:|#|[^:]*)$/i,
+    }), [content]);
     const Icon = Icons[section.icon] ?? BookOpen;
 
     // Internal links in the markdown written as (guide:customers) or (route:sales.pos) resolve in-app.

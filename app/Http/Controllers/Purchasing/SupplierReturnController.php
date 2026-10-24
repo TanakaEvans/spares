@@ -14,12 +14,19 @@ use Inertia\Response;
 
 class SupplierReturnController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/Returns/Index', [
             'returns' => SupplierReturn::with('supplier:id,name', 'branch:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                    fn ($x) => $x->where('return_number', 'like', "%{$s}%")
+                        ->orWhere('supplier_rma', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
+                ))
                 ->latest()
                 ->paginate(25)
+                ->withQueryString()
                 ->through(fn (SupplierReturn $r) => [
                     'id' => $r->id,
                     'return_number' => $r->return_number,
@@ -33,6 +40,13 @@ class SupplierReturnController extends Controller
                     'value' => $r->totalValue(),
                     'credit_total' => $r->credit_total !== null ? (float) $r->credit_total : null,
                 ]),
+            'stats' => [
+                'to_ship' => (int) SupplierReturn::where('status', 'draft')->count(),
+                'awaiting_credit' => (int) SupplierReturn::where('status', 'shipped')->count(),
+                'awaiting_value' => round((float) SupplierReturn::where('status', 'shipped')
+                    ->get()->sum(fn ($r) => $r->totalValue()), 2),
+            ],
+            'filters' => $request->only('search', 'status'),
         ]);
     }
 

@@ -5,13 +5,32 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
+import { fmt } from '@/Components/Pos/posMath';
+import {
+    Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/Components/ui/dialog';
 
-export default function ReturnsIndex({ returns }) {
+const PILLS = [
+    { key: '', label: 'All' },
+    { key: 'draft', label: 'Draft' },
+    { key: 'shipped', label: 'Shipped' },
+    { key: 'credited', label: 'Credited' },
+];
+
+export default function ReturnsIndex({ returns, stats, filters }) {
     const [action, setAction] = useState(null); // {type: 'ship'|'credit', return}
     const [value, setValue] = useState('');
     const [value2, setValue2] = useState('');
+
+    function filter(params) {
+        router.get(route('purchasing.returns.index'), Object.fromEntries(
+            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
+        ), { preserveState: true });
+    }
 
     function run() {
         if (action.type === 'ship') {
@@ -37,7 +56,37 @@ export default function ReturnsIndex({ returns }) {
             <Head title="Returns to Supplier" />
 
             <div className="space-y-4">
-                <div className="flex">
+                <StatChips
+                    items={[
+                        { label: 'To ship', value: stats.to_ship, tone: stats.to_ship > 0 ? 'amber' : 'slate' },
+                        { label: 'Awaiting credit', value: stats.awaiting_credit, tone: stats.awaiting_credit > 0 ? 'red' : 'emerald' },
+                        { label: 'Value out for credit', value: `R${fmt(stats.awaiting_value)}`, tone: stats.awaiting_value > 0 ? 'orange' : 'slate' },
+                    ]}
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
+                        {PILLS.map((p) => (
+                            <button
+                                key={p.key}
+                                role="tab"
+                                aria-selected={(filters.status ?? '') === p.key}
+                                onClick={() => filter({ status: p.key })}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md ${
+                                    (filters.status ?? '') === p.key ? 'bg-orange-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <SearchInput
+                        id="sr-search"
+                        value={filters.search ?? ''}
+                        onSearch={(s) => filter({ search: s })}
+                        placeholder="Return, RMA or supplier…"
+                        className="w-64"
+                    />
                     <Link
                         href={route('purchasing.returns.create')}
                         className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
@@ -82,61 +131,63 @@ export default function ReturnsIndex({ returns }) {
                 />
             </div>
 
-            {action && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
-                    <div className="absolute inset-0 bg-slate-900/50" onClick={() => setAction(null)} />
-                    <div className="relative w-full max-w-md rounded-xl bg-white shadow-xl p-6 space-y-4">
-                        <h2 className="text-lg font-semibold text-slate-900">
-                            {action.type === 'ship' ? `Ship ${action.return.return_number}` : `Capture credit for ${action.return.return_number}`}
-                        </h2>
-                        {action.type === 'ship' ? (
-                            <>
-                                <p className="text-sm text-slate-500">Stock leaves the shelf when you ship. The supplier's RMA number is required.</p>
-                                <input
-                                    value={value}
-                                    onChange={(e) => setValue(e.target.value)}
-                                    placeholder="Supplier RMA number"
-                                    aria-label="Supplier RMA number"
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
-                                    autoFocus
-                                />
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-sm text-slate-500">The credit reduces what you owe this supplier.</p>
-                                <input
-                                    value={value}
-                                    onChange={(e) => setValue(e.target.value)}
-                                    placeholder="Supplier credit note ref"
-                                    aria-label="Credit note reference"
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
-                                    autoFocus
-                                />
-                                <input
-                                    type="number" step="0.01"
-                                    value={value2}
-                                    onChange={(e) => setValue2(e.target.value)}
-                                    placeholder="Credit amount"
-                                    aria-label="Credit amount"
-                                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-right tabular-nums"
-                                />
-                            </>
-                        )}
-                        <div className="flex justify-end gap-3">
-                            <button onClick={() => setAction(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">
-                                Cancel
-                            </button>
-                            <button
-                                onClick={run}
-                                disabled={!value || (action.type === 'credit' && !value2)}
-                                className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40"
-                            >
-                                {action.type === 'ship' ? 'Ship Return' : 'Capture Credit'}
-                            </button>
+            <Dialog open={action !== null} onOpenChange={(open) => !open && setAction(null)}>
+                <DialogContent className="bg-white rounded-xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {action?.type === 'ship' ? `Ship ${action?.return.return_number}` : `Capture credit for ${action?.return.return_number}`}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {action?.type === 'ship'
+                                ? 'Stock leaves the shelf when you ship. The supplier\'s RMA number is required.'
+                                : 'The credit reduces what you owe this supplier.'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {action?.type === 'ship' ? (
+                        <input
+                            value={value}
+                            onChange={(e) => setValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && value && run()}
+                            placeholder="Supplier RMA number"
+                            aria-label="Supplier RMA number"
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
+                            autoFocus
+                        />
+                    ) : (
+                        <div className="space-y-3">
+                            <input
+                                value={value}
+                                onChange={(e) => setValue(e.target.value)}
+                                placeholder="Supplier credit note ref"
+                                aria-label="Credit note reference"
+                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono"
+                                autoFocus
+                            />
+                            <input
+                                type="number" step="0.01"
+                                value={value2}
+                                onChange={(e) => setValue2(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && value && value2 && run()}
+                                placeholder="Credit amount"
+                                aria-label="Credit amount"
+                                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-right tabular-nums"
+                            />
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
+                    <DialogFooter>
+                        <button onClick={() => setAction(null)} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={run}
+                            disabled={!value || (action?.type === 'credit' && !value2)}
+                            className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40"
+                        >
+                            {action?.type === 'ship' ? 'Ship Return' : 'Capture Credit'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </ModuleLayout>
     );
 }

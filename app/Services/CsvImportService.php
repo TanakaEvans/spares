@@ -19,7 +19,13 @@ class CsvImportService
      */
     public function storeUpload(UploadedFile $file): string
     {
-        $ext = strtolower($file->getClientOriginalExtension());
+        return $this->storeFile($file->getRealPath(), $file->getClientOriginalExtension());
+    }
+
+    /** Same as storeUpload() for a file already on disk (console imports). The source is copied, never moved. */
+    public function storeFile(string $source, ?string $ext = null): string
+    {
+        $ext = strtolower($ext ?: pathinfo($source, PATHINFO_EXTENSION));
         $dir = storage_path('app/private/imports/data');
         if (! is_dir($dir)) {
             mkdir($dir, 0775, true);
@@ -31,9 +37,9 @@ class CsvImportService
             if (! class_exists(IOFactory::class)) {
                 throw new \RuntimeException('Excel uploads need the spreadsheet library — save the sheet as CSV (UTF-8) and upload that instead.');
             }
-            $reader = IOFactory::createReaderForFile($file->getRealPath());
+            $reader = IOFactory::createReaderForFile($source);
             $reader->setReadDataOnly(true);
-            $sheet = $reader->load($file->getRealPath())->getSheet(0);
+            $sheet = $reader->load($source)->getSheet(0);
             $out = fopen($target, 'w');
             foreach ($sheet->toArray(null, true, true, false) as $row) {
                 if (array_filter($row, fn ($c) => $c !== null && trim((string) $c) !== '') === []) {
@@ -43,7 +49,7 @@ class CsvImportService
             }
             fclose($out);
         } else {
-            $file->move($dir, $name);
+            copy($source, $target);
         }
 
         return 'imports/data/'.$name;
@@ -131,7 +137,8 @@ class CsvImportService
 
     /**
      * Guess which column holds a field: exact label/key match first (so our own
-     * templates map perfectly), then keyword search.
+     * templates map perfectly), then keyword search in keyword order — earlier
+     * keywords win, so "description" beats "desc" matching "Category Desc".
      */
     public function guess(array $header, array $keywords, ?string $label = null, ?string $key = null): ?int
     {
@@ -146,8 +153,8 @@ class CsvImportService
                 }
             }
         }
-        foreach ($header as $i => $name) {
-            foreach ($keywords as $kw) {
+        foreach ($keywords as $kw) {
+            foreach ($header as $i => $name) {
                 if (str_contains(mb_strtolower((string) $name), $kw)) {
                     return $i;
                 }

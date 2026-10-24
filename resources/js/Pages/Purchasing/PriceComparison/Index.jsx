@@ -23,12 +23,23 @@ export default function PriceComparisonIndex({ rows, filters }) {
                         </div>
                         <table className="w-full text-sm">
                             <tbody className="divide-y divide-slate-50">
-                                {r.offers.map((o, i) => (
+                                {r.offers.map((o, i) => {
+                                    const worst = r.offers[r.offers.length - 1].cost;
+                                    const saving = worst - o.cost;
+                                    return (
                                     <tr key={i} className={o.cost === r.best ? 'bg-emerald-50/50' : ''}>
                                         <td className="px-4 py-2"><EntityLink type="supplier" id={o.supplier_id} label={o.supplier} />{o.cost === r.best && <span className="ml-2 text-[10px] font-semibold uppercase text-emerald-600">best</span>}</td>
                                         <td className="px-4 py-2 text-right tabular-nums font-medium text-slate-700"><MoneyDisplay amount={o.cost} /></td>
+                                        <td className="px-4 py-2 text-right w-36 text-xs">
+                                            {saving > 0
+                                                ? <span className="text-emerald-600">saves <MoneyDisplay amount={saving} /></span>
+                                                : r.offers.length > 1 && o.cost === worst
+                                                    ? <span className="text-red-500">costliest</span>
+                                                    : <span className="text-slate-300">—</span>}
+                                        </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, TriangleAlert } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import FormField from '@/Components/FormField';
 import PartLinePicker from '@/Components/PartLinePicker';
 import EntityLink from '@/Components/EntityLink';
+
+const CONDITION_FOR = { damaged: 'damaged', incorrect_part: 'new', excess_stock: 'new', warranty: 'used' };
 
 export default function ReturnCreate({ suppliers, branches }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -19,6 +21,19 @@ export default function ReturnCreate({ suppliers, branches }) {
         setLines(next);
         setData('lines', next.map(({ part_id, qty, condition }) => ({ part_id, qty, condition })));
     }
+
+    function addLine(part, qty = 1) {
+        if (lines.some((l) => l.part_id === part.id)) {
+            sync(lines.map((l) => (l.part_id === part.id ? { ...l, qty: l.qty + qty } : l)));
+            return;
+        }
+        sync([...lines, {
+            part_id: part.id, part_number: part.part_number, description: part.description,
+            on_hand: part.on_hand, qty, condition: CONDITION_FOR[data.reason] ?? 'new',
+        }]);
+    }
+
+    const overStock = lines.some((l) => l.on_hand != null && l.qty > l.on_hand);
 
     return (
         <ModuleLayout
@@ -62,22 +77,45 @@ export default function ReturnCreate({ suppliers, branches }) {
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 space-y-4">
                     <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Parts to return</h2>
-                    <PartLinePicker onPick={(p) => {
-                        if (lines.some((l) => l.part_id === p.id)) return;
-                        sync([...lines, { part_id: p.id, part_number: p.part_number, description: p.description, qty: 1, condition: 'damaged' }]);
-                    }} />
+                    <PartLinePicker
+                        branchId={data.branch_id || null}
+                        onPick={addLine}
+                        placeholder="Search part — on-hand shown, 3*CODE for qty…"
+                    />
                     {errors.lines && <p className="text-xs text-red-600">{errors.lines}</p>}
+
+                    {overStock && (
+                        <p role="alert" className="flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+                            <TriangleAlert className="w-4 h-4 shrink-0" />
+                            A line returns more than this branch holds — check the quantity.
+                        </p>
+                    )}
 
                     {lines.map((l, i) => (
                         <div key={l.part_id} className="flex items-center gap-3 text-sm">
                             <EntityLink type="part" id={l.part_id} label={l.part_number} mono className="font-semibold w-36 truncate" />
-                            <span className="flex-1 text-slate-500 truncate">{l.description}</span>
-                            <input
-                                type="number" step="0.01" min="0.01" value={l.qty}
-                                aria-label={`Quantity for ${l.part_number}`}
-                                onChange={(e) => sync(lines.map((x, idx) => idx === i ? { ...x, qty: Number(e.target.value) || 0 } : x))}
-                                className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-right tabular-nums"
-                            />
+                            <span className="flex-1 min-w-0 text-slate-500 truncate">
+                                {l.description}
+                                {l.on_hand != null && (
+                                    <span className={`ml-2 text-[11px] tabular-nums ${l.qty > l.on_hand ? 'font-semibold text-red-600' : 'text-slate-400'}`}>
+                                        {l.on_hand} on hand
+                                    </span>
+                                )}
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <button type="button" onClick={() => sync(lines.map((x, idx) => idx === i ? { ...x, qty: Math.max(0, x.qty - 1) } : x))} aria-label="Decrease" className="p-1 rounded border border-slate-200 text-slate-400 hover:bg-slate-50">
+                                    <Minus className="w-3.5 h-3.5" />
+                                </button>
+                                <input
+                                    type="number" step="0.01" min="0.01" value={l.qty}
+                                    aria-label={`Quantity for ${l.part_number}`}
+                                    onChange={(e) => sync(lines.map((x, idx) => idx === i ? { ...x, qty: Number(e.target.value) || 0 } : x))}
+                                    className={`w-16 rounded-lg border px-2 py-1.5 text-right tabular-nums ${l.on_hand != null && l.qty > l.on_hand ? 'border-red-400' : 'border-slate-300'}`}
+                                />
+                                <button type="button" onClick={() => sync(lines.map((x, idx) => idx === i ? { ...x, qty: x.qty + 1 } : x))} aria-label="Increase" className="p-1 rounded border border-slate-200 text-slate-400 hover:bg-slate-50">
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                             <select
                                 value={l.condition}
                                 aria-label={`Condition for ${l.part_number}`}

@@ -3,6 +3,7 @@ import { Undo2, Receipt } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import StatusBadge from '@/Components/StatusBadge';
 import PrintButton from '@/Components/PrintButton';
 import EntityLink from '@/Components/EntityLink';
 import RelatedLinks from '@/Components/RelatedLinks';
@@ -39,7 +40,15 @@ export default function InvoiceShow({ invoice, creditNotes, related = {} }) {
             <div className="max-w-4xl space-y-6">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900">{invoice.document_number}</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-xl font-bold text-slate-900">{invoice.document_number}</h1>
+                            <StatusBadge status={invoice.status} />
+                            <StatusBadge
+                                status={onAccount ? 'on_hold' : 'paid'}
+                                label={onAccount ? 'on account' : 'paid in full'}
+                            />
+                            {creditNotes.length > 0 && <StatusBadge status="partial" label={`${creditNotes.length} credit note${creditNotes.length === 1 ? '' : 's'}`} />}
+                        </div>
                         <p className="mt-1 text-sm text-slate-500">
                             <EntityLink type="customer" id={invoice.customer?.id} label={invoice.customer?.name} className="font-medium" />
                             {' · '}{invoice.document_date}

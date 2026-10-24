@@ -41,8 +41,18 @@ class PurchaseOrderController extends Controller
                     'status' => $po->status,
                     'order_date' => $po->order_date->toDateString(),
                     'expected_date' => $po->expected_date?->toDateString(),
+                    'is_overdue' => $po->isReceivable()
+                        && $po->expected_date !== null
+                        && $po->expected_date->isPast(),
                     'total' => (float) $po->total,
                 ]),
+            'stats' => [
+                'open' => (int) PurchaseOrder::whereIn('status', ['submitted', 'confirmed', 'partial'])->count(),
+                'open_value' => round((float) PurchaseOrder::whereIn('status', ['submitted', 'confirmed', 'partial'])->sum('total'), 2),
+                'overdue' => (int) PurchaseOrder::whereIn('status', ['submitted', 'confirmed', 'partial'])
+                    ->whereNotNull('expected_date')->where('expected_date', '<', now()->toDateString())->count(),
+                'drafts' => (int) PurchaseOrder::where('status', 'draft')->count(),
+            ],
             'filters' => $request->only('search', 'status'),
         ]);
     }
@@ -56,23 +66,26 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
-    /** Part search for PO lines — returns supplier price-list cost when available. */
+    /** Part search for PO lines — supplier price-list cost, plus stock/bin at a branch when given. */
     public function partLookup(Request $request): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
         $supplierId = $request->integer('supplier_id') ?: null;
+        $branchId = $request->integer('branch_id') ?: null;
 
         if (mb_strlen($q) < 2) {
             return response()->json(['parts' => []]);
         }
 
-        $parts = Part::search($q)->active()->with('stockLevels')->limit(8)->get()
-            ->map(function (Part $p) use ($supplierId) {
+        $parts = Part::search($q)->active()->with('stockLevels.binLocation')->limit(8)->get()
+            ->map(function (Part $p) use ($supplierId, $branchId) {
                 $listCost = $supplierId
                     ? SupplierPriceListItem::where('part_id', $p->id)
                         ->whereHas('priceList', fn ($x) => $x->where('supplier_id', $supplierId)->where('status', 'active'))
                         ->value('cost_price')
                     : null;
+
+                $level = $branchId ? $p->stockLevels->firstWhere('branch_id', $branchId) : null;
 
                 return [
                     'id' => $p->id,
@@ -82,6 +95,9 @@ class PurchaseOrderController extends Controller
                         ? (float) $listCost
                         : (float) ($p->stockLevels->first()?->average_cost ?? 0),
                     'cost_source' => $listCost !== null ? 'price list' : 'last AVCO',
+                    'on_hand' => $level ? (float) $level->qty_on_hand : null,
+                    'bin' => $level?->binLocation?->code,
+                    'bin_id' => $level?->bin_location_id,
                 ];
             });
 

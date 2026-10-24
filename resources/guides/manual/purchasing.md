@@ -4,13 +4,13 @@ The full chain from ordering to paying: Purchase Order → Goods Received → Su
 
 ## Raise a purchase order
 
-**Purchasing → Purchase Orders → New** (route:purchasing.orders.index).
+[**Purchasing → Purchase Orders → New**](route:purchasing.orders.index).
 
 1. Pick the **supplier**.
 2. Add the **parts** and quantities you're ordering, with the unit cost.
 3. Save. The PO is a draft; submit it and print or email it to the supplier.
 
-> Short of stock? The **Reorder Report** (route:inventory.reorder.index) lists everything below its reorder point and drafts the POs for you in one click — grouped by each part's preferred supplier.
+> Short of stock? The [**Reorder Report**](route:inventory.reorder.index) lists everything below its reorder point and drafts the POs for you in one click — grouped by each part's preferred supplier.
 
 ## Receive the goods (GRN)
 
@@ -30,14 +30,14 @@ When the supplier's invoice arrives:
 
 ## Pay the supplier
 
-1. **Finance → Supplier Payments** (route:finance.payments.index), or run a **payment run** to pay many at once (route:finance.payment-run.index).
+1. [**Finance → Supplier Payments**](route:finance.payments.index), or run a [payment run](route:finance.payment-run.index) to pay many at once.
 2. Choose the supplier and the invoices to settle, and the payment method.
 3. Post it. The supplier's balance comes down and the bank/cash is reduced.
 
 ## Returns to a supplier
 
-**Purchasing → Returns** (route:purchasing.returns.index): raise an RMA, ship it back, and capture the supplier's credit when it comes.
+[**Purchasing → Returns**](route:purchasing.returns.index): raise an RMA, ship it back, and capture the supplier's credit when it comes.
 
 ## See it all in one place
 
-Open any **supplier** (route:suppliers.index) to see their orders, receipts, invoices, payments, returns, price list and the parts you buy from them — all linked.
+Open any [**supplier**](route:suppliers.index) to see their orders, receipts, invoices, payments, returns, price list and the parts you buy from them — all linked.

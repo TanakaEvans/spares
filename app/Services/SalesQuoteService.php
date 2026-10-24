@@ -77,6 +77,40 @@ class SalesQuoteService
     }
 
     /**
+     * A confirmed order captured directly (phone/counter order) — same shape as
+     * a converted quote: prices resolve from the customer's list unless given,
+     * and every line reserves stock at the branch (2.3 rule 1).
+     *
+     * @param array $lines [['part_id'=>, 'qty'=>, 'unit_price'=>excl?, 'discount_pct'=>0], …]
+     */
+    public function createOrder(Customer $customer, int $branchId, array $lines, ?int $userId = null): SalesDocument
+    {
+        if ($lines === []) {
+            throw new InvalidArgumentException('An order needs at least one line.');
+        }
+
+        return DB::transaction(function () use ($customer, $branchId, $lines, $userId) {
+            $order = SalesDocument::create([
+                'document_number' => $this->sequences->next('sales_order', $branchId),
+                'document_type' => 'order',
+                'status' => 'confirmed',
+                'customer_id' => $customer->id,
+                'branch_id' => $branchId,
+                'salesperson_id' => $userId,
+                'document_date' => now()->toDateString(),
+            ]);
+
+            $this->writeLines($order, $customer, $lines);
+
+            foreach ($order->lines as $line) {
+                $this->stock->reserve($line->part_id, $branchId, (float) $line->qty);
+            }
+
+            return $order->fresh('lines');
+        });
+    }
+
+    /**
      * Convert a quote to a confirmed order and reserve stock.
      * Honours the quoted prices unless $reprice is true (then re-resolves).
      */

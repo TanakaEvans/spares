@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Truck } from 'lucide-react';
+import { Truck, Check, PackageCheck, PackageOpen } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import StatusBadge from '@/Components/StatusBadge';
@@ -37,6 +37,15 @@ export default function DeliveryNoteShow({ note }) {
                             {' · '}{note.delivery_date}
                             {note.branch && <> · <EntityLink type="branch" id={note.branch.id} label={note.branch.name} muted /></>}
                         </p>
+                        <div className="mt-3 flex items-center gap-4">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white"><PackageOpen className="h-3 w-3" /></span>Dispatched</span>
+                            <span className="h-px w-8 bg-slate-300" />
+                            {note.status === 'delivered' ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white"><Check className="h-3 w-3" /></span>Delivered</span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-200"><PackageCheck className="h-3 w-3" /></span>Delivered</span>
+                            )}
+                        </div>
                     </div>
                     {note.status === 'dispatched' && (
                         <button

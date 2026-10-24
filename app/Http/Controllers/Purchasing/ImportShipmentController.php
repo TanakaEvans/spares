@@ -23,6 +23,11 @@ class ImportShipmentController extends Controller
                     'goods_value' => (float) $s->goods_value, 'freight' => (float) $s->freight, 'duty' => (float) $s->duty, 'landed' => $s->landedTotal(),
                 ]),
             'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
+            'stats' => [
+                'active' => (int) ImportShipment::whereNot('status', 'received')->count(),
+                'in_transit_value' => round((float) ImportShipment::whereNot('status', 'received')
+                    ->get()->sum(fn ($s) => $s->landedTotal()), 2),
+            ],
         ]);
     }
 

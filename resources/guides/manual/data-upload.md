@@ -2,7 +2,7 @@
 
 Instead of typing thousands of parts by hand, load them from a spreadsheet. One sheet can carry your parts, prices, quantities, costs, bins and suppliers all at once.
 
-Find it at **System Administration → Data Upload** (route:imports.index).
+Find it at [**System Administration → Data Upload**](route:imports.index).
 
 ## The golden rule
 

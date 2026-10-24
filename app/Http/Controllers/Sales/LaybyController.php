@@ -28,6 +28,10 @@ class LaybyController extends Controller
             'customers' => Customer::where('is_walk_in', false)->orderBy('name')->limit(200)->get(['id', 'name']),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
             'minDepositPct' => (float) $settings->get('sales.layby_minimum_deposit_pct'),
+            'stats' => [
+                'active' => (int) Layby::where('status', 'active')->count(),
+                'outstanding' => round((float) Layby::where('status', 'active')->selectRaw('COALESCE(SUM(total - deposit_paid), 0) outstanding')->value('outstanding'), 2),
+            ],
         ]);
     }
 

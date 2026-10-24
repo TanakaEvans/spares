@@ -5,6 +5,7 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import FormField from '@/Components/FormField';
+import MoneyDisplay from '@/Components/MoneyDisplay';
 import EntityLink from '@/Components/EntityLink';
 
 // The receiving screen (Module 3.3): count what arrived, reject damage,
@@ -19,7 +20,7 @@ export default function GrnCreate({ order, bins }) {
             qty_received: l.qty_outstanding,
             qty_rejected: 0,
             rejection_reason: '',
-            bin_location_id: '',
+            bin_location_id: l.suggested_bin_id ?? '',
         })),
     });
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -175,7 +176,7 @@ export default function GrnCreate({ order, bins }) {
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-slate-500">
                         Receiving <strong className="tabular-nums">{totals.qty}</strong> units ·
-                        value <strong className="tabular-nums">${totals.value}</strong>
+                        value <strong className="tabular-nums"><MoneyDisplay amount={totals.value} /></strong>
                     </p>
                     <button
                         onClick={() => setConfirmOpen(true)}
@@ -192,7 +193,7 @@ export default function GrnCreate({ order, bins }) {
             <ConfirmDialog
                 open={confirmOpen}
                 title={`Post goods receipt for ${order.po_number}?`}
-                message={`${totals.qty} units ($${totals.value}) will enter stock and the GL. Posting cannot be undone — corrections go through a supplier return.`}
+                message={`${totals.qty} units (R${totals.value}) will enter stock and the GL. Posting cannot be undone — corrections go through a supplier return.`}
                 confirmLabel="Post GRN"
                 processing={processing}
                 onConfirm={submit}

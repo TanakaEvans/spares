@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Part;
 use App\Models\PriceList;
 use App\Models\PriceListItem;
+use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,7 +43,7 @@ class PriceListController extends Controller
             ->with('success', "Price list “{$list->name}” created.");
     }
 
-    public function show(Request $request, PriceList $priceList): Response
+    public function show(Request $request, PriceList $priceList, SettingsService $settings): Response
     {
         $items = PriceListItem::where('price_list_id', $priceList->id)
             ->with('part:id,part_number,description')
@@ -65,6 +66,7 @@ class PriceListController extends Controller
         return Inertia::render('Sales/PriceLists/Show', [
             'priceList' => $priceList->only(['id', 'name', 'type', 'is_default', 'is_active']),
             'items' => $items,
+            'vatRate' => (float) $settings->get('tax.vat_rate_default'),
             'filters' => $request->only('search'),
             'unpricedParts' => $priceList->is_default
                 ? $this->unpricedPartsQuery()->limit(50)->get(['id', 'part_number', 'description'])

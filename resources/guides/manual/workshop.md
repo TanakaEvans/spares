@@ -4,7 +4,7 @@ Book a vehicle in, do the work, and turn it into an invoice — with the parts a
 
 ## Open a job card
 
-**Workshop → Job Cards → New** (route:workshop.jobs.index).
+[**Workshop → Job Cards → New**](route:workshop.jobs.index).
 
 1. Pick the **customer** and their **vehicle** (add the vehicle if it's new).
 2. Record the **reported fault** and the odometer reading.
@@ -29,8 +29,8 @@ Book a vehicle in, do the work, and turn it into an invoice — with the parts a
 
 ## Warranty claims
 
-If a supplied part fails under warranty, raise a **warranty claim** (route:workshop.warranty.index) against the supplier and track it to credit.
+If a supplied part fails under warranty, raise a [**warranty claim**](route:workshop.warranty.index) against the supplier and track it to credit.
 
 ## See a technician's work
 
-Open any **technician** (route:workshop.technicians.index) to see their jobs, status counts and hours.
+Open any [**technician**](route:workshop.technicians.index) to see their jobs, status counts and hours.

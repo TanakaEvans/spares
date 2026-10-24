@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Part;
@@ -133,6 +134,31 @@ class QuoteToInvoiceFlowTest extends TestCase
         $this->assertSame('cancelled', $order->fresh()->status);
         $level = StockLevel::where('part_id', $this->part->id)->where('branch_id', $this->branch->id)->first();
         $this->assertEqualsWithDelta(0, (float) $level->qty_reserved, 0.001);
+    }
+
+    public function test_direct_order_confirms_and_reserves(): void
+    {
+        $order = app(SalesQuoteService::class)->createOrder(
+            $this->customer, $this->branch->id,
+            [['part_id' => $this->part->id, 'qty' => 3]],
+        );
+
+        $this->assertSame('order', $order->document_type);
+        $this->assertSame('confirmed', $order->status);
+        $this->assertNull($order->parent_id);
+        $this->assertEqualsWithDelta(45.00, (float) $order->lines->first()->unit_price, 0.001);
+
+        $level = StockLevel::where('part_id', $this->part->id)->where('branch_id', $this->branch->id)->first();
+        $this->assertEqualsWithDelta(3, (float) $level->qty_reserved, 0.001);
+    }
+
+    public function test_direct_order_refuses_short_stock(): void
+    {
+        $this->expectException(InsufficientStockException::class);
+        app(SalesQuoteService::class)->createOrder(
+            $this->customer, $this->branch->id,
+            [['part_id' => $this->part->id, 'qty' => 25]], // only 20 on hand
+        );
     }
 
     public function test_reprice_check_flags_changed_prices(): void

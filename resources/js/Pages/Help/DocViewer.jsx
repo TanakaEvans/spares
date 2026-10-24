@@ -9,7 +9,10 @@ import AppLayout from '@/Layouts/AppLayout';
 // other docs pages so the whole spec is browsable in-app.
 export default function DocViewer({ auth, path, content }) {
     const html = useMemo(
-        () => DOMPurify.sanitize(marked.parse(content ?? '')),
+        () => DOMPurify.sanitize(marked.parse(content ?? ''), {
+            // Permit the guide link schemes plus colon-less relative .md links.
+            ALLOWED_URI_REGEXP: /^(?:route:|doc:|guide:|https?:|mailto:|#|[^:]*)$/i,
+        }),
         [content]
     );
 
@@ -21,6 +24,19 @@ export default function DocViewer({ auth, path, content }) {
         if (href.startsWith('http') || href.startsWith('#')) return; // external/anchor: default
 
         e.preventDefault();
+        if (href.startsWith('route:')) {
+            const name = href.slice(6);
+            if (route().has(name)) router.visit(route(name));
+            return;
+        }
+        if (href.startsWith('guide:')) {
+            router.visit(route('guide.show', href.slice(6)));
+            return;
+        }
+        if (href.startsWith('doc:')) {
+            router.visit(`/help/docs/${href.slice(4)}`);
+            return;
+        }
         // Resolve relative to the current doc's directory.
         const dir = path.includes('/') ? path.slice(0, path.lastIndexOf('/') + 1) : '';
         const url = new URL(href, `http://x/${dir}`);

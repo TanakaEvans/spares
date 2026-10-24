@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
-use App\Exceptions\UnpricedPartException;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
-use App\Models\Part;
-use App\Models\StockLevel;
+use App\Services\PosTerminalService;
 use App\Services\PricingService;
 use App\Services\SalesPostingService;
 use App\Services\SettingsService;
@@ -26,7 +24,7 @@ use Inertia\Response;
  */
 class PointOfSaleController extends Controller
 {
-    public function create(Request $request, SettingsService $settings): Response
+    public function create(Request $request, SettingsService $settings, PosTerminalService $till): Response
     {
         $branch = $this->activeBranch($request);
 
@@ -35,50 +33,31 @@ class PointOfSaleController extends Controller
             'walkIn' => Customer::walkIn()->only(['id', 'name', 'customer_number']),
             'maxDiscount' => (float) $settings->get('sales.max_discount_without_approval', $branch->id),
             'vatRate' => (float) $settings->get('tax.vat_rate_default'),
+            'allowNegative' => (bool) $settings->get('inventory.allow_negative_stock', $branch->id),
+            'topSellers' => $till->topSellers($branch),
+            'categories' => $till->categories(),
+            'today' => $till->todayFor($request->user()->id, $branch),
+            'completedSale' => $request->session()->get('pos_sale'),
         ]);
     }
 
-    /** Scan/search → price + availability at the active branch. */
-    public function partLookup(Request $request, PricingService $pricing): JsonResponse
+    /**
+     * Scan/search/browse → price, availability, bin and supersession at the
+     * active branch. exact=1: a scanned barcode / typed part number followed by
+     * Enter — one hit on part number or either barcode, no fuzzy matching.
+     */
+    public function partLookup(Request $request, PosTerminalService $till): JsonResponse
     {
         $q = trim((string) $request->query('q', ''));
-        $branch = $this->activeBranch($request);
-        $customer = $request->integer('customer_id') ? Customer::find($request->integer('customer_id')) : null;
-
-        if (mb_strlen($q) < 2) {
+        $categoryId = $request->integer('category_id') ?: null;
+        if (mb_strlen($q) < 2 && ! $categoryId) {
             return response()->json(['parts' => []]);
         }
+        $customer = $request->integer('customer_id') ? Customer::find($request->integer('customer_id')) : null;
 
-        // exact=1: a scanned barcode / typed part number followed by Enter — one
-        // hit on part number or either barcode, no fuzzy matching.
-        $parts = ($request->boolean('exact')
-            ? Part::query()->where(fn ($x) => $x->where('part_number', $q)
-                ->orWhere('barcode_ean', $q)->orWhere('barcode_code128', $q))->limit(1)
-            : Part::search($q)->limit(8))
-            ->active()->get()
-            ->map(function (Part $p) use ($pricing, $customer, $branch) {
-                try {
-                    $price = $pricing->priceFor($p, $customer);
-                    $priced = true;
-                } catch (UnpricedPartException) {
-                    $price = 0.0;
-                    $priced = false;
-                }
-
-                $onHand = (float) (StockLevel::where('part_id', $p->id)
-                    ->where('branch_id', $branch->id)->value('qty_on_hand') ?? 0);
-
-                return [
-                    'id' => $p->id,
-                    'part_number' => $p->part_number,
-                    'description' => $p->description,
-                    'price' => round($price, 2),
-                    'priced' => $priced,
-                    'on_hand' => $onHand,
-                ];
-            });
-
-        return response()->json(['parts' => $parts]);
+        return response()->json([
+            'parts' => $till->lookup($this->activeBranch($request), $customer, $q, $request->boolean('exact'), $categoryId, $categoryId ? 40 : 20),
+        ]);
     }
 
     /** Customer search for account/named sales. */
@@ -108,7 +87,7 @@ class PointOfSaleController extends Controller
         return response()->json(['customers' => $customers]);
     }
 
-    public function store(Request $request, SalesPostingService $sales, PricingService $pricing, SettingsService $settings): RedirectResponse
+    public function store(Request $request, SalesPostingService $sales, PricingService $pricing, SettingsService $settings, PosTerminalService $till): RedirectResponse
     {
         $data = $request->validate([
             'customer_id' => ['required', 'exists:customers,id'],
@@ -177,8 +156,9 @@ class PointOfSaleController extends Controller
             return back()->withErrors(['sale' => $e->getMessage()]);
         }
 
-        return redirect()->route('sales.invoices.show', $invoice)
-            ->with('success', "Invoice {$invoice->document_number} posted — ".number_format((float) $invoice->total_incl, 2).'.');
+        // Straight back to the till, ready for the next customer — the
+        // completion screen offers the receipt, the A4 invoice and the change due.
+        return redirect()->route('sales.pos')->with('pos_sale', $till->completedSummary($invoice));
     }
 
     /**

@@ -40,6 +40,12 @@ class CreditNoteController extends Controller
                     'total_incl' => (float) $d->total_incl,
                     'credit_mode' => $d->credit_mode,
                 ]),
+            'stats' => [
+                'month_count' => (int) SalesDocument::query()->where('document_type', 'credit_note')
+                    ->whereBetween('document_date', [now()->startOfMonth()->toDateString(), now()->toDateString()])->count(),
+                'month_total' => round((float) SalesDocument::query()->where('document_type', 'credit_note')
+                    ->whereBetween('document_date', [now()->startOfMonth()->toDateString(), now()->toDateString()])->sum('total_incl'), 2),
+            ],
             'filters' => $request->only('search'),
         ]);
     }
@@ -48,14 +54,23 @@ class CreditNoteController extends Controller
     public function create(SalesDocument $invoice): Response
     {
         abort_unless($invoice->document_type === 'invoice' && $invoice->status === 'posted', 404);
-        $invoice->load('customer:id,name,customer_number', 'lines.part:id,part_number');
+        $invoice->load('customer:id,name,customer_number,is_walk_in', 'lines.part:id,part_number', 'payments:id,document_id,method,amount');
 
         return Inertia::render('Sales/CreditNotes/Create', [
             'invoice' => [
                 'id' => $invoice->id,
                 'document_number' => $invoice->document_number,
-                'customer' => $invoice->customer?->only(['id', 'name', 'customer_number']),
+                'customer' => $invoice->customer?->only(['id', 'name', 'customer_number', 'is_walk_in']),
                 'document_date' => $invoice->document_date->toDateString(),
+                'total_incl' => (float) $invoice->total_incl,
+                'total_credited' => round((float) $invoice->lines->sum('qty_credited') > 0
+                    ? (float) $invoice->children()->where('document_type', 'credit_note')->sum('total_incl')
+                    : 0, 2),
+                'same_day' => $invoice->document_date->isToday(),
+                'payments' => $invoice->payments->map(fn ($p) => [
+                    'method' => $p->method,
+                    'amount' => (float) $p->amount,
+                ])->values(),
                 'lines' => $invoice->lines->map(fn ($l) => [
                     'id' => $l->id,
                     'part_id' => $l->part_id,
@@ -63,6 +78,8 @@ class CreditNoteController extends Controller
                     'description' => $l->description,
                     'qty' => (float) $l->qty,
                     'unit_price' => (float) $l->unit_price,
+                    'discount_pct' => (float) $l->discount_pct,
+                    'vat_rate' => (float) $l->vat_rate,
                     'qty_credited' => (float) $l->qty_credited,
                     'qty_creditable' => (float) $l->qty - (float) $l->qty_credited,
                 ])->filter(fn ($l) => $l['qty_creditable'] > 0)->values(),

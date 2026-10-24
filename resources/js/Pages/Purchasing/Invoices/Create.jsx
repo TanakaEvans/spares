@@ -6,13 +6,18 @@ import MoneyDisplay from '@/Components/MoneyDisplay';
 import EntityLink from '@/Components/EntityLink';
 
 // Capture the supplier's invoice against a GRN — the 3-way match runs on save.
-export default function InvoiceCreate({ grn }) {
+export default function InvoiceCreate({ grn, vatRate }) {
+    const rate = (Number(vatRate) || 15) / 100;
     const { data, setData, post, processing, errors } = useForm({
         supplier_ref: '',
         invoice_date: new Date().toISOString().slice(0, 10),
         subtotal: grn.value.toFixed(2),
-        vat_amount: (grn.value * 0.15).toFixed(2),
+        vat_amount: (grn.value * rate).toFixed(2),
     });
+
+    const duePreview = data.invoice_date && grn.supplier_terms_days
+        ? (() => { const d = new Date(data.invoice_date); d.setDate(d.getDate() + grn.supplier_terms_days); return d.toISOString().slice(0, 10); })()
+        : null;
 
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
     const variance = Math.abs(Number(data.subtotal || 0) - grn.value);
@@ -74,16 +79,19 @@ export default function InvoiceCreate({ grn }) {
                         <FormField label="Subtotal (excl VAT)" htmlFor="inv-sub" required error={errors.subtotal}>
                             <input id="inv-sub" type="number" step="0.01" value={data.subtotal} onChange={(e) => setData('subtotal', e.target.value)} className={`${input} text-right tabular-nums`} />
                         </FormField>
-                        <FormField label="VAT" htmlFor="inv-vat" required error={errors.vat_amount}>
+                        <FormField label={`VAT (${Number(vatRate) || 15}%)`} htmlFor="inv-vat" required error={errors.vat_amount}>
                             <input id="inv-vat" type="number" step="0.01" value={data.vat_amount} onChange={(e) => setData('vat_amount', e.target.value)} className={`${input} text-right tabular-nums`} />
                         </FormField>
                     </div>
+                    {duePreview && (
+                        <p className="text-xs text-slate-400">Due {duePreview} under the supplier's {grn.supplier_terms_days}-day terms.</p>
+                    )}
                     <p className={`text-sm ${variance > Math.max(grn.value * 0.02, 10) ? 'text-amber-700' : 'text-slate-500'}`}>
                         {variance <= 0.005
                             ? 'Matches the GRN exactly — will post straight to accounts payable.'
                             : variance > Math.max(grn.value * 0.02, 10)
-                                ? `Differs from the GRN by $${variance.toFixed(2)} — this will be captured as DISPUTED for buyer review.`
-                                : `Differs from the GRN by $${variance.toFixed(2)} — within tolerance, will post.`}
+                                ? <>Differs from the GRN by <strong><MoneyDisplay amount={variance} /></strong> — this will be captured as DISPUTED for buyer review.</>
+                                : <>Differs from the GRN by <MoneyDisplay amount={variance} /> — within tolerance, will post.</>}
                     </p>
                     <button
                         type="submit"

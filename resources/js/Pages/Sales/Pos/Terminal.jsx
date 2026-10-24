@@ -1,677 +1,404 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
-import { Search, Trash2, ScanBarcode, UserRound, X, AlertTriangle, Banknote, PauseCircle, PlayCircle, ShieldCheck, Keyboard } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Head, usePage } from '@inertiajs/react';
+import {
+    ScanBarcode, AlertTriangle, X, Banknote, CreditCard, BookUser, PauseCircle, PlayCircle, Eraser,
+    Maximize2, Minimize2, Store, UserRound, Clock, Receipt, Keyboard,
+} from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import ConfirmDialog from '@/Components/ConfirmDialog';
+import PartResults from '@/Components/Pos/PartResults';
+import CartPanel from '@/Components/Pos/CartPanel';
+import CustomerPicker from '@/Components/Pos/CustomerPicker';
+import TenderDialog, { accountBlockReason } from '@/Components/Pos/TenderDialog';
+import SaleCompleteDialog from '@/Components/Pos/SaleCompleteDialog';
+import RecallDialog from '@/Components/Pos/RecallDialog';
+import { cartTotals, fmt, getJson, parseQuery, round2, stockState, tillStore } from '@/Components/Pos/posMath';
 
-const money = (n) => Number(n || 0).toFixed(2);
+const SHORTCUTS = [
+    ['F2', 'Customer'], ['F3', 'Clear sale'], ['F4', 'Split pay'], ['F5', 'Cash'], ['F6', 'Card'], ['F7', 'Account'],
+    ['F8', 'Suspend'], ['F9', 'Recall'], ['F10', 'Full screen'], ['↑↓', 'Pick line'], ['+ −', 'Qty'], ['Del', 'Remove line'],
+];
 
-/** Debounced JSON GET against a Ziggy route. */
-function useLookup(routeName, extra = {}) {
-    return async (q, more = {}) => {
-        const params = new URLSearchParams({ q, ...extra, ...more });
-        const res = await fetch(route(routeName) + '?' + params, { headers: { Accept: 'application/json' } });
-        return res.json();
-    };
-}
+/**
+ * Counter sales till (Module 2.1) — keyboard-first, scan-focused: find → cart →
+ * tender → receipt → next customer without leaving the screen. Prices,
+ * availability, credit and discount authority are all re-verified server-side.
+ */
+export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allowNegative, topSellers = [], categories = [], today, completedSale }) {
+    const { errors, auth } = usePage().props;
+    const walkInCustomer = useMemo(() => ({ ...walkIn, is_walk_in: true }), [walkIn]);
 
-/* Suspended carts live in the browser of this till (2.1: suspend/recall holds no stock). */
-const suspendKey = (branchId) => `pos.suspended.${branchId}`;
-const readSuspended = (branchId) => { try { return JSON.parse(localStorage.getItem(suspendKey(branchId)) || '[]'); } catch { return []; } };
-const writeSuspended = (branchId, list) => { try { localStorage.setItem(suspendKey(branchId), JSON.stringify(list)); } catch { /* storage unavailable */ } };
+    // ── Cart (restored after a crash/refresh unless a sale just posted) ──
+    const restored = useMemo(() => (completedSale ? null : tillStore.cart(branch.id)), []);
+    const [customer, setCustomer] = useState(restored?.customer ?? walkInCustomer);
+    const [lines, setLines] = useState(restored?.lines ?? []);
+    const [selected, setSelected] = useState(null);
+    const [notice, setNotice] = useState(restored?.lines?.length ? { tone: 'info', text: `Recovered an unfinished sale (${restored.lines.length} line${restored.lines.length === 1 ? '' : 's'}).` } : null);
 
-export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate }) {
-    const { errors } = usePage().props;
-    const [customer, setCustomer] = useState({ ...walkIn, is_walk_in: true });
-    const [lines, setLines] = useState([]);
+    // ── Search / browse ──
     const [query, setQuery] = useState('');
+    const [category, setCategory] = useState(null);
     const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [highlight, setHighlight] = useState(0);
-    const [tenderOpen, setTenderOpen] = useState(false);
+
+    // ── Dialogs / chrome ──
+    const [tenderMode, setTenderMode] = useState(null);
     const [recallOpen, setRecallOpen] = useState(false);
-    const [suspended, setSuspended] = useState(() => readSuspended(branch.id));
+    const [clearOpen, setClearOpen] = useState(false);
     const [customerOpenRequest, setCustomerOpenRequest] = useState(0);
-    const [notice, setNotice] = useState(null);
+    const [suspended, setSuspended] = useState(() => tillStore.suspended(branch.id));
+    const [sale, setSale] = useState(completedSale ?? null);
+    const [focusMode, setFocusMode] = useState(() => tillStore.focus());
+    const [clock, setClock] = useState(() => new Date());
+
     const scanRef = useRef(null);
     const timer = useRef(null);
-    const partLookup = useLookup('sales.pos.part-lookup', { customer_id: customer.id });
+    const { qty: queryQty, term } = parseQuery(query);
+    const totals = cartTotals(lines, vatRate);
+    const dialogOpen = !!tenderMode || recallOpen || clearOpen || !!sale;
 
-    useEffect(() => { scanRef.current?.focus(); }, []);
+    const refocus = () => setTimeout(() => scanRef.current?.focus(), 0);
+    const flash = (text, tone = 'info') => setNotice({ text, tone });
 
-    // Debounced part search.
+    useEffect(() => { refocus(); const t = setInterval(() => setClock(new Date()), 30000); return () => clearInterval(t); }, []);
+    useEffect(() => { tillStore.setCart(branch.id, lines.length ? { customer, lines } : null); }, [lines, customer]);
+    useEffect(() => { tillStore.setFocus(focusMode); }, [focusMode]);
+    useEffect(() => { if (completedSale) { setSale(completedSale); tillStore.setCart(branch.id, null); } }, [completedSale?.id]);
+    useEffect(() => { if (!dialogOpen) refocus(); }, [dialogOpen]);
+
+    // ── Live search / category browse ──
     useEffect(() => {
         clearTimeout(timer.current);
-        if (query.trim().length < 2) { setResults([]); return; }
+        if (term.length < 2 && !category) { setResults([]); setLoading(false); return; }
+        setLoading(true);
         timer.current = setTimeout(async () => {
             try {
-                const json = await partLookup(query);
+                const json = await getJson('sales.pos.part-lookup', { q: term, customer_id: customer.id, ...(category ? { category_id: category.id } : {}) });
                 setResults(json.parts ?? []);
                 setHighlight(0);
-            } catch { /* offline — keep prior */ }
-        }, 200);
+            } catch { /* offline — keep prior results */ } finally { setLoading(false); }
+        }, 180);
         return () => clearTimeout(timer.current);
-    }, [query, customer.id]);
+    }, [term, category?.id, customer.id]);
 
-    const addPart = useCallback((part) => {
-        setLines((prev) => {
-            const existing = prev.find((l) => l.part_id === part.id);
-            if (existing) {
-                return prev.map((l) => (l.part_id === part.id ? { ...l, qty: l.qty + 1 } : l));
-            }
-            return [...prev, {
-                part_id: part.id, part_number: part.part_number, description: part.description,
-                qty: 1, unit_price: part.price, discount_pct: 0, priced: part.priced, on_hand: part.on_hand,
-            }];
-        });
-        setQuery('');
-        setResults([]);
-        scanRef.current?.focus();
-    }, []);
+    // ── Cart operations ──
+    const availableText = (n) => fmt(Math.max(Number(n) || 0, 0)).replace('.00', '');
 
-    /**
-     * Scanner-safe Enter: a barcode scanner types the code and sends Enter inside
-     * the debounce window, so on Enter we ask the server for an exact match
-     * immediately instead of relying on the (possibly empty) result list.
-     */
-    async function addExact(q) {
+    function addPart(part, qty = 1) {
+        if (!part.priced) { flash(`${part.part_number} has no selling price — it can't be sold until it is priced.`, 'error'); return false; }
+        const avail = Number(part.available ?? part.on_hand ?? 0);
+        const i = lines.findIndex((l) => l.part_id === part.id);
+        const nextQty = round2((i >= 0 ? lines[i].qty : 0) + qty);
+        if (stockState(part, allowNegative).blocked || (!allowNegative && nextQty > avail)) {
+            flash(`${part.part_number}: only ${availableText(avail)} available here.`, 'error');
+            return false;
+        }
+        if (i >= 0) {
+            setLines(lines.map((l, idx) => (idx === i ? { ...l, qty: nextQty, available: part.available, on_hand: part.on_hand } : l)));
+            setSelected(i);
+        } else {
+            setLines([...lines, {
+                part_id: part.id, part_number: part.part_number, description: part.description, bin: part.bin,
+                qty: nextQty, unit_price: part.price, discount_pct: 0, priced: part.priced,
+                on_hand: part.on_hand, available: part.available,
+            }]);
+            setSelected(lines.length);
+        }
+        setQuery(''); setCategory(null); setResults([]); setNotice(null);
+        refocus();
+        return true;
+    }
+
+    /** Exact lookup by number/barcode (scanner Enter, supersession jump, tiles for trade pricing). */
+    async function addByNumber(number, qty = 1) {
         try {
-            const json = await partLookup(q, { exact: 1 });
-            const hit = (json.parts ?? [])[0];
-            if (hit) { addPart(hit); return true; }
+            const hit = (await getJson('sales.pos.part-lookup', { q: number, exact: 1, customer_id: customer.id })).parts?.[0];
+            if (hit) {
+                if (hit.superseded_by && stockState(hit, allowNegative).blocked) {
+                    flash(`${hit.part_number} is out of stock and superseded by ${hit.superseded_by} — search that number.`, 'error');
+                    return false;
+                }
+                const ok = addPart(hit, qty);
+                if (ok && hit.superseded_by) flash(`${hit.part_number} is superseded by ${hit.superseded_by} — both can be sold.`, 'info');
+                return ok;
+            }
         } catch { /* fall through */ }
-        setNotice(`No part matches "${q}" — try the OEM number or a description word.`);
+        flash(`No part matches "${number}". Try the OEM number, a description word, or browse a category.`, 'error');
         return false;
     }
 
-    function onKey(e) {
-        if (e.key === 'ArrowDown') { e.preventDefault(); setHighlight((h) => Math.min(h + 1, results.length - 1)); }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlight((h) => Math.max(h - 1, 0)); }
-        else if (e.key === 'Enter') {
-            e.preventDefault();
-            const q = query.trim();
-            if (results.length > 0 && results[highlight] && q.length >= 2) {
-                const exact = results.find((p) => p.part_number.toLowerCase() === q.toLowerCase());
-                addPart(exact ?? results[highlight]);
-            } else if (q.length >= 2) {
-                clearTimeout(timer.current);
-                addExact(q);
-            }
-        }
-        else if (e.key === 'Escape') { setQuery(''); setResults([]); }
+    function setQty(i, qty) {
+        const line = lines[i];
+        if (!line) return;
+        const avail = Number(line.available ?? line.on_hand ?? 0);
+        if (!allowNegative && qty > avail && qty > line.qty) { flash(`${line.part_number}: only ${availableText(avail)} available here.`, 'error'); return; }
+        setLines(lines.map((l, idx) => (idx === i ? { ...l, qty: round2(Math.max(qty, 0)) } : l)));
+    }
+    const setDiscount = (i, pct) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, discount_pct: pct } : l)));
+    const removeLine = (i) => { setLines((prev) => prev.filter((_, idx) => idx !== i)); setSelected((s) => (s === null ? null : Math.max(0, Math.min(s, lines.length - 2)))); };
+    const resetSale = () => { setLines([]); setCustomer(walkInCustomer); setSelected(null); setQuery(''); setCategory(null); };
+
+    /** Customer or recall changed the price list → re-price every line (server would reject a stale total). */
+    async function reprice(forCustomer, sourceLines, message) {
+        if (sourceLines.length === 0) return;
+        let changed = 0;
+        const next = await Promise.all(sourceLines.map(async (l) => {
+            try {
+                const hit = (await getJson('sales.pos.part-lookup', { q: l.part_number, exact: 1, customer_id: forCustomer.id })).parts?.[0];
+                if (hit) {
+                    const priceChanged = Math.abs(hit.price - l.unit_price) > 0.001;
+                    if (priceChanged) changed++;
+                    return { ...l, unit_price: hit.price, priced: hit.priced, on_hand: hit.on_hand, available: hit.available, bin: hit.bin, priceChanged };
+                }
+            } catch { /* keep line */ }
+            return l;
+        }));
+        setLines(next);
+        flash(changed ? `${message} — ${changed} price${changed === 1 ? '' : 's'} updated; check the cart.` : message, changed ? 'warn' : 'info');
     }
 
-    const setLine = (i, field, value) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: value } : l)));
-    const removeLine = (i) => setLines((prev) => prev.filter((_, idx) => idx !== i));
+    function changeCustomer(c) {
+        setCustomer(c);
+        reprice(c, lines, `Customer set to ${c.name}`);
+        refocus();
+    }
 
-    // Totals (mirrors PricingService::computeLine on the server).
-    const calc = lines.map((l) => {
-        const gross = l.qty * l.unit_price;
-        const discount = Math.round((gross * (l.discount_pct || 0) / 100) * 100) / 100;
-        const excl = Math.round((gross - discount) * 100) / 100;
-        const vat = Math.round((excl * vatRate / 100) * 100) / 100;
-        return { excl, vat, incl: Math.round((excl + vat) * 100) / 100 };
-    });
-    const subtotal = calc.reduce((n, c) => n + c.excl, 0);
-    const vatTotal = calc.reduce((n, c) => n + c.vat, 0);
-    const total = Math.round((subtotal + vatTotal) * 100) / 100;
-
-    const hasUnpriced = lines.some((l) => !l.priced);
-    const canCharge = lines.length > 0 && !hasUnpriced;
-
-    // ── Suspend / recall ────────────────────────────────────────────────
+    // ── Suspend / recall ──
     function suspendSale() {
         if (lines.length === 0) return;
-        const entry = { id: Date.now(), at: new Date().toISOString(), customer, lines };
-        const next = [entry, ...readSuspended(branch.id)].slice(0, 20);
-        writeSuspended(branch.id, next);
+        const entry = { id: Date.now(), at: new Date().toISOString(), customer, lines, total: totals.total };
+        const next = [entry, ...tillStore.suspended(branch.id)].slice(0, 20);
+        tillStore.setSuspended(branch.id, next);
         setSuspended(next);
-        setLines([]);
-        setCustomer({ ...walkIn, is_walk_in: true });
-        setNotice(`Sale suspended (${entry.lines.length} line${entry.lines.length === 1 ? '' : 's'}). Press F9 to recall.`);
-        scanRef.current?.focus();
+        resetSale();
+        flash(`Sale suspended (${entry.lines.length} line${entry.lines.length === 1 ? '' : 's'}, ${fmt(entry.total)}). F9 to recall.`);
+        refocus();
     }
-
     async function recallSale(entry) {
-        const next = readSuspended(branch.id).filter((s) => s.id !== entry.id);
-        writeSuspended(branch.id, next);
+        if (lines.length > 0) { flash('Finish, suspend or clear the current sale before recalling another.', 'error'); return; }
+        const next = tillStore.suspended(branch.id).filter((s) => s.id !== entry.id);
+        tillStore.setSuspended(branch.id, next);
         setSuspended(next);
-        setCustomer(entry.customer);
-        // Re-validate price and availability for every line (2.1 rule 5).
-        const refreshed = [];
-        let changed = false;
-        for (const l of entry.lines) {
-            try {
-                const json = await partLookup(l.part_number, { exact: 1, customer_id: entry.customer.id });
-                const hit = (json.parts ?? [])[0];
-                if (hit) {
-                    if (hit.price !== l.unit_price) changed = true;
-                    refreshed.push({ ...l, unit_price: hit.price, priced: hit.priced, on_hand: hit.on_hand });
-                    continue;
-                }
-            } catch { /* keep stale line */ }
-            refreshed.push(l);
-        }
-        setLines(refreshed);
         setRecallOpen(false);
-        setNotice(changed ? 'Recalled — some prices changed since the sale was suspended; check the cart.' : 'Sale recalled.');
-        scanRef.current?.focus();
+        setCustomer(entry.customer);
+        setLines(entry.lines);
+        await reprice(entry.customer, entry.lines, 'Sale recalled');
+    }
+    function discardSuspended(entry) {
+        const next = tillStore.suspended(branch.id).filter((s) => s.id !== entry.id);
+        tillStore.setSuspended(branch.id, next);
+        setSuspended(next);
     }
 
-    // ── Keyboard shortcuts (2.1: operable without a mouse) ───────────────
-    useEffect(() => {
-        function onGlobalKey(e) {
-            if (e.key === 'F2') { e.preventDefault(); setCustomerOpenRequest((n) => n + 1); }
-            else if (e.key === 'F4') { e.preventDefault(); if (canCharge) setTenderOpen(true); }
-            else if (e.key === 'F8') { e.preventDefault(); suspendSale(); }
-            else if (e.key === 'F9') { e.preventDefault(); setRecallOpen((o) => !o); }
-            else if (e.key === 'Escape') { setTenderOpen(false); setRecallOpen(false); setNotice(null); }
-        }
-        window.addEventListener('keydown', onGlobalKey);
-        return () => window.removeEventListener('keydown', onGlobalKey);
-    });
-
-    return (
-        <ModuleLayout
-            navConfig={navConfig}
-            title="Point of Sale"
-            breadcrumbs={[{ label: 'Sales & POS', href: route('modules.show', 'sales') }, { label: 'Point of Sale' }]}
-        >
-            <Head title="Point of Sale" />
-
-            {(errors.sale || errors.discount || errors.lines) && (
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{errors.sale || errors.discount || errors.lines}</span>
-                </div>
-            )}
-            {notice && (
-                <div className="mb-4 flex items-start justify-between gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-700">
-                    <span>{notice}</span>
-                    <button onClick={() => setNotice(null)} aria-label="Dismiss" className="text-slate-300 hover:text-slate-600"><X className="w-4 h-4" /></button>
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Cart */}
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="relative">
-                        <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-500 pointer-events-none" />
-                        <input
-                            ref={scanRef}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={onKey}
-                            placeholder="Scan barcode or search part number / name…"
-                            aria-label="Scan or search part"
-                            className="w-full rounded-xl border-2 border-slate-200 bg-white pl-11 pr-4 py-3 text-base focus:border-orange-500 focus:ring-orange-500"
-                        />
-                        {results.length > 0 && (
-                            <ul className="absolute z-30 mt-1 w-full rounded-lg bg-white shadow-lg border border-slate-100 overflow-hidden">
-                                {results.map((p, i) => (
-                                    <li key={p.id}>
-                                        <button
-                                            type="button"
-                                            onClick={() => addPart(p)}
-                                            onMouseEnter={() => setHighlight(i)}
-                                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm text-left ${highlight === i ? 'bg-orange-50' : ''}`}
-                                        >
-                                            <span className="font-mono font-semibold text-slate-800">{p.part_number}</span>
-                                            <span className="flex-1 truncate text-slate-500">{p.description}</span>
-                                            <span className={`text-xs tabular-nums ${p.on_hand > 0 ? 'text-slate-400' : 'text-red-500'}`}>{money(p.on_hand)} on hand</span>
-                                            <span className="w-16 text-right font-semibold tabular-nums text-slate-700">{p.priced ? money(p.price) : '—'}</span>
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-
-                    <div className="rounded-xl border border-slate-100 bg-white overflow-hidden min-h-[16rem]">
-                        {lines.length === 0 ? (
-                            <div className="flex h-64 flex-col items-center justify-center text-center text-slate-400">
-                                <ScanBarcode className="w-10 h-10 mb-3" />
-                                <p className="text-sm">Scan or search to start a sale.</p>
-                                {suspended.length > 0 && (
-                                    <button onClick={() => setRecallOpen(true)} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-orange-600 hover:text-orange-700">
-                                        <PlayCircle className="w-4 h-4" /> Recall a suspended sale ({suspended.length})
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                        <th className="px-3 py-2">Part</th>
-                                        <th className="px-2 py-2 text-right w-20">Qty</th>
-                                        <th className="px-2 py-2 text-right w-24">Price</th>
-                                        <th className="px-2 py-2 text-right w-20">Disc %</th>
-                                        <th className="px-3 py-2 text-right w-28">Total</th>
-                                        <th className="w-9"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {lines.map((l, i) => (
-                                        <tr key={l.part_id} className={!l.priced ? 'bg-red-50' : ''}>
-                                            <td className="px-3 py-2">
-                                                <span className="font-mono font-semibold text-slate-800">{l.part_number}</span>
-                                                <span className="block text-xs text-slate-400 truncate max-w-[16rem]">{l.description}</span>
-                                                {!l.priced && <span className="text-xs text-red-600">No price — set one before selling.</span>}
-                                                {l.qty > l.on_hand && <span className="text-xs text-amber-600">Only {money(l.on_hand)} in stock.</span>}
-                                            </td>
-                                            <td className="px-2 py-2">
-                                                <input type="number" min="0.01" step="0.01" value={l.qty}
-                                                    aria-label={`Qty ${l.part_number}`}
-                                                    onChange={(e) => setLine(i, 'qty', Number(e.target.value) || 0)}
-                                                    className="w-full rounded border border-slate-300 px-2 py-1 text-right tabular-nums" />
-                                            </td>
-                                            <td className="px-2 py-2 text-right tabular-nums text-slate-500">{money(l.unit_price)}</td>
-                                            <td className="px-2 py-2">
-                                                <input type="number" min="0" max="100" step="0.5" value={l.discount_pct}
-                                                    aria-label={`Discount ${l.part_number}`}
-                                                    onChange={(e) => setLine(i, 'discount_pct', Number(e.target.value) || 0)}
-                                                    className={`w-full rounded border px-2 py-1 text-right tabular-nums ${l.discount_pct > maxDiscount ? 'border-amber-400 bg-amber-50' : 'border-slate-300'}`} />
-                                            </td>
-                                            <td className="px-3 py-2 text-right tabular-nums font-medium">{money(calc[i].incl)}</td>
-                                            <td className="px-2 py-2 text-right">
-                                                <button type="button" onClick={() => removeLine(i)} aria-label="Remove" className="p-1 rounded text-slate-300 hover:text-red-600 hover:bg-red-50">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
-                        <span className="inline-flex items-center gap-1"><Keyboard className="w-3.5 h-3.5" /> Shortcuts:</span>
-                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F2</kbd> customer</span>
-                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F4</kbd> take payment</span>
-                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F8</kbd> suspend</span>
-                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">F9</kbd> recall</span>
-                        <span><kbd className="rounded border border-slate-300 bg-white px-1 font-mono">Esc</kbd> close</span>
-                    </div>
-                </div>
-
-                {/* Sale panel */}
-                <div className="space-y-4">
-                    <CustomerPicker customer={customer} walkIn={walkIn} onChange={setCustomer} openRequest={customerOpenRequest} />
-
-                    <div className="rounded-xl border border-slate-100 bg-white p-5 space-y-2">
-                        <div className="flex justify-between text-sm text-slate-500"><span>Subtotal (excl)</span><span className="tabular-nums">{money(subtotal)}</span></div>
-                        <div className="flex justify-between text-sm text-slate-500"><span>VAT {vatRate}%</span><span className="tabular-nums">{money(vatTotal)}</span></div>
-                        <div className="flex justify-between border-t border-slate-100 pt-2 text-lg font-bold text-slate-900"><span>Total</span><span className="tabular-nums"><MoneyDisplay amount={total} /></span></div>
-
-                        <button
-                            type="button"
-                            disabled={!canCharge}
-                            onClick={() => setTenderOpen(true)}
-                            title={hasUnpriced ? 'Remove or price the flagged lines first' : undefined}
-                            className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-3 text-base font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <Banknote className="w-5 h-5" />
-                            Charge <MoneyDisplay amount={total} />
-                        </button>
-                        <div className="flex gap-2 pt-1">
-                            <button type="button" onClick={suspendSale} disabled={lines.length === 0}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40">
-                                <PauseCircle className="w-4 h-4" /> Suspend
-                            </button>
-                            <button type="button" onClick={() => setRecallOpen(true)} disabled={suspended.length === 0}
-                                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40">
-                                <PlayCircle className="w-4 h-4" /> Recall{suspended.length > 0 ? ` (${suspended.length})` : ''}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {recallOpen && (
-                <RecallPanel suspended={suspended} onRecall={recallSale} onClose={() => setRecallOpen(false)}
-                    onDiscard={(entry) => { const next = readSuspended(branch.id).filter((s) => s.id !== entry.id); writeSuspended(branch.id, next); setSuspended(next); }} />
-            )}
-
-            {tenderOpen && (
-                <TenderDialog
-                    total={total}
-                    customer={customer}
-                    lines={lines}
-                    maxDiscount={maxDiscount}
-                    onClose={() => setTenderOpen(false)}
-                />
-            )}
-        </ModuleLayout>
-    );
-}
-
-function RecallPanel({ suspended, onRecall, onDiscard, onClose }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Suspended sales">
-            <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
-            <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold text-slate-900">Suspended sales</h2>
-                    <button onClick={onClose} aria-label="Close" className="text-slate-300 hover:text-slate-600"><X className="w-5 h-5" /></button>
-                </div>
-                {suspended.length === 0 ? (
-                    <p className="text-sm text-slate-400">Nothing suspended on this till.</p>
-                ) : (
-                    <ul className="divide-y divide-slate-100">
-                        {suspended.map((s) => (
-                            <li key={s.id} className="flex items-center gap-3 py-2.5">
-                                <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-slate-800 truncate">{s.customer?.name ?? 'Cash Customer'}</div>
-                                    <div className="text-xs text-slate-400">{s.lines.length} line{s.lines.length === 1 ? '' : 's'} · {new Date(s.at).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</div>
-                                </div>
-                                <button onClick={() => onDiscard(s)} className="text-xs text-slate-400 hover:text-red-600">Discard</button>
-                                <button onClick={() => onRecall(s)} className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700">Recall</button>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-                <p className="text-xs text-slate-400">Suspended sales hold no stock; prices and availability are re-checked on recall.</p>
-            </div>
-        </div>
-    );
-}
-
-function CustomerPicker({ customer, walkIn, onChange, openRequest = 0 }) {
-    const [open, setOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const lookup = useLookup('sales.pos.customer-lookup');
-    const timer = useRef(null);
-
-    useEffect(() => { if (openRequest > 0) setOpen(true); }, [openRequest]);
-
-    useEffect(() => {
-        clearTimeout(timer.current);
-        if (query.trim().length < 2) { setResults([]); return; }
-        timer.current = setTimeout(async () => {
-            try { setResults((await lookup(query)).customers ?? []); } catch { /* keep */ }
-        }, 200);
-        return () => clearTimeout(timer.current);
-    }, [query]);
-
-    return (
-        <div className="rounded-xl border border-slate-100 bg-white p-4">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                    <UserRound className="w-4 h-4 text-slate-400 shrink-0" />
-                    <div className="min-w-0">
-                        <div className="text-sm font-semibold text-slate-800 truncate">{customer.name}</div>
-                        <div className="text-xs text-slate-400">{customer.customer_number}{customer.on_hold ? ' · on hold' : ''}</div>
-                    </div>
-                </div>
-                {!customer.is_walk_in && (
-                    <button onClick={() => onChange({ ...walkIn, is_walk_in: true })} aria-label="Reset to walk-in" className="p-1 text-slate-300 hover:text-slate-600">
-                        <X className="w-4 h-4" />
-                    </button>
-                )}
-            </div>
-
-            {!customer.is_walk_in && (
-                <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-sm">
-                    <div className="flex justify-between">
-                        <span className="text-slate-500">Account balance</span>
-                        <span className="tabular-nums font-semibold text-slate-800"><MoneyDisplay amount={customer.ar_balance ?? 0} /></span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-slate-500">Available credit</span>
-                        <span className={`tabular-nums font-semibold ${(customer.available_credit ?? 0) <= 0 ? 'text-red-600' : 'text-emerald-600'}`}><MoneyDisplay amount={customer.available_credit ?? 0} /></span>
-                    </div>
-                    {customer.on_hold && <div className="mt-1 text-xs font-medium text-amber-600">On credit hold — account sales blocked.</div>}
-                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium">
-                        <a href={route('customers.statement', customer.id)} target="_blank" rel="noreferrer" className="text-orange-600 hover:text-orange-700">Statement PDF</a>
-                        <a href={route('customers.statement.csv', customer.id)} className="text-orange-600 hover:text-orange-700">Statement CSV</a>
-                        <a href={route('finance.receipts.index')} className="text-orange-600 hover:text-orange-700">Take a payment</a>
-                        <a href={route('sales.laybys.index')} className="text-orange-600 hover:text-orange-700">Start lay-by</a>
-                    </div>
-                </div>
-            )}
-
-            {open ? (
-                <div className="mt-3">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); } }}
-                            placeholder="Search customer…" aria-label="Search customer"
-                            className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-1.5 text-sm"
-                        />
-                    </div>
-                    {results.length > 0 && (
-                        <ul className="mt-1 rounded-lg border border-slate-100 overflow-hidden">
-                            {results.map((c) => (
-                                <li key={c.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => { onChange(c); setOpen(false); setQuery(''); setResults([]); }}
-                                        className="w-full px-3 py-2 text-left text-sm hover:bg-orange-50"
-                                    >
-                                        <span className="font-medium text-slate-700">{c.name}</span>
-                                        <span className="block text-xs text-slate-400">
-                                            {c.customer_number}{c.on_hold ? ' · on hold' : ''}
-                                            {!c.is_walk_in && ` · available ${money(c.available_credit)}`}
-                                        </span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    <button onClick={() => setOpen(false)} className="mt-2 text-xs text-slate-400 hover:text-slate-600">Close</button>
-                </div>
-            ) : (
-                <button onClick={() => setOpen(true)} className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700">
-                    Change customer → <span className="text-xs text-slate-400">(F2)</span>
-                </button>
-            )}
-        </div>
-    );
-}
-
-function TenderDialog({ total, customer, lines, maxDiscount, onClose }) {
-    const [payments, setPayments] = useState([{ method: 'cash', amount: total, tendered: total, reference: '' }]);
-    const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState(null);
-    const [supervisor, setSupervisor] = useState({ username: '', password: '' });
-    const [approver, setApprover] = useState(null);     // name once verified
-    const [verifying, setVerifying] = useState(false);
-
-    const paid = Math.round(payments.reduce((n, p) => n + Number(p.amount || 0), 0) * 100) / 100;
-    const balance = Math.round((total - paid) * 100) / 100;
-    const cashLine = payments.find((p) => p.method === 'cash');
-    const change = cashLine && cashLine.tendered ? Math.max(0, Math.round((Number(cashLine.tendered) - Number(cashLine.amount)) * 100) / 100) : 0;
-    const needsApproval = lines.some((l) => (l.discount_pct || 0) > maxDiscount);
-    const accountBlocked = payments.some((p) => p.method === 'account') && (customer.is_walk_in || customer.on_hold);
-
-    const setP = (i, field, value) => {
-        setError(null);
-        setPayments((prev) => prev.map((p, idx) => (idx === i ? { ...p, [field]: value } : p)));
+    // ── Charge readiness: disabled-with-reason (ui-rules) ──
+    const shortLine = !allowNegative && lines.find((l) => l.qty > Number(l.available ?? l.on_hand ?? 0));
+    const chargeBlock = lines.length === 0 ? 'Add a part first.'
+        : lines.some((l) => !l.priced) ? 'Remove the unpriced line(s) first.'
+        : lines.some((l) => !(l.qty > 0)) ? 'Every line needs a quantity above 0.'
+        : shortLine ? `Not enough stock for ${shortLine.part_number}.`
+        : null;
+    const accountBlock = accountBlockReason(customer);
+    const openTender = (mode) => {
+        if (chargeBlock) { flash(chargeBlock, 'error'); return; }
+        if (mode === 'account' && accountBlock) { flash(accountBlock, 'error'); return; }
+        setTenderMode(mode);
     };
 
-    /** Check the supervisor's credentials now so the cashier gets an immediate answer. */
-    async function verifySupervisor() {
-        setVerifying(true); setError(null);
-        try {
-            const res = await window.axios.post(route('sales.pos.verify-supervisor'), supervisor);
-            setApprover(res.data.approver);
-        } catch (e) {
-            setApprover(null);
-            setError(e.response?.data?.message ?? 'Could not verify the supervisor.');
-        } finally { setVerifying(false); }
+    // ── Keyboard: scan box ──
+    function onScanKey(e) {
+        const hasResults = results.length > 0 && (term.length >= 2 || category);
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (hasResults) setHighlight((h) => Math.min(h + 1, results.length - 1));
+            else if (lines.length) setSelected((s) => (s === null ? 0 : Math.min(s + 1, lines.length - 1)));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (hasResults) setHighlight((h) => Math.max(h - 1, 0));
+            else if (lines.length) setSelected((s) => (s === null ? lines.length - 1 : Math.max(s - 1, 0)));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (term.length < 2) { if (hasResults && results[highlight]) addPart(results[highlight], queryQty); return; }
+            const exact = results.find((p) => p.part_number.toLowerCase() === term.toLowerCase());
+            if (exact) addPart(exact, queryQty);
+            else if (hasResults && results[highlight] && !loading) addPart(results[highlight], queryQty);
+            else { clearTimeout(timer.current); addByNumber(term, queryQty); }
+        } else if (e.key === 'Escape') {
+            if (query || category) { e.stopPropagation(); setQuery(''); setCategory(null); }
+        } else if (query === '' && selected !== null && lines[selected]) {
+            if (e.key === '+' || e.key === '=') { e.preventDefault(); setQty(selected, lines[selected].qty + 1); }
+            else if (e.key === '-') { e.preventDefault(); if (lines[selected].qty > 1) setQty(selected, lines[selected].qty - 1); }
+            else if (e.key === 'Delete') { e.preventDefault(); removeLine(selected); }
+        }
     }
 
-    function submit() {
-        if (payments.some((p) => Number(p.amount || 0) <= 0)) { setError('Every payment line needs an amount greater than 0 — remove any blank line.'); return; }
-        if (Math.abs(balance) > 0.001) { setError('Payments must equal the total.'); return; }
-        if (needsApproval && !approver) { setError('A supervisor must approve the over-limit discount before the sale can post.'); return; }
-        setProcessing(true);
-        router.post(route('sales.pos.store'), {
-            customer_id: customer.id,
-            lines: lines.map((l) => ({ part_id: l.part_id, qty: l.qty, discount_pct: l.discount_pct })),
-            payments: payments.map((p) => ({
-                method: p.method, amount: Number(p.amount),
-                tendered: p.method === 'cash' ? Number(p.tendered || p.amount) : null,
-                reference: p.reference || null,
-            })),
-            supervisor_username: needsApproval ? supervisor.username : null,
-            supervisor_password: needsApproval ? supervisor.password : null,
-        }, {
-            onError: (errs) => { setError(Object.values(errs)[0]); setProcessing(false); },
-            onFinish: () => setProcessing(false),
-        });
-    }
+    // ── Keyboard: global function keys (2.1: operable without a mouse) ──
+    useEffect(() => {
+        function onKey(e) {
+            if (dialogOpen) return; // Radix dialogs own the keyboard while open
+            const map = {
+                F2: () => setCustomerOpenRequest((n) => n + 1),
+                F3: () => lines.length && setClearOpen(true),
+                F4: () => openTender('split'),
+                F5: () => openTender('cash'),
+                F6: () => openTender('card'),
+                F7: () => openTender('account'),
+                F8: () => suspendSale(),
+                F9: () => setRecallOpen(true),
+                F10: () => setFocusMode((f) => !f),
+            };
+            if (map[e.key]) { e.preventDefault(); map[e.key](); }
+            else if (e.key === 'Escape') setNotice(null);
+        }
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    });
 
-    const method = 'w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base';
+    const serverError = errors.sale || errors.discount || errors.lines;
+    const toneClass = { info: 'border-slate-200 bg-white text-slate-700', warn: 'border-amber-200 bg-amber-50 text-amber-800', error: 'border-red-200 bg-red-50 text-red-700' };
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Take payment">
-            <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} />
-            <div className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-2xl bg-white shadow-2xl p-8 space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <div>
-                        <h2 className="text-2xl font-semibold text-slate-900">Take payment</h2>
-                        <p className="text-sm text-slate-500 mt-0.5">{customer.name}</p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-xs uppercase tracking-wide text-slate-400">Total due</div>
-                        <div className="text-4xl font-bold tabular-nums text-slate-900"><MoneyDisplay amount={total} /></div>
-                    </div>
-                </div>
-
-                {customer.on_hold && (
-                    <p className="rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-800">
-                        {customer.name} is on hold — account payment is blocked. Take cash or card.
-                    </p>
-                )}
-
-                {!customer.is_walk_in && !customer.on_hold && (
-                    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-orange-50 border border-orange-100 px-3 py-2.5">
-                        <span className="text-sm font-medium text-orange-800">Credit customer:</span>
-                        <button type="button"
-                            onClick={() => { setError(null); setPayments([{ method: 'account', amount: total, reference: '' }]); }}
-                            className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100">
-                            Full amount on account
+    const till = (
+        <div className={`${focusMode ? 'fixed inset-0 z-40 bg-slate-100 p-3' : 'h-[calc(100vh-7.5rem)]'} flex flex-col gap-3`}>
+            {/* Header strip: branch · cashier · today · clock · tools */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-slate-300">
+                <span className="flex items-center gap-1.5 font-semibold text-white"><Store className="h-4 w-4 text-orange-400" />{branch.name}</span>
+                <span className="flex items-center gap-1.5"><UserRound className="h-4 w-4" />{auth?.user?.name}</span>
+                <span className="flex items-center gap-1.5" title="Your posted sales today">
+                    <Receipt className="h-4 w-4" />{today.count} sale{today.count === 1 ? '' : 's'} today · <MoneyDisplay amount={today.total} className="font-semibold text-white" />
+                </span>
+                <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{clock.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="ml-auto flex items-center gap-2">
+                    {suspended.length > 0 && (
+                        <button onClick={() => setRecallOpen(true)} className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/30">
+                            {suspended.length} suspended · F9
                         </button>
-                        <button type="button"
-                            disabled={balance <= 0.001 || payments.some((p) => p.method === 'account')}
-                            onClick={() => { setError(null); setPayments((prev) => [...prev, { method: 'account', amount: Math.max(0, balance), reference: '' }]); }}
-                            className="rounded-md border border-orange-300 bg-white px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Take a deposit above, then put the remaining balance on the account">
-                            Put balance ({money(Math.max(0, balance))}) on account
-                        </button>
-                        <span className="w-full text-xs text-orange-700/80">Available credit {money(customer.available_credit ?? 0)}.</span>
-                    </div>
-                )}
-
-                <div className="space-y-4">
-                    {payments.map((p, i) => (
-                        <div key={i} className="flex items-end gap-3">
-                            <label className="w-40">
-                                <span className="block text-xs font-medium text-slate-500 mb-1">How they're paying</span>
-                                <select value={p.method} onChange={(e) => setP(i, 'method', e.target.value)} className={method}>
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="eft">EFT</option>
-                                    <option value="account" disabled={customer.is_walk_in || customer.on_hold}>Account</option>
-                                </select>
-                            </label>
-                            <label className="flex-1">
-                                <span className="block text-xs font-medium text-slate-500 mb-1">Amount on this method</span>
-                                <input type="number" step="0.01" min="0" value={p.amount} placeholder="0.00"
-                                    aria-label="Amount" onChange={(e) => setP(i, 'amount', e.target.value)}
-                                    className={`${method} text-right tabular-nums font-semibold`} />
-                            </label>
-                            {p.method === 'cash' ? (
-                                <label className="w-44">
-                                    <span className="block text-xs font-medium text-slate-500 mb-1">Cash handed over</span>
-                                    <input type="number" step="0.01" min="0" value={p.tendered} placeholder="0.00"
-                                        aria-label="Cash tendered"
-                                        onChange={(e) => setP(i, 'tendered', e.target.value)}
-                                        className={`${method} text-right tabular-nums`} />
-                                </label>
-                            ) : (
-                                <label className="w-44">
-                                    <span className="block text-xs font-medium text-slate-500 mb-1">Reference (optional)</span>
-                                    <input value={p.reference} aria-label="Reference" placeholder="Card / EFT ref"
-                                        onChange={(e) => setP(i, 'reference', e.target.value)}
-                                        className={method} />
-                                </label>
-                            )}
-                            {payments.length > 1 && (
-                                <button onClick={() => { setError(null); setPayments((prev) => prev.filter((_, idx) => idx !== i)); }} aria-label="Remove payment" className="mb-2 flex justify-center p-1 text-slate-300 hover:text-red-600">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => { setError(null); setPayments((prev) => [...prev, { method: 'card', amount: Math.max(0, balance) || '', reference: '' }]); }}
-                        className="text-sm font-medium text-orange-600 hover:text-orange-700"
-                    >
-                        + Split payment
+                    )}
+                    <a href={route('reports.cashup')} target="_blank" rel="noreferrer" className="rounded-md px-2 py-1 text-xs hover:bg-slate-800 hover:text-white">Cash-up (X/Z)</a>
+                    <button onClick={() => setFocusMode((f) => !f)} title="Full-screen till (F10)" className="rounded-md p-1.5 hover:bg-slate-800 hover:text-white">
+                        {focusMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                     </button>
-                </div>
+                </span>
+            </div>
 
-                <div className="rounded-xl bg-slate-50 px-5 py-4 text-base space-y-2">
-                    <div className="flex justify-between text-slate-500"><span>Paid</span><span className="tabular-nums">{money(paid)}</span></div>
-                    <div className={`flex justify-between text-lg font-semibold ${Math.abs(balance) > 0.001 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        <span>{balance > 0 ? 'Balance due' : balance < 0 ? 'Over-tender' : 'Settled'}</span>
-                        <span className="tabular-nums">{money(Math.abs(balance))}</span>
-                    </div>
-                    {change > 0 && <div className="flex justify-between text-slate-900 font-semibold"><span>Change</span><span className="tabular-nums">{money(change)}</span></div>}
+            {(serverError || notice) && (
+                <div className={`flex items-start justify-between gap-2 rounded-lg border px-4 py-2 text-sm ${serverError ? toneClass.error : toneClass[notice.tone]}`} role="status">
+                    <span className="flex items-start gap-2">{(serverError || notice?.tone === 'error') && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}{serverError || notice.text}</span>
+                    {!serverError && <button onClick={() => setNotice(null)} aria-label="Dismiss" className="opacity-50 hover:opacity-100"><X className="h-4 w-4" /></button>}
                 </div>
+            )}
 
-                {needsApproval && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 space-y-3">
-                        <div className="flex items-start gap-2 text-sm text-amber-800">
-                            <ShieldCheck className="w-5 h-5 shrink-0" />
-                            <span>A line discount exceeds {maxDiscount}%. A supervisor must enter <strong>their own</strong> username and password to approve it; the approval is recorded on the invoice and in the audit trail.</span>
-                        </div>
-                        {approver ? (
-                            <div className="flex items-center justify-between rounded-lg bg-white border border-emerald-200 px-3 py-2 text-sm">
-                                <span className="text-emerald-700 font-medium">Approved by {approver}</span>
-                                <button type="button" onClick={() => { setApprover(null); setSupervisor({ username: '', password: '' }); }} className="text-xs text-slate-400 hover:text-slate-600">Change</button>
-                            </div>
-                        ) : (
-                            <div className="flex flex-wrap items-end gap-3">
-                                <label className="flex-1 min-w-[10rem]">
-                                    <span className="block text-xs font-medium text-amber-800 mb-1">Supervisor username</span>
-                                    <input value={supervisor.username} autoComplete="off" onChange={(e) => setSupervisor((s) => ({ ...s, username: e.target.value }))}
-                                        aria-label="Supervisor username" className={method} />
-                                </label>
-                                <label className="flex-1 min-w-[10rem]">
-                                    <span className="block text-xs font-medium text-amber-800 mb-1">Supervisor password</span>
-                                    <input type="password" value={supervisor.password} autoComplete="new-password"
-                                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); verifySupervisor(); } }}
-                                        onChange={(e) => setSupervisor((s) => ({ ...s, password: e.target.value }))}
-                                        aria-label="Supervisor password" className={method} />
-                                </label>
-                                <button type="button" onClick={verifySupervisor} disabled={verifying || !supervisor.username || !supervisor.password}
-                                    className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-40">
-                                    {verifying ? 'Checking…' : 'Approve'}
-                                </button>
-                            </div>
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-12">
+                {/* ── Find ── */}
+                <section className="flex min-h-0 flex-col gap-3 lg:col-span-7">
+                    <div className="relative">
+                        <ScanBarcode className="pointer-events-none absolute left-4 top-1/2 h-6 w-6 -translate-y-1/2 text-orange-500" />
+                        <input
+                            ref={scanRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={onScanKey}
+                            placeholder="Scan a barcode, or type part number / OEM / vehicle + part…"
+                            aria-label="Scan or search part" autoComplete="off" spellCheck={false}
+                            className="w-full rounded-xl border-2 border-slate-200 bg-white py-3.5 pl-14 pr-28 text-lg shadow-sm focus:border-orange-500 focus:ring-orange-500"
+                        />
+                        {queryQty !== 1 && term && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md bg-orange-100 px-2 py-1 text-xs font-bold text-orange-700">× {queryQty}</span>
                         )}
                     </div>
-                )}
-                {error && <p className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</p>}
+                    <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                        <PartResults
+                            term={term} results={results} loading={loading} highlight={highlight} setHighlight={setHighlight}
+                            category={category} onClearCategory={() => { setCategory(null); refocus(); }}
+                            onAdd={(p) => (customer.is_walk_in ? addPart(p, queryQty) : addByNumber(p.part_number, queryQty))}
+                            onUseReplacement={(n) => addByNumber(n, queryQty)}
+                            topSellers={topSellers} categories={categories}
+                            onBrowse={(c) => { setCategory(c); refocus(); }}
+                            allowNegative={allowNegative} vatRate={vatRate}
+                        />
+                    </div>
+                </section>
 
-                <div className="flex justify-end gap-3 pt-2">
-                    <button onClick={onClose} className="rounded-lg px-5 py-3 text-base font-medium text-slate-600 hover:bg-slate-100">Cancel</button>
-                    <button
-                        onClick={submit}
-                        disabled={processing || Math.abs(balance) > 0.001 || accountBlocked || (needsApproval && !approver)}
-                        className="rounded-lg bg-orange-600 px-8 py-3 text-base font-semibold text-white hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {processing ? 'Posting…' : 'Complete sale'}
-                    </button>
-                </div>
+                {/* ── Sale ── */}
+                <section className="flex min-h-0 flex-col gap-3 lg:col-span-5">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3">
+                        <CustomerPicker customer={customer} walkIn={walkInCustomer} onChange={changeCustomer} openRequest={customerOpenRequest} />
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
+                            <span className="font-semibold uppercase tracking-wide">Sale · {lines.length} line{lines.length === 1 ? '' : 's'} · {fmt(totals.items).replace('.00', '')} item{totals.items === 1 ? '' : 's'}</span>
+                            <span>Prices incl. VAT</span>
+                        </div>
+                        <div className="min-h-0 flex-1">
+                            <CartPanel lines={lines} calc={totals.calc} selected={selected} onSelect={(i) => { setSelected(i); }}
+                                onQty={setQty} onDiscount={setDiscount} onRemove={removeLine}
+                                maxDiscount={maxDiscount} allowNegative={allowNegative} vatRate={vatRate}
+                                suspendedCount={suspended.length} onRecall={() => setRecallOpen(true)} />
+                        </div>
+
+                        <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 space-y-1 text-sm">
+                            <div className="flex justify-between text-slate-500"><span>Subtotal excl. VAT</span><span className="tabular-nums">{fmt(totals.subtotal)}</span></div>
+                            {totals.discount > 0 && <div className="flex justify-between text-emerald-700"><span>Discounts (excl.)</span><span className="tabular-nums">−{fmt(totals.discount)}</span></div>}
+                            <div className="flex justify-between text-slate-500"><span>VAT {vatRate}%</span><span className="tabular-nums">{fmt(totals.vat)}</span></div>
+                            <div className="flex items-end justify-between pt-1">
+                                <span className="text-base font-semibold text-slate-700">Total</span>
+                                <span className="text-4xl font-extrabold tabular-nums text-slate-900"><MoneyDisplay amount={totals.total} /></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tender + sale actions */}
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                            {[['cash', 'Cash', Banknote, 'F5', null], ['card', 'Card', CreditCard, 'F6', null], ['account', 'Account', BookUser, 'F7', accountBlock]].map(([mode, label, Icon, kbd, block]) => (
+                                <button key={mode} type="button" onClick={() => openTender(mode)} disabled={!!chargeBlock || !!block} title={chargeBlock ?? block ?? `Pay by ${label.toLowerCase()} (${kbd})`}
+                                    className="flex flex-col items-center gap-0.5 rounded-xl border-2 border-slate-300 bg-white py-2.5 text-sm font-bold text-slate-800 hover:border-orange-500 hover:text-orange-700 disabled:cursor-not-allowed disabled:opacity-40">
+                                    <Icon className="h-5 w-5" />{label}<kbd className="font-mono text-[10px] font-normal text-slate-400">{kbd}</kbd>
+                                </button>
+                            ))}
+                        </div>
+                        <button type="button" onClick={() => openTender('cash')} disabled={!!chargeBlock} title={chargeBlock ?? 'Take payment'}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-orange-600 py-3.5 text-lg font-bold text-white shadow-sm hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-40">
+                            Take payment <MoneyDisplay amount={totals.total} />
+                        </button>
+                        <div className="grid grid-cols-3 gap-2 text-xs font-medium">
+                            <button type="button" onClick={suspendSale} disabled={lines.length === 0} title={lines.length ? 'Park this sale (F8)' : 'Nothing to suspend'}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                                <PauseCircle className="h-4 w-4" />Suspend <kbd className="text-slate-400">F8</kbd>
+                            </button>
+                            <button type="button" onClick={() => setRecallOpen(true)} disabled={suspended.length === 0} title={suspended.length ? 'Recall a parked sale (F9)' : 'No suspended sales on this till'}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white py-2 text-slate-600 hover:bg-slate-50 disabled:opacity-40">
+                                <PlayCircle className="h-4 w-4" />Recall{suspended.length ? ` (${suspended.length})` : ''} <kbd className="text-slate-400">F9</kbd>
+                            </button>
+                            <button type="button" onClick={() => setClearOpen(true)} disabled={lines.length === 0} title={lines.length ? 'Start over (F3)' : 'Nothing to clear'}
+                                className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white py-2 text-slate-600 hover:border-red-300 hover:text-red-600 disabled:opacity-40">
+                                <Eraser className="h-4 w-4" />Clear <kbd className="text-slate-400">F3</kbd>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div className="hidden xl:flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                <Keyboard className="h-3.5 w-3.5" />
+                {SHORTCUTS.map(([k, label]) => <span key={k}><kbd className="rounded border border-slate-300 bg-white px-1 font-mono text-slate-500">{k}</kbd> {label}</span>)}
             </div>
         </div>
+    );
+
+    return (
+        <ModuleLayout navConfig={navConfig} title="Point of Sale"
+            breadcrumbs={[{ label: 'Sales & POS', href: route('modules.show', 'sales') }, { label: 'Point of Sale' }]}>
+            <Head title="Point of Sale" />
+            {till}
+
+            <TenderDialog open={!!tenderMode} initialMode={tenderMode} total={totals.total} customer={customer} lines={lines} maxDiscount={maxDiscount}
+                onClose={() => setTenderMode(null)}
+                onPosted={() => { setTenderMode(null); resetSale(); tillStore.setCart(branch.id, null); }} />
+            <SaleCompleteDialog sale={sale} onNext={() => { setSale(null); setNotice(null); }} />
+            <RecallDialog open={recallOpen} suspended={suspended} onRecall={recallSale} onDiscard={discardSuspended} onClose={() => setRecallOpen(false)} />
+            <ConfirmDialog open={clearOpen} title="Clear this sale?" message={`${lines.length} line${lines.length === 1 ? '' : 's'} (${fmt(totals.total)}) will be removed. Nothing has been posted.`}
+                confirmLabel="Clear sale" destructive onCancel={() => setClearOpen(false)}
+                onConfirm={() => { resetSale(); setClearOpen(false); flash('Sale cleared.'); }} />
+        </ModuleLayout>
     );
 }

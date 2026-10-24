@@ -4,7 +4,7 @@ Everything for serving a customer, from a quick cash sale to an account invoice,
 
 ## Point of Sale — make a cash sale
 
-The till. Open it at **Sales → Point of Sale** (route:sales.pos).
+The till. Open it at [**Sales → Point of Sale**](route:sales.pos).
 
 1. **Scan or search** the part in the big search box at the top (barcode, part number or name). Press **Enter** to add the top match to the cart.
 2. Repeat for every item. Adjust the **quantity** or add a **discount %** on any line if needed.
@@ -30,22 +30,22 @@ The till. Open it at **Sales → Point of Sale** (route:sales.pos).
 
 ## Quote → order → invoice
 
-1. **Sales → Quotations → New Quote** (route:sales.quotes.index). Pick the customer, add parts, save. Print or email it.
+1. [**Sales → Quotations → New Quote**](route:sales.quotes.index). Pick the customer, add parts, save. Print or email it.
 2. When the customer accepts, open the quote and click **Convert to order** — this reserves the stock.
 3. When you deliver/collect, open the order and **invoice** it. The quote, order and invoice stay linked — open any one and the "Connected to" card walks the chain.
 
 ## Credit note / return
 
-1. Open the original invoice (Sales → Tax Invoices (route:sales.invoices.index), or click its number anywhere).
+1. Open the original invoice (Sales → [Tax Invoices](route:sales.invoices.index), or click its number anywhere).
 2. Click **Raise credit note**.
 3. Choose the lines and quantities coming back, tick **restock** if the goods are resaleable, and pick **refund cash** or **credit the account**.
 4. Post it. Stock goes back up (if restocked) and the money is reversed.
 
 ## Lay-by and delivery notes
 
-- **Lay-by** (route:sales.laybys.index): reserve goods, take a deposit, record instalments, hand over when paid off.
-- **Delivery notes** (route:sales.delivery-notes.index): a dispatch note against an invoice or order.
+- [**Lay-by**](route:sales.laybys.index): reserve goods, take a deposit, record instalments, hand over when paid off.
+- [**Delivery notes**](route:sales.delivery-notes.index): a dispatch note against an invoice or order.
 
 ## End of day
 
-Cash up and reconcile the till — see **Daily cash-up** in (guide:finance).
+Cash up and reconcile the till — see **Daily cash-up** in [finance guide](guide:finance).

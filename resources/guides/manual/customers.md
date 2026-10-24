@@ -4,12 +4,12 @@ Your customer list, their credit, and their statements.
 
 ## Add a customer
 
-1. **Customers → Add Customer** (route:customers.index).
+1. [**Customers → Add Customer**](route:customers.create).
 2. Enter their name and type (individual, business, fleet, dealer).
 3. For account customers, set the **payment terms** and **credit limit**, and the **price list** (retail or trade) they get.
 4. Save.
 
-> Loading lots of customers? Use (guide:data-upload) instead of typing them.
+> Loading lots of customers? Use [data-upload guide](guide:data-upload) instead of typing them.
 
 ## The customer page
 
@@ -34,6 +34,6 @@ On the customer's page, **Statement** gives you a PDF (or CSV) of their account 
 
 ## Groups and communication
 
-- **Customer Groups** (route:customers.groups.index) — attach a trade price list to a whole group.
-- **Communication Log** (route:customers.comms.index) — record calls, visits and emails.
-- **Loyalty** (route:customers.loyalty.index) — points, if you run a loyalty programme.
+- [**Customer Groups**](route:customers.groups.index) — attach a trade price list to a whole group.
+- [**Communication Log**](route:customers.comms.index) — record calls, visits and emails.
+- [**Loyalty**](route:customers.loyalty.index) — points, if you run a loyalty programme.

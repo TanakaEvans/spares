@@ -6,8 +6,10 @@ import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
 import EntityLink from '@/Components/EntityLink';
+import StatChips from '@/Components/StatChips';
+import { fmt } from '@/Components/Pos/posMath';
 
-export default function CreditNotesIndex({ creditNotes, filters }) {
+export default function CreditNotesIndex({ creditNotes, stats, filters }) {
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -16,6 +18,10 @@ export default function CreditNotesIndex({ creditNotes, filters }) {
         >
             <Head title="Credit Notes" />
             <div className="space-y-4">
+                <StatChips items={[
+                    { label: 'This month', value: `${stats.month_count} credit${stats.month_count === 1 ? '' : 's'}` },
+                    { label: 'Credited this month', value: `−R${fmt(stats.month_total)}`, tone: stats.month_total > 0 ? 'red' : 'slate' },
+                ]} />
                 <SearchInput
                     id="cn-search"
                     value={filters.search ?? ''}

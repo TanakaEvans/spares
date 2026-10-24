@@ -44,7 +44,7 @@ export function PageGuidePanel({ open, onClose }) {
         return DOMPurify.sanitize(raw, {
             ADD_ATTR: ['target'],
             // Permit the guide link schemes (resolved in handleClick) alongside normal URLs.
-            ALLOWED_URI_REGEXP: /^(?:route:|doc:|https?:|mailto:|#)/i,
+            ALLOWED_URI_REGEXP: /^(?:route:|doc:|guide:|https?:|mailto:|#|[^:]*)$/i,
         });
     }, [pageGuide]);
 
@@ -61,6 +61,9 @@ export function PageGuidePanel({ open, onClose }) {
         } else if (href.startsWith('doc:')) {
             e.preventDefault();
             router.visit(`/help/docs/${href.slice(4)}`);
+        } else if (href.startsWith('guide:')) {
+            e.preventDefault();
+            router.visit(route('guide.show', href.slice(6)));
         }
     }
 

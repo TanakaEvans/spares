@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CatalogueSetupMissingException;
 use App\Models\ApprovedSupplier;
 use App\Models\BinLocation;
 use App\Models\Branch;
@@ -22,9 +23,11 @@ use App\Services\NumberSequenceService;
 use App\Services\OpeningBalanceService;
 use App\Services\SettingsService;
 use App\Services\StockLedgerService;
+use App\Services\SupplierCatalogueImportService;
 use App\Support\CsvExport;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -38,7 +41,7 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  */
 class DataImportController extends Controller
 {
-    private const ENTITIES = ['stock', 'parts', 'suppliers', 'customers'];
+    private const ENTITIES = ['stock', 'parts', 'catalogue', 'suppliers', 'customers'];
 
     /** Per-entity definitions: friendly labels double as template headers. */
     private function entities(): array
@@ -84,6 +87,16 @@ class DataImportController extends Controller
                     'unit' => ['label' => 'Unit', 'required' => false, 'keywords' => ['unit', 'uom', 'measure']],
                 ],
                 'example' => ['Z762', 'Oil filter — Toyota Hilux 2.8 GD-6', '90915-YZZD4', 'Oil Filters', 'GUD', 'Each'],
+            ],
+            'catalogue' => [
+                'label' => 'Supplier Catalogue',
+                'icon' => 'BookOpen',
+                'listRoute' => 'inventory.parts.index',
+                'exportRoute' => 'inventory.parts.export',
+                'blurb' => 'A wholesaler\'s full product listing (item code, category, application, spec, unit) — no prices or stock needed. Every item becomes a searchable part linked to that supplier; upload next month\'s list to update it.',
+                'fields' => SupplierCatalogueImportService::FIELDS,
+                'example' => SupplierCatalogueImportService::EXAMPLE,
+                'needsSupplier' => true,
             ],
             'suppliers' => [
                 'label' => 'Suppliers',
@@ -142,11 +155,11 @@ class DataImportController extends Controller
             'steps' => collect($this->entities())->map(fn ($e, $k) => [
                 'entity' => $k, 'label' => $e['label'], 'icon' => $e['icon'], 'blurb' => $e['blurb'],
                 'count' => match ($k) {
-                    'stock' => $counts['stocked'], 'parts' => $counts['parts'],
+                    'stock' => $counts['stocked'], 'parts', 'catalogue' => $counts['parts'],
                     'suppliers' => $counts['suppliers'], 'customers' => $counts['customers'],
                 },
                 'countLabel' => match ($k) {
-                    'stock' => 'parts with stock', 'parts' => 'parts in catalogue',
+                    'stock' => 'parts with stock', 'parts', 'catalogue' => 'parts in catalogue',
                     'suppliers' => 'suppliers', 'customers' => 'customers',
                 },
                 'listRoute' => $e['listRoute'],
@@ -237,6 +250,8 @@ class DataImportController extends Controller
             'path' => ['required', 'string'],
             'original_name' => ['nullable', 'string', 'max:255'],
             'map' => ['required', 'array'],
+            'supplier_name' => [($config['needsSupplier'] ?? false) ? 'required' : 'nullable', 'string', 'max:255'],
+            'discontinue_missing' => ['nullable', 'boolean'],
         ]);
 
         foreach ($config['fields'] as $key => $def) {
@@ -247,6 +262,16 @@ class DataImportController extends Controller
 
         $file = storage_path('app/private/'.$data['path']);
         abort_unless(is_file($file) && str_contains($data['path'], 'imports/data'), 404);
+
+        $catalogue = null;
+        if ($entity === 'catalogue') {
+            try {
+                $catalogue = app(SupplierCatalogueImportService::class)->begin($data['supplier_name']);
+            } catch (CatalogueSetupMissingException $e) {
+                return back()->withErrors(['map' => $e->userMessage()]);
+            }
+            @set_time_limit(0); // a full wholesaler listing is ~11k rows
+        }
 
         $import = DataImport::create([
             'entity' => $entity, 'file_name' => $data['original_name'] ?? basename($data['path']),
@@ -259,11 +284,22 @@ class DataImportController extends Controller
         $persist = match ($entity) {
             'stock' => fn (array $v) => $this->persistStock($v, $branch, $vat, $sequences, $ledger, $import->id, $userId),
             'parts' => fn (array $v) => $this->persistPart($v),
+            'catalogue' => fn (array $v) => $catalogue->persist($v),
             'suppliers' => fn (array $v) => $this->persistSupplier($v, $sequences),
             'customers' => fn (array $v) => $this->persistCustomer($v, $sequences),
         };
 
-        $result = $csv->import($file, $data['map'], $persist);
+        $discontinued = null;
+        $run = function () use ($csv, $file, $data, $persist, $catalogue, &$discontinued) {
+            $result = $csv->import($file, $data['map'], $persist);
+            if ($catalogue && ($data['discontinue_missing'] ?? false)) {
+                $discontinued = $catalogue->syncDiscontinued();
+            }
+
+            return $result;
+        };
+        // One commit for an 11k-row listing (fast, and all-or-nothing if the request dies).
+        $result = $catalogue ? DB::transaction($run) : $run();
         @unlink($file);
 
         $import->update([
@@ -271,9 +307,19 @@ class DataImportController extends Controller
             'skipped_count' => $result['skipped'], 'errors' => $result['errors'],
         ]);
 
-        return redirect()->route('imports.result', $import)
-            ->with('success', sprintf('%s upload: %d created, %d updated, %d skipped.',
-                $config['label'], $result['created'], $result['updated'], $result['skipped']));
+        $message = sprintf('%s upload: %d created, %d updated, %d skipped.',
+            $config['label'], $result['created'], $result['updated'], $result['skipped']);
+        if ($catalogue) {
+            $message .= " Linked to supplier {$catalogue->supplier()->name}.";
+            if ($catalogue->unclassified !== []) {
+                $message .= ' '.array_sum($catalogue->unclassified).' parts in unmapped categories went to Unclassified ('.implode(', ', array_keys($catalogue->unclassified)).').';
+            }
+            if ($discontinued) {
+                $message .= " {$discontinued[0]} no longer listed → discontinued; {$discontinued[1]} re-listed.";
+            }
+        }
+
+        return redirect()->route('imports.result', $import)->with('success', $message);
     }
 
     // ── Persisters ───────────────────────────────────────────────────────
@@ -497,6 +543,9 @@ class DataImportController extends Controller
             'fields' => collect($config['fields'])->map(fn ($d, $k) => [
                 'key' => $k, 'label' => $d['label'], 'required' => $d['required'] ?? false,
             ])->values(),
+            'supplierOptions' => ($config['needsSupplier'] ?? false)
+                ? ['default' => SupplierCatalogueImportService::DEFAULT_SUPPLIER, 'names' => Supplier::orderBy('name')->limit(500)->pluck('name')]
+                : null,
         ];
     }
 }

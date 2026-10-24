@@ -77,20 +77,26 @@ class Part extends Model
 
     /**
      * The one part search (ui-rules §6): part number, OEM number, barcodes,
-     * description AND cross-reference numbers.
+     * description AND cross-reference numbers. Every word must match somewhere,
+     * in any order — "control arm i10" finds "CONTROL ARM - HYU I10 09- LH".
      */
     public function scopeSearch(Builder $query, string $term): Builder
     {
-        $like = '%'.str_replace(['%', '_'], ['\%', '\_'], trim($term)).'%';
+        $words = array_slice(preg_split('/\s+/', trim($term), -1, PREG_SPLIT_NO_EMPTY), 0, 6) ?: [''];
 
-        return $query->where(fn (Builder $q) => $q
-            ->where('part_number', 'like', $like)
-            ->orWhere('oem_number', 'like', $like)
-            ->orWhere('description', 'like', $like)
-            ->orWhere('barcode_ean', 'like', $like)
-            ->orWhere('barcode_code128', 'like', $like)
-            ->orWhereHas('crossReferences', fn (Builder $x) => $x->where('reference_number', 'like', $like))
-        );
+        foreach ($words as $word) {
+            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $word).'%';
+            $query->where(fn (Builder $q) => $q
+                ->where('part_number', 'like', $like)
+                ->orWhere('oem_number', 'like', $like)
+                ->orWhere('description', 'like', $like)
+                ->orWhere('barcode_ean', 'like', $like)
+                ->orWhere('barcode_code128', 'like', $like)
+                ->orWhereHas('crossReferences', fn (Builder $x) => $x->where('reference_number', 'like', $like))
+            );
+        }
+
+        return $query;
     }
 
     /**

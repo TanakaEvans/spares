@@ -4,10 +4,26 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
+import { fmt } from '@/Components/Pos/posMath';
 
-export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
+const PILLS = [
+    { key: '', label: 'All' },
+    { key: 'posted', label: 'Posted' },
+    { key: 'matched', label: 'Matched' },
+    { key: 'disputed', label: 'Disputed' },
+    { key: 'draft', label: 'Draft' },
+];
+
+export default function InvoicesIndex({ invoices, uninvoicedGrns, stats, filters }) {
+    function filter(params) {
+        router.get(route('purchasing.invoices.index'), Object.fromEntries(
+            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
+        ), { preserveState: true });
+    }
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -19,7 +35,15 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
         >
             <Head title="Supplier Invoices" />
 
-            <div className="space-y-6">
+            <div className="space-y-4">
+                <StatChips
+                    items={[
+                        { label: 'GRNs awaiting invoice', value: stats.awaiting_capture, tone: stats.awaiting_capture > 0 ? 'amber' : 'emerald' },
+                        { label: 'Disputed', value: stats.disputed, tone: stats.disputed > 0 ? 'red' : 'emerald' },
+                        { label: 'Posted this month', value: `R${fmt(stats.posted_month)}` },
+                    ]}
+                />
+
                 {uninvoicedGrns.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
                         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
@@ -42,16 +66,29 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, filters }) {
                     </div>
                 )}
 
-                <div className="flex gap-3">
-                    <select
-                        aria-label="Filter by status"
-                        value={filters.status ?? ''}
-                        onChange={(e) => router.get(route('purchasing.invoices.index'), e.target.value ? { status: e.target.value } : {}, { preserveState: true })}
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                        <option value="">All statuses</option>
-                        {['posted', 'disputed', 'matched', 'draft'].map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
+                        {PILLS.map((p) => (
+                            <button
+                                key={p.key}
+                                role="tab"
+                                aria-selected={(filters.status ?? '') === p.key}
+                                onClick={() => filter({ status: p.key })}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md ${
+                                    (filters.status ?? '') === p.key ? 'bg-orange-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <SearchInput
+                        id="si-search"
+                        value={filters.search ?? ''}
+                        onSearch={(s) => filter({ search: s })}
+                        placeholder="Invoice ref or supplier…"
+                        className="w-64"
+                    />
                 </div>
 
                 <DataTable

@@ -19,15 +19,15 @@ export default function AppLayout({ children, title = 'Dashboard', auth }) {
             <div className="min-h-screen bg-slate-50">
                 <header className="bg-slate-900 px-6 py-4">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center">
+                        <Link href={route('dashboard')} title="Back to the main menu" className="flex items-center gap-3 group">
+                            <div className="w-10 h-10 bg-orange-600 rounded-lg flex items-center justify-center group-hover:bg-orange-500 transition-colors">
                                 <Wrench className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <span className="text-xl font-bold text-white">{brand}</span>
+                                <span className="text-xl font-bold text-white group-hover:text-orange-100 transition-colors">{brand}</span>
                                 <span className="ml-2 text-sm text-slate-400 hidden sm:inline">Motor Spares ERP</span>
                             </div>
-                        </div>
+                        </Link>
 
                         <div className="flex items-center gap-4">
                             <Link href={route('guide.index')} title="User Guide" className="inline-flex items-center gap-1.5 text-sm text-slate-300 hover:text-white"><BookOpen className="w-5 h-5" /><span className="hidden lg:inline">Guide</span></Link>

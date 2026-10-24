@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Purchasing;
 use App\Http\Controllers\Controller;
 use App\Models\GoodsReceivedNote;
 use App\Models\SupplierInvoice;
+use App\Services\SettingsService;
 use App\Services\SupplierInvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,11 @@ class SupplierInvoiceController extends Controller
         return Inertia::render('Purchasing/Invoices/Index', [
             'invoices' => SupplierInvoice::with('supplier:id,name', 'grn:id,grn_number')
                 ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                    fn ($x) => $x->where('supplier_ref', 'like', "%{$s}%")
+                        ->orWhere('invoice_number', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
+                ))
                 ->latest('invoice_date')->latest('id')
                 ->paginate(25)
                 ->withQueryString()
@@ -44,15 +50,23 @@ class SupplierInvoiceController extends Controller
                     'id' => $g->id, 'grn_number' => $g->grn_number,
                     'supplier' => $g->supplier?->name, 'value' => $g->acceptedValue(),
                 ]),
-            'filters' => $request->only('status'),
+            'stats' => [
+                'awaiting_capture' => (int) GoodsReceivedNote::where('status', 'posted')
+                    ->whereNotIn('id', SupplierInvoice::whereIn('status', ['matched', 'posted'])->pluck('grn_id'))->count(),
+                'disputed' => (int) SupplierInvoice::where('status', 'disputed')->count(),
+                'posted_month' => round((float) SupplierInvoice::where('status', 'posted')
+                    ->whereBetween('invoice_date', [now()->startOfMonth()->toDateString(), now()->toDateString()])->sum('total'), 2),
+            ],
+            'filters' => $request->only('status', 'search'),
         ]);
     }
 
-    public function create(GoodsReceivedNote $grn): Response
+    public function create(GoodsReceivedNote $grn, SettingsService $settings): Response
     {
         $grn->load('supplier:id,name,payment_terms_days', 'purchaseOrder:id,po_number', 'lines.part:id,part_number');
 
         return Inertia::render('Purchasing/Invoices/Create', [
+            'vatRate' => (float) $settings->get('tax.vat_rate_default'),
             'grn' => [
                 'id' => $grn->id,
                 'grn_number' => $grn->grn_number,
@@ -60,6 +74,7 @@ class SupplierInvoiceController extends Controller
                 'po_number' => $grn->purchaseOrder?->po_number,
                 'supplier_id' => $grn->supplier_id,
                 'supplier' => $grn->supplier?->name,
+                'supplier_terms_days' => (int) ($grn->supplier?->payment_terms_days ?? 0),
                 'received_date' => $grn->received_date->toDateString(),
                 'value' => $grn->acceptedValue(),
                 'lines' => $grn->lines->map(fn ($l) => [

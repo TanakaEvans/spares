@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
 use App\Services\SalesQuoteService;
+use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -38,17 +39,28 @@ class QuoteController extends Controller
                     'customer_id' => $d->customer_id,
                     'document_date' => $d->document_date->toDateString(),
                     'expiry_date' => $d->expiry_date?->toDateString(),
+                    'days_left' => $d->expiry_date ? (int) now()->startOfDay()->diffInDays($d->expiry_date, false) : null,
                     'total_incl' => (float) $d->total_incl,
                     'status' => $d->isExpired() && $d->status === 'open' ? 'expired' : $d->status,
                 ]),
+            'stats' => [
+                'open' => (int) SalesDocument::query()->where('document_type', 'quotation')->where('status', 'open')
+                    ->where(fn ($q) => $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->toDateString()))->count(),
+                'open_value' => round((float) SalesDocument::query()->where('document_type', 'quotation')->where('status', 'open')
+                    ->where(fn ($q) => $q->whereNull('expiry_date')->orWhere('expiry_date', '>=', now()->toDateString()))->sum('total_incl'), 2),
+                'expiring' => (int) SalesDocument::query()->where('document_type', 'quotation')->where('status', 'open')
+                    ->whereBetween('expiry_date', [now()->toDateString(), now()->addDays(5)->toDateString()])->count(),
+            ],
             'filters' => $request->only('search', 'status'),
         ]);
     }
 
-    public function create(): Response
+    public function create(SettingsService $settings): Response
     {
         return Inertia::render('Sales/Quotes/Create', [
             'walkIn' => Customer::walkIn()->only(['id', 'name', 'customer_number']),
+            'vatRate' => (float) $settings->get('tax.vat_rate_default'),
+            'expiryDays' => (int) $settings->get('sales.quote_expiry_days'),
         ]);
     }
 
@@ -102,6 +114,7 @@ class QuoteController extends Controller
                 'order' => $order?->only(['id', 'document_number']),
                 'invoice' => $invoice?->only(['id', 'document_number']),
                 'lines' => $quote->lines->map(fn ($l) => [
+                    'id' => $l->id,
                     'part_id' => $l->part_id,
                     'part_number' => $l->part?->part_number,
                     'description' => $l->description,
@@ -124,6 +137,8 @@ class QuoteController extends Controller
 
         try {
             $order = $quotes->convertToOrder($quote, $reprice, $request->user()->id);
+        } catch (DomainException $e) {
+            return back()->withErrors(['convert' => $e->userMessage()]);
         } catch (\InvalidArgumentException $e) {
             return back()->withErrors(['convert' => $e->getMessage()]);
         }

@@ -20,7 +20,7 @@ class InvoiceController extends Controller
         return Inertia::render('Sales/Invoices/Index', [
             'invoices' => SalesDocument::query()
                 ->where('document_type', 'invoice')
-                ->with('customer:id,name', 'branch:id,name')
+                ->with('customer:id,name', 'branch:id,name', 'payments:id,document_id,method')
                 ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
                     fn ($x) => $x->where('document_number', 'like', "%{$s}%")
                         ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
@@ -37,7 +37,16 @@ class InvoiceController extends Controller
                     'document_date' => $d->document_date->toDateString(),
                     'total_incl' => (float) $d->total_incl,
                     'status' => $d->status,
+                    'on_account' => $d->payments->contains(fn ($p) => $p->method === 'account'),
                 ]),
+            'stats' => [
+                'today_count' => (int) SalesDocument::query()->where('document_type', 'invoice')
+                    ->whereDate('document_date', now()->toDateString())->count(),
+                'today_total' => round((float) SalesDocument::query()->where('document_type', 'invoice')
+                    ->whereDate('document_date', now()->toDateString())->sum('total_incl'), 2),
+                'on_account' => (int) SalesDocument::query()->where('document_type', 'invoice')
+                    ->whereHas('payments', fn ($p) => $p->where('method', 'account'))->count(),
+            ],
             'filters' => $request->only('search'),
         ]);
     }

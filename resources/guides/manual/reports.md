@@ -4,7 +4,7 @@ Every number in the system, read back to you. All figures come straight from the
 
 ## The owner's dashboard
 
-**Reports → Executive Dashboard** (route:reports.dashboard).
+[**Reports → Executive Dashboard**](route:reports.dashboard).
 
 - **Tiles**: today's sales, month-to-date, outstanding debtors, overdue 60+, stock value, open jobs.
 - **Charts**: 12-month sales trend (this year vs last), debtors ageing, top parts and categories.
@@ -12,11 +12,11 @@ Every number in the system, read back to you. All figures come straight from the
 
 ## Report suites
 
-- **Sales** (route:reports.sales.index) — by period, method, customer, category.
-- **Inventory** (route:reports.inventory.index) — stock value (reconciled to the books), on-hand, ageing, dead stock.
-- **Customers** (route:reports.customers.index) — top customers, dormant, credit review.
-- **Suppliers** (route:reports.suppliers.index) — spend, open POs, performance.
-- **Workshop** (route:reports.workshop.index) — productivity and job profitability.
+- [**Sales**](route:reports.sales.index) — by period, method, customer, category.
+- [**Inventory**](route:reports.inventory.index) — stock value (reconciled to the books), on-hand, ageing, dead stock.
+- [**Customers**](route:reports.customers.index) — top customers, dormant, credit review.
+- [**Suppliers**](route:reports.suppliers.index) — spend, open POs, performance.
+- [**Workshop**](route:reports.workshop.index) — productivity and job profitability.
 
 ## Export anything
 
@@ -24,4 +24,4 @@ Most list screens have an **Export** button (top right) that gives you **CSV** (
 
 ## Daily cash-up
 
-The end-of-day takings report lives here too — see (guide:finance) → "Daily cash-up".
+The end-of-day takings report lives here too — see [finance guide](guide:finance) → "Daily cash-up".

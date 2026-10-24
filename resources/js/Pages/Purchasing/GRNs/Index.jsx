@@ -1,13 +1,28 @@
-import { Head, Link } from '@inertiajs/react';
-import { PackageCheck } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { PackageCheck, TriangleAlert } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
+import SearchInput from '@/Components/SearchInput';
 import StatusBadge from '@/Components/StatusBadge';
+import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
+import { fmt } from '@/Components/Pos/posMath';
 
-export default function GrnsIndex({ grns, awaiting }) {
+const PILLS = [
+    { key: '', label: 'All' },
+    { key: 'posted', label: 'Posted' },
+    { key: 'draft', label: 'Draft' },
+];
+
+export default function GrnsIndex({ grns, awaiting, stats, filters }) {
+    function filter(params) {
+        router.get(route('purchasing.grns.index'), Object.fromEntries(
+            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
+        ), { preserveState: true });
+    }
+
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -19,7 +34,15 @@ export default function GrnsIndex({ grns, awaiting }) {
         >
             <Head title="Goods Receiving" />
 
-            <div className="space-y-6">
+            <div className="space-y-4">
+                <StatChips
+                    items={[
+                        { label: 'POs awaiting delivery', value: stats.awaiting, tone: stats.awaiting > 0 ? 'amber' : 'emerald' },
+                        { label: 'Received today', value: stats.today_count },
+                        { label: "Today's value", value: `R${fmt(stats.today_value)}` },
+                    ]}
+                />
+
                 {awaiting.length > 0 && (
                     <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
                         <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
@@ -30,17 +53,45 @@ export default function GrnsIndex({ grns, awaiting }) {
                                 <Link
                                     key={po.id}
                                     href={route('purchasing.grns.create', po.id)}
-                                    className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm hover:border-orange-400 hover:bg-orange-50/50 transition-colors"
+                                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                                        po.is_overdue ? 'border-red-200 bg-red-50/50 hover:border-red-400' : 'border-slate-200 hover:border-orange-400 hover:bg-orange-50/50'
+                                    }`}
                                 >
-                                    <PackageCheck className="w-4 h-4 text-green-600" />
+                                    {po.is_overdue ? <TriangleAlert className="w-4 h-4 text-red-500" /> : <PackageCheck className="w-4 h-4 text-green-600" />}
                                     <span className="font-mono font-semibold text-slate-700">{po.po_number}</span>
                                     <span className="text-slate-400">{po.supplier}</span>
+                                    {po.expected_date && <span className={`text-xs tabular-nums ${po.is_overdue ? 'text-red-600 font-medium' : 'text-slate-400'}`}>{po.expected_date}</span>}
                                     <StatusBadge status={po.status} />
                                 </Link>
                             ))}
                         </div>
                     </div>
                 )}
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
+                        {PILLS.map((p) => (
+                            <button
+                                key={p.key}
+                                role="tab"
+                                aria-selected={(filters.status ?? '') === p.key}
+                                onClick={() => filter({ status: p.key })}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md ${
+                                    (filters.status ?? '') === p.key ? 'bg-orange-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                                }`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+                    <SearchInput
+                        id="grn-search"
+                        value={filters.search ?? ''}
+                        onSearch={(s) => filter({ search: s })}
+                        placeholder="GRN, PO, delivery note or supplier…"
+                        className="w-72"
+                    />
+                </div>
 
                 <DataTable
                     columns={[

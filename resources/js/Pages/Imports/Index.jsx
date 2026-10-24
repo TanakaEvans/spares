@@ -1,10 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Boxes, PackageSearch, Truck, Users, Download, Upload, CheckCircle2, AlertTriangle, ArrowRight, History } from 'lucide-react';
+import { Boxes, PackageSearch, BookOpen, Truck, Users, Download, Upload, CheckCircle2, AlertTriangle, ArrowRight, History } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 
-const ICONS = { Boxes, PackageSearch, Truck, Users };
+const ICONS = { Boxes, PackageSearch, BookOpen, Truck, Users };
 
 export default function ImportsIndex({ steps, opening, branch, recent }) {
     const reconciled = Math.abs(opening.gap) < 0.01;
@@ -16,11 +16,11 @@ export default function ImportsIndex({ steps, opening, branch, recent }) {
 
             <div className="space-y-6 max-w-6xl">
                 <div className="rounded-xl border border-orange-100 bg-orange-50 px-5 py-4">
-                    <h2 className="text-base font-semibold text-slate-900">Load your real data in three steps</h2>
+                    <h2 className="text-base font-semibold text-slate-900">Load your real data from spreadsheets</h2>
                     <p className="mt-1 text-sm text-slate-600">
                         For each step: <strong>download the template</strong>, fill it in Excel, then <strong>upload</strong> it (Excel or CSV).
                         Rows are matched on part/supplier/customer numbers, so uploading a corrected sheet fixes records instead of duplicating them.
-                        Start with <strong>Parts &amp; Stock</strong> — that one sheet loads your parts, prices, quantities and costs together.
+                        Have a wholesaler's product listing? Load it with <strong>Supplier Catalogue</strong> first, then <strong>Parts &amp; Stock</strong> adds your quantities, costs and prices to those same part numbers.
                     </p>
                 </div>
 

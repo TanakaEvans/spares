@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { CalendarClock } from 'lucide-react';
+import { CalendarClock, Banknote, CreditCard, Landmark } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import MoneyDisplay from '@/Components/MoneyDisplay';
@@ -62,6 +62,16 @@ export default function LaybyShow({ layby }) {
                     <Stat label="Balance outstanding" tone={layby.balance > 0 ? 'text-amber-600' : 'text-emerald-600'}><MoneyDisplay amount={layby.balance} /></Stat>
                 </div>
 
+                <div className="rounded-xl border border-slate-100 bg-white p-4">
+                    <div className="mb-1.5 flex items-center justify-between text-xs text-slate-500">
+                        <span>{Math.round((layby.deposit_paid / layby.total) * 100)}% paid</span>
+                        <span><MoneyDisplay amount={layby.deposit_paid} /> of <MoneyDisplay amount={layby.total} /></span>
+                    </div>
+                    <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${Math.min(100, Math.round((layby.deposit_paid / layby.total) * 100))}%` }} />
+                    </div>
+                </div>
+
                 {layby.notes && (
                     <div className="rounded-xl border border-slate-100 bg-white p-4 text-sm text-slate-600">{layby.notes}</div>
                 )}
@@ -101,24 +111,33 @@ export default function LaybyShow({ layby }) {
                     {isActive ? (
                         <form onSubmit={pay} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">
                             <h2 className="text-sm font-semibold text-slate-700">Record a payment</h2>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {[{ key: 'cash', icon: Banknote }, { key: 'card', icon: CreditCard }, { key: 'eft', icon: Landmark }].map((m) => (
+                                    <button key={m.key} type="button" onClick={() => setData('method', m.key)}
+                                        className={`flex flex-col items-center gap-0.5 rounded-lg border-2 px-2 py-2 text-xs font-semibold transition ${data.method === m.key ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+                                        <m.icon className="h-4 w-4" />{methodLabel[m.key]}
+                                    </button>
+                                ))}
+                            </div>
                             <div className="space-y-1">
                                 <label htmlFor="lb-amount" className="block text-xs font-medium text-slate-500">Amount</label>
                                 <input id="lb-amount" type="number" step="0.01" min="0.01" max={layby.balance} value={data.amount}
                                     onChange={(e) => setData('amount', e.target.value)} placeholder={`Up to ${layby.balance.toFixed(2)}`} className={`${input} text-right tabular-nums`} />
                                 {errors.amount && <p className="text-xs text-red-600">{errors.amount}</p>}
                             </div>
-                            <div className="space-y-1">
-                                <label htmlFor="lb-method" className="block text-xs font-medium text-slate-500">Method</label>
-                                <select id="lb-method" value={data.method} onChange={(e) => setData('method', e.target.value)} className={input}>
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="eft">EFT</option>
-                                </select>
+                            <div className="flex gap-1.5">
+                                {[{ label: 'Balance', v: layby.balance }, { label: 'Half', v: layby.balance / 2 }, { label: 'R100', v: 100 }].map((q) => (
+                                    <button key={q.label} type="button" onClick={() => setData('amount', Math.min(layby.balance, Math.round(q.v * 100) / 100).toFixed(2))}
+                                        className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">{q.label}</button>
+                                ))}
                             </div>
                             <button type="submit" disabled={processing || !data.amount || Number(data.amount) <= 0}
                                 className="w-full rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40">
                                 {processing ? 'Saving…' : 'Record payment'}
                             </button>
+                            {Number(data.amount) >= layby.balance && data.amount !== '' && (
+                                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">This settles the lay-by — the goods can go home.</p>
+                            )}
                             <p className="text-xs text-slate-400">Paying the full balance marks the lay-by completed and releases the goods.</p>
                         </form>
                     ) : (

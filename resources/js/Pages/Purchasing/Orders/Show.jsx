@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { PackageCheck, Send, XCircle } from 'lucide-react';
+import { ArrowRight, PackageCheck, Send, TriangleAlert, XCircle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import ConfirmDialog from '@/Components/ConfirmDialog';
@@ -39,6 +39,11 @@ export default function OrderShow({ order }) {
             onFinish: () => setConfirm(null),
         });
     }
+
+    const STEPS = ['draft', 'submitted', 'confirmed', 'received', 'closed'];
+    const isOverdue = order.is_receivable && order.expected_date && new Date(order.expected_date) < new Date(new Date().toDateString());
+    const stepIndex = order.status === 'cancelled' ? -1
+        : STEPS.indexOf(order.status === 'partial' ? 'received' : order.status);
 
     return (
         <ModuleLayout
@@ -113,6 +118,30 @@ export default function OrderShow({ order }) {
                             )}
                         </div>
                     </div>
+
+                    {order.status !== 'cancelled' && (
+                        <ol className="mt-5 flex flex-wrap items-center gap-2 text-xs">
+                            {STEPS.map((step, i) => (
+                                <li key={step} className="flex items-center gap-2">
+                                    <span className={`rounded-md px-2.5 py-1 capitalize ${
+                                        i < stepIndex ? 'bg-green-50 text-green-700 border border-green-200'
+                                            : i === stepIndex ? 'bg-orange-600 text-white font-semibold'
+                                                : 'border border-dashed border-slate-300 text-slate-400'
+                                    }`}>
+                                        {step}{step === 'received' && order.status === 'partial' ? ' (partial)' : ''}
+                                    </span>
+                                    {i < STEPS.length - 1 && <ArrowRight className="h-3.5 w-3.5 text-slate-300" />}
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+
+                    {isOverdue && (
+                        <div role="alert" className="mt-4 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-2.5 text-sm text-red-700">
+                            <TriangleAlert className="w-4 h-4 shrink-0" />
+                            This order is past its expected date and still isn't fully received — chase the supplier or update the date.
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-x-auto">

@@ -14,7 +14,7 @@ Delivered (13 golden-flow tests + full-suite 119 green + end-to-end browser pass
 - [x] 3.5/3.6 Returns + supplier credits — RMA-gated shipping (RETURN_OUT at AVCO), credit capture (DR 2110 / CR 1310, variance → 5300)
 - Deferred as planned (Phase 6): 3.1 requisitions, 3.7 import shipments, 3.8 price comparison
 
-Granular checklists below remain for the deferred items.
+> **Purchasing UX pass (2026-10-24):** every card raised to the till standard — `StatChips` + pill filters + search on every index (orders open/overdue, GRNs awaiting/today, invoices disputed/month, returns to-ship/awaiting-credit, credits total recovered, imports on-water value); `PartLinePicker` upgraded (`qty*CODE`, loading, branch-aware on-hand/bin via `orders.part-lookup?branch_id=`); `Orders/Create` lead-time-dated expected date + draft persistence + Ctrl+Enter; `Orders/Show` pipeline stepper + overdue banner; `GRNs/Index` overdue PO tiles; `GRNs/Create` **primary-bin pre-fill per line** + ZAR fix; `Invoices/Create` real VAT rate prop + due-date preview + ZAR fix; `Returns/Create` reason→condition defaults + over-stock warning; `Returns/Index` Radix dialogs; `Imports` labelled form + chips; `PriceComparison` saves-vs-costliest column. **Fixed a live bug:** `returns/create` was registered after `returns/{supplierReturn}` — the New Return link 404'd. Tests: `PurchasingScreensSmokeTest` (7), suite **239 green**. Still per spec backlog: requisitions, PO approvals/email, partial-ship picking, import cost allocation to stock.
 
 ## 3.2 Purchase Orders  ·  [spec](../modules/03-purchasing-procurement/3.2-purchase-orders.md)  ·  Phase 2.3
 

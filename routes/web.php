@@ -419,8 +419,8 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('invoices/{invoice}/post', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'post'])->name('invoices.post');
 
         Route::get('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'index'])->name('returns.index');
-        Route::get('returns/{supplierReturn}', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'show'])->name('returns.show')->defaults('description', 'Supplier return detail');
         Route::get('returns/create', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'create'])->name('returns.create');
+        Route::get('returns/{supplierReturn}', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'show'])->name('returns.show')->defaults('description', 'Supplier return detail');
         Route::post('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'store'])->name('returns.store');
         Route::post('returns/{return}/ship', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'ship'])->name('returns.ship');
         Route::post('returns/{return}/credit', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'credit'])->name('returns.credit');
@@ -488,6 +488,8 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Sales orders
         Route::get('orders', [\App\Http\Controllers\Sales\OrderController::class, 'index'])->name('orders.index')->defaults('description', 'Sales orders');
+        Route::get('orders/create', [\App\Http\Controllers\Sales\OrderController::class, 'create'])->name('orders.create')->defaults('description', 'New sales order');
+        Route::post('orders', [\App\Http\Controllers\Sales\OrderController::class, 'store'])->name('orders.store')->defaults('description', 'Save a sales order');
         Route::get('orders/{order}', [\App\Http\Controllers\Sales\OrderController::class, 'show'])->name('orders.show')->defaults('description', 'Sales order detail');
         Route::post('orders/{order}/fulfil', [\App\Http\Controllers\Sales\OrderController::class, 'fulfil'])->name('orders.fulfil')->defaults('description', 'Fulfil an order and invoice it');
         Route::post('orders/{order}/cancel', [\App\Http\Controllers\Sales\OrderController::class, 'cancel'])->name('orders.cancel')->defaults('description', 'Cancel an order');
@@ -628,8 +630,8 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
     // ── Master-data CSV import wizard ────────────────────────────────────
     Route::prefix('imports')->name('imports.')->group(function () {
-        $entities = ['stock', 'parts', 'suppliers', 'customers'];
-        Route::get('/', [\App\Http\Controllers\DataImportController::class, 'index'])->name('index')->defaults('description', 'Data Upload hub — load parts & stock, suppliers, customers');
+        $entities = ['stock', 'parts', 'catalogue', 'suppliers', 'customers'];
+        Route::get('/', [\App\Http\Controllers\DataImportController::class, 'index'])->name('index')->defaults('description', 'Data Upload hub — load parts & stock, supplier catalogues, suppliers, customers');
         Route::get('result/{import}', [\App\Http\Controllers\DataImportController::class, 'result'])->name('result')->defaults('description', 'Results of a data upload');
         Route::get('{entity}/template', [\App\Http\Controllers\DataImportController::class, 'template'])->name('template')->whereIn('entity', $entities)->defaults('description', 'Download an upload template');
         Route::get('{entity}', [\App\Http\Controllers\DataImportController::class, 'show'])->name('show')->whereIn('entity', $entities)->defaults('description', 'Upload data from Excel/CSV');

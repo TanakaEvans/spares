@@ -2,6 +2,7 @@
 import {
     ShoppingCart, Receipt, Undo2, FileText, ClipboardList, ListOrdered,
     LayoutList, Plus, ScanBarcode, Users, PackageSearch, Layers, Banknote,
+    Percent, CalendarClock, Truck,
 } from 'lucide-react';
 
 const navConfig = {
@@ -16,6 +17,7 @@ const navConfig = {
                 { label: 'Point of Sale', route: 'sales.pos', icon: ScanBarcode },
                 { label: 'Quotations', route: 'sales.quotes.index', icon: FileText },
                 { label: 'Sales Orders', route: 'sales.orders.index', icon: ClipboardList },
+                { label: 'Lay-bys', route: 'sales.laybys.index', icon: CalendarClock },
             ],
         },
         {
@@ -23,12 +25,14 @@ const navConfig = {
             items: [
                 { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
                 { label: 'Credit Notes', route: 'sales.credit-notes.index', icon: Undo2 },
+                { label: 'Delivery Notes', route: 'sales.delivery-notes.index', icon: Truck },
             ],
         },
         {
             section: 'Setup',
             items: [
                 { label: 'Price Lists', route: 'sales.price-lists.index', icon: ListOrdered },
+                { label: 'Promotions', route: 'sales.promotions.index', icon: Percent },
             ],
         },
     ],
@@ -93,6 +97,7 @@ const navConfig = {
             routePrefix: 'sales.orders',
             work: [
                 { label: 'All Orders', route: 'sales.orders.index', icon: LayoutList },
+                { label: 'New Order', route: 'sales.orders.create', icon: Plus },
             ],
             quickLinks: [
                 { label: 'Quotations', route: 'sales.quotes.index', icon: FileText },
@@ -110,6 +115,42 @@ const navConfig = {
             quickLinks: [
                 { label: 'Parts Catalogue', route: 'inventory.parts.index', icon: PackageSearch },
                 { label: 'Customers', route: 'customers.index', icon: Users },
+            ],
+        },
+        laybys: {
+            label: 'Lay-bys',
+            icon: CalendarClock,
+            routePrefix: 'sales.laybys',
+            work: [
+                { label: 'All Lay-bys', route: 'sales.laybys.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Point of Sale', route: 'sales.pos', icon: ScanBarcode },
+                { label: 'Customers', route: 'customers.index', icon: Users },
+            ],
+        },
+        promotions: {
+            label: 'Promotions',
+            icon: Percent,
+            routePrefix: 'sales.promotions',
+            work: [
+                { label: 'All Promotions', route: 'sales.promotions.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Price Lists', route: 'sales.price-lists.index', icon: ListOrdered },
+                { label: 'Point of Sale', route: 'sales.pos', icon: ScanBarcode },
+            ],
+        },
+        deliveryNotes: {
+            label: 'Delivery Notes',
+            icon: Truck,
+            routePrefix: 'sales.delivery-notes',
+            work: [
+                { label: 'All Delivery Notes', route: 'sales.delivery-notes.index', icon: LayoutList },
+            ],
+            quickLinks: [
+                { label: 'Sales Orders', route: 'sales.orders.index', icon: ClipboardList },
+                { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
             ],
         },
     },

@@ -38,6 +38,10 @@ class SupplierCreditController extends Controller
                     'reason' => $r->reason,
                     'credit_total' => (float) $r->credit_total,
                 ]),
+            'stats' => [
+                'count' => (int) SupplierReturn::where('status', 'credited')->count(),
+                'total' => round((float) SupplierReturn::where('status', 'credited')->sum('credit_total'), 2),
+            ],
             'filters' => $request->only('search'),
         ]);
     }

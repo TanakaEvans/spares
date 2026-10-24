@@ -5,15 +5,23 @@ import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import SearchInput from '@/Components/SearchInput';
+import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
+import { fmt } from '@/Components/Pos/posMath';
 
-export default function SupplierCreditsIndex({ credits, filters }) {
+export default function SupplierCreditsIndex({ credits, stats, filters }) {
     return (
         <ModuleLayout navConfig={navConfig} title="Supplier Credit Notes"
             breadcrumbs={[{ label: 'Purchasing', href: route('modules.show', 'purchasing') }, { label: 'Supplier Credit Notes' }]}>
             <Head title="Supplier Credit Notes" />
             <div className="space-y-4">
                 <p className="text-sm text-slate-500">Credits received from suppliers against returns — each one reduced Accounts Payable.</p>
+                <StatChips
+                    items={[
+                        { label: 'Credit notes', value: stats.count },
+                        { label: 'Recovered from suppliers', value: `R${fmt(stats.total)}` },
+                    ]}
+                />
                 <SearchInput id="scr-search" value={filters.search ?? ''} onSearch={(s) => router.get(route('purchasing.supplier-credits.index'), s ? { search: s } : {}, { preserveState: true, replace: true })} placeholder="Return, credit ref or supplier…" className="w-72" />
                 <DataTable
                     columns={[

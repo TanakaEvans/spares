@@ -7,6 +7,7 @@ use App\Models\BinLocation;
 use App\Models\GoodsReceivedNote;
 use App\Models\GrnLine;
 use App\Models\PurchaseOrder;
+use App\Models\StockLevel;
 use App\Models\SupplierInvoice;
 use App\Services\GrnPostingService;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +21,13 @@ class GrnController extends Controller
     {
         return Inertia::render('Purchasing/GRNs/Index', [
             'grns' => GoodsReceivedNote::with('supplier:id,name', 'purchaseOrder:id,po_number', 'branch:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                    fn ($x) => $x->where('grn_number', 'like', "%{$s}%")
+                        ->orWhere('delivery_note_number', 'like', "%{$s}%")
+                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
+                        ->orWhereHas('purchaseOrder', fn ($y) => $y->where('po_number', 'like', "%{$s}%"))
+                ))
                 ->latest('received_date')->latest('id')
                 ->paginate(25)
                 ->withQueryString()
@@ -42,7 +50,16 @@ class GrnController extends Controller
                 ->map(fn ($po) => [
                     'id' => $po->id, 'po_number' => $po->po_number,
                     'supplier' => $po->supplier?->name, 'status' => $po->status,
+                    'expected_date' => $po->expected_date?->toDateString(),
+                    'is_overdue' => $po->expected_date !== null && $po->expected_date->isPast(),
                 ]),
+            'stats' => [
+                'awaiting' => (int) PurchaseOrder::whereIn('status', ['submitted', 'confirmed', 'partial'])->count(),
+                'today_count' => (int) GoodsReceivedNote::whereDate('received_date', now()->toDateString())->count(),
+                'today_value' => round((float) GoodsReceivedNote::whereDate('received_date', now()->toDateString())
+                    ->get()->sum(fn ($g) => $g->acceptedValue()), 2),
+            ],
+            'filters' => $request->only('search', 'status'),
         ]);
     }
 
@@ -51,6 +68,12 @@ class GrnController extends Controller
         abort_unless($order->isReceivable(), 422, 'This PO cannot be received against.');
 
         $order->load('supplier:id,name', 'lines.part:id,part_number');
+
+        // The part's primary bin at this branch pre-fills putaway — the
+        // storeman only corrects the exceptions.
+        $levels = StockLevel::where('branch_id', $order->branch_id)
+            ->whereIn('part_id', $order->lines->pluck('part_id'))
+            ->get()->keyBy('part_id');
 
         return Inertia::render('Purchasing/GRNs/Create', [
             'order' => [
@@ -71,6 +94,7 @@ class GrnController extends Controller
                         'qty_already_received' => (float) $l->qty_received,
                         'qty_outstanding' => max(0, (float) $l->qty_ordered - (float) $l->qty_received),
                         'unit_cost' => (float) $l->unit_cost,
+                        'suggested_bin_id' => $levels->get($l->part_id)?->bin_location_id,
                     ]),
             ],
             'bins' => BinLocation::where('branch_id', $order->branch_id)

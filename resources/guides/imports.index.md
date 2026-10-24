@@ -2,10 +2,12 @@
 
 Data Upload is where you load the business's real records from a spreadsheet instead of typing them one by one. Download a template, fill it in Excel, upload the file, check the columns, done.
 
-## The three steps
+## The steps
 1. **Parts & Stock** — one row per part: number, description, cost, selling price, quantity on hand, bin, and supplier. This single sheet creates the parts, prices them on the Retail list, loads opening stock, places it in bins and links each part's preferred supplier.
-2. **Suppliers** — who you buy from. Leave the number blank and one is assigned.
-3. **Customers** — account customers and regulars. Walk-in cash sales need no record.
+2. **Parts (catalogue only)** — parts without quantities.
+3. **Supplier Catalogue** — a wholesaler's whole product listing as they send it (item code, category, application, spec, unit). Every item becomes a searchable part linked to that supplier, filed in the right category, with its part type added to the description ("CONTROL ARM - HYU I10 09- LH"). Upload next month's list to update it; tick *full list* to flag lines they've dropped as discontinued. Then use Parts & Stock to add your quantities and prices to the same part numbers.
+4. **Suppliers** — who you buy from. Leave the number blank and one is assigned.
+5. **Customers** — account customers and regulars. Walk-in cash sales need no record.
 
 ## Good to know
 - **Re-uploading corrects, never duplicates.** Rows match on part / supplier / customer number, so fix a sheet and upload it again.

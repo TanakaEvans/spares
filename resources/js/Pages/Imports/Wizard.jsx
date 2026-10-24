@@ -4,7 +4,7 @@ import { Upload, FileSpreadsheet, ArrowRight, Download } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
 
-export default function ImportWizard({ entity, label, blurb, listRoute, fields, preview }) {
+export default function ImportWizard({ entity, label, blurb, listRoute, fields, preview, supplierOptions }) {
     const input = 'rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
     return (
@@ -22,7 +22,7 @@ export default function ImportWizard({ entity, label, blurb, listRoute, fields, 
 
                 {!preview
                     ? <UploadStep entity={entity} label={label} blurb={blurb} fields={fields} />
-                    : <MapStep entity={entity} label={label} fields={fields} preview={preview} input={input} />}
+                    : <MapStep entity={entity} label={label} fields={fields} preview={preview} input={input} supplierOptions={supplierOptions} />}
             </div>
         </ModuleLayout>
     );
@@ -86,15 +86,21 @@ function UploadStep({ entity, label, blurb, fields }) {
     );
 }
 
-function MapStep({ entity, label, fields, preview, input }) {
+function MapStep({ entity, label, fields, preview, input, supplierOptions }) {
     const initial = {};
     fields.forEach((f) => { initial[f.key] = preview.guess[f.key] ?? ''; });
-    const { data, setData, post, processing, errors } = useForm({ path: preview.path, original_name: preview.original_name, map: initial });
+    const { data, setData, post, processing, errors } = useForm({
+        path: preview.path, original_name: preview.original_name, map: initial,
+        ...(supplierOptions ? { supplier_name: supplierOptions.default, discontinue_missing: false } : {}),
+    });
     const [showAll, setShowAll] = useState(false);
 
     const setMap = (key, value) => setData('map', { ...data.map, [key]: value === '' ? '' : Number(value) });
     const rows = showAll ? preview.rows : preview.rows.slice(0, 5);
-    const unmatchedRequired = fields.filter((f) => f.required && data.map[f.key] === '');
+    const unmatchedRequired = [
+        ...fields.filter((f) => f.required && data.map[f.key] === ''),
+        ...(supplierOptions && !data.supplier_name?.trim() ? [{ label: 'Supplier' }] : []),
+    ];
 
     return (
         <div className="space-y-6">
@@ -116,6 +122,25 @@ function MapStep({ entity, label, fields, preview, input }) {
                         </label>
                     ))}
                 </div>
+                {supplierOptions && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                        <label className="text-sm">
+                            <span className="block text-slate-600 mb-1">Supplier this listing belongs to<span className="text-red-500"> *</span></span>
+                            <input list="catalogue-suppliers" value={data.supplier_name} onChange={(e) => setData('supplier_name', e.target.value)}
+                                className={`${input} w-full ${!data.supplier_name ? 'border-red-400 bg-red-50' : ''}`} />
+                            <datalist id="catalogue-suppliers">
+                                {supplierOptions.names.map((n) => <option key={n} value={n} />)}
+                            </datalist>
+                            <span className="mt-1 block text-xs text-slate-400">Pick an existing supplier or type a new name — it is created if new. You can rename it later under Suppliers.</span>
+                            {errors.supplier_name && <span className="mt-1 block text-xs text-red-600">{errors.supplier_name}</span>}
+                        </label>
+                        <label className="text-sm flex items-start gap-2 sm:mt-6">
+                            <input type="checkbox" checked={data.discontinue_missing} onChange={(e) => setData('discontinue_missing', e.target.checked)}
+                                className="mt-0.5 rounded border-slate-300" />
+                            <span className="text-slate-600">This is the supplier's <strong>full</strong> list — mark their parts that are no longer on it as discontinued (they stay sellable while in stock).</span>
+                        </label>
+                    </div>
+                )}
             </div>
 
             <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
