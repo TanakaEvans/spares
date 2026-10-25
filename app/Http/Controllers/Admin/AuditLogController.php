@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -15,27 +16,22 @@ use Inertia\Response;
  */
 class AuditLogController extends Controller
 {
+    use ListQuery;
     public function index(Request $request): Response
     {
-        $filters = [
-            'search' => trim((string) $request->query('search', '')),
-            'action' => (string) $request->query('action', ''),
-            'user_id' => $request->integer('user_id') ?: null,
-            'from' => (string) $request->query('from', ''),
-            'to' => (string) $request->query('to', ''),
-        ];
-
-        $logs = AuditLog::query()
-            ->with('user:id,name')
-            ->when($filters['action'], fn ($q, $a) => $q->where('action', $a))
-            ->when($filters['user_id'], fn ($q, $u) => $q->where('user_id', $u))
-            ->when($filters['from'], fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
-            ->when($filters['to'], fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
-            ->when($filters['search'], fn ($q, $s) => $q->where(fn ($x) => $x
-                ->where('label', 'like', "%{$s}%")
-                ->orWhere('note', 'like', "%{$s}%")
-                ->orWhere('action', 'like', "%{$s}%")))
-            ->orderByDesc('id')
+        $logs = $this->listApply(
+            AuditLog::query()
+                ->with('user:id,name')
+                ->when($request->query('action'), fn ($q, $a) => $q->where('action', $a))
+                ->when($request->integer('user_id'), fn ($q, $u) => $q->where('user_id', $u)),
+            $request,
+            [
+                'searchable' => ['label', 'note', 'action', 'ip'],
+                'sortable' => ['created_at' => 'created_at', 'action' => 'action'],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        )
             ->paginate(40)
             ->withQueryString()
             ->through(fn (AuditLog $log) => [
@@ -54,7 +50,7 @@ class AuditLogController extends Controller
 
         return Inertia::render('Admin/AuditLog/Index', [
             'logs' => $logs,
-            'filters' => $filters,
+            'filters' => $this->listFilters($request, ['action', 'user_id']),
             'actions' => AuditLog::query()->select('action')->distinct()->orderBy('action')->pluck('action'),
             'users' => User::query()->orderBy('name')->get(['id', 'name']),
         ]);

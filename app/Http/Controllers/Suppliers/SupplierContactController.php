@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Suppliers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\SupplierContact;
 use Illuminate\Http\Request;
@@ -10,16 +11,22 @@ use Inertia\Response;
 
 class SupplierContactController extends Controller
 {
+    use ListQuery;
     public function index(Request $request): Response
     {
         return Inertia::render('Suppliers/Contacts/Index', [
-            'contacts' => SupplierContact::with('supplier:id,name')
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('name', 'like', "%{$s}%")->orWhere('email', 'like', "%{$s}%")
-                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->orderByDesc('is_primary')->orderBy('name')
-                ->paginate(30)
+            'contacts' => $this->listApply(
+                SupplierContact::with('supplier:id,name'),
+                $request,
+                [
+                    'searchable' => ['name', 'email', 'phone', 'position', 'supplier.name'],
+                    'sortable' => [
+                        'name' => 'name', 'email' => 'email',
+                        'is_primary' => 'is_primary', 'created_at' => 'created_at',
+                    ],
+                    'defaultSort' => ['is_primary' => 'desc', 'name' => 'asc'],
+                ]
+            )->paginate(30)
                 ->withQueryString()
                 ->through(fn (SupplierContact $c) => [
                     'id' => $c->id,
@@ -31,7 +38,7 @@ class SupplierContactController extends Controller
                     'supplier_id' => $c->supplier_id,
                     'supplier' => $c->supplier?->name,
                 ]),
-            'filters' => $request->only('search'),
+            'filters' => $this->listFilters($request),
         ]);
     }
 }

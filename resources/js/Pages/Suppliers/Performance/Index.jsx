@@ -2,14 +2,25 @@ import { Head } from '@inertiajs/react';
 import { TrendingUp } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/suppliers';
+import ListToolbar from '@/Components/ListToolbar';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function PerformanceIndex({ rows }) {
+export default function PerformanceIndex({ rows, filters = {} }) {
+    const filter = useListFilter('suppliers.performance.index', filters);
     return (
         <ModuleLayout navConfig={navConfig} title="Supplier Performance"
             breadcrumbs={[{ label: 'Suppliers', href: route('modules.show', 'suppliers') }, { label: 'Supplier Performance' }]}>
             <Head title="Supplier Performance" />
+            <div className="max-w-4xl mb-4">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Supplier name…"
+                    searchClass="w-64"
+                />
+            </div>
             <div className="rounded-xl border border-slate-100 bg-white overflow-hidden max-w-4xl">
                 <div className="px-4 py-2.5 border-b border-slate-100"><h2 className="text-sm font-semibold text-slate-700">Delivery, spend & lead time</h2></div>
                 {rows.length === 0 ? (

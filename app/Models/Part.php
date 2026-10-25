@@ -54,6 +54,11 @@ class Part extends Model
         return $this->hasMany(PartCrossReference::class);
     }
 
+    public function approvedSuppliers(): HasMany
+    {
+        return $this->hasMany(ApprovedSupplier::class);
+    }
+
     public function fitments(): HasMany
     {
         return $this->hasMany(PartFitment::class);
@@ -93,6 +98,7 @@ class Part extends Model
                 ->orWhere('barcode_ean', 'like', $like)
                 ->orWhere('barcode_code128', 'like', $like)
                 ->orWhereHas('crossReferences', fn (Builder $x) => $x->where('reference_number', 'like', $like))
+                ->orWhereHas('approvedSuppliers', fn (Builder $x) => $x->where('supplier_part_number', 'like', $like))
             );
         }
 

@@ -1,18 +1,18 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, Plus, Download, Upload } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Eye, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
+import RowActions from '@/Components/RowActions';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
+import { useDeleteRecord } from '@/lib/records';
 
 export default function PartsIndex({ parts, categories, brands = [], filters }) {
-    function filter(params) {
-        router.get(route('inventory.parts.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true });
-    }
+    const filter = useListFilter('inventory.parts.index', filters);
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
 
     return (
         <ModuleLayout
@@ -26,15 +26,13 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
             <Head title="Parts Catalogue" />
 
             <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    <SearchInput
-                        id="parts-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => filter({ search: s })}
-                        placeholder="Part no, OEM no, barcode, description, cross-ref…"
-                        autoFocus
-                        className="w-80"
-                    />
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Part no, OEM no, barcode, description, cross-ref…"
+                    searchClass="w-80"
+                    exportRoute="inventory.parts.export"
+                >
                     <select
                         aria-label="Filter by category"
                         value={filters.category_id ?? ''}
@@ -67,25 +65,11 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
                     </select>
                     <Link
                         href={route('imports.show', 'parts')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                     >
                         <Upload className="w-4 h-4" />
                         Import CSV
                     </Link>
-                    <a
-                        href={route('inventory.parts.export', Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)))}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                        <Download className="w-4 h-4" />
-                        CSV
-                    </a>
-                    <a
-                        href={route('inventory.parts.export', { ...Object.fromEntries(Object.entries(filters ?? {}).filter(([, v]) => v)), format: 'pdf' })}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                        <Download className="w-4 h-4" />
-                        PDF
-                    </a>
                     <Link
                         href={route('inventory.parts.create')}
                         className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 transition-colors"
@@ -93,7 +77,7 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
                         <Plus className="w-4 h-4" />
                         New Part
                     </Link>
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
@@ -110,7 +94,7 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
                                 </div>
                             ),
                         },
-                        { key: 'description', label: 'Description', render: (p) => <span className="text-slate-700">{p.description}</span> },
+                        { key: 'description', label: 'Description', sortable: 'description', render: (p) => <span className="text-slate-700">{p.description}</span> },
                         { key: 'brand', label: 'Brand', render: (p) => <EntityLink type="brand" id={p.brand_id} label={p.brand} muted /> },
                         { key: 'category', label: 'Category', render: (p) => <EntityLink type="category" id={p.category_id} label={p.category} muted /> },
                         {
@@ -119,10 +103,20 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
                                 ? <span className="text-green-700 font-semibold">{p.qty_available}</span>
                                 : <span className="text-slate-400">0</span>,
                         },
-                        { key: 'is_active', label: 'Status', render: (p) => <StatusBadge status={p.is_active ? 'active' : 'inactive'} /> },
+                        { key: 'is_active', label: 'Status', sortable: 'is_active', render: (p) => <StatusBadge status={p.is_active ? 'active' : 'inactive'} /> },
+                        {
+                            key: 'actions', label: '', align: 'right', render: (p) => (
+                                <RowActions actions={[
+                                    { label: 'Open', icon: Eye, href: route('inventory.parts.show', p.id) },
+                                    { label: 'Edit', icon: Pencil, href: route('inventory.parts.edit', p.id) },
+                                    { label: 'Delete', icon: Trash2, destructive: true, onSelect: () => confirmDelete({ url: route('inventory.parts.destroy', p.id), label: `part ${p.part_number}`, message: 'Parts with stock or document history are deactivated — a never-used part is deleted outright.' }) },
+                                ]} />
+                            ),
+                        },
                     ]}
                     rows={parts.data}
                     pagination={parts}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(p) => route('inventory.parts.show', p.id)}
                     emptyTitle="No parts match"
                     emptyMessage="Try another number — the search also covers OEM numbers, barcodes and cross-references."
@@ -137,6 +131,8 @@ export default function PartsIndex({ parts, categories, brands = [], filters }) 
                     }
                 />
             </div>
+
+            {deleteDialog}
         </ModuleLayout>
     );
 }

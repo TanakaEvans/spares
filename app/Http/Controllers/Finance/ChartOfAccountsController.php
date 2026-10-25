@@ -15,7 +15,10 @@ class ChartOfAccountsController extends Controller
     {
         $balances = $reports->balancesByAccount(null, now()->toDateString());
 
-        $accounts = GlAccount::orderBy('account_code')->get()->map(function (GlAccount $a) use ($balances, $reports) {
+        $accounts = GlAccount::when($request->string('search')->toString(), fn ($q, $s) => $q->where(
+                fn ($x) => $x->where('account_code', 'like', "%{$s}%")->orWhere('name', 'like', "%{$s}%")->orWhere('category', 'like', "%{$s}%")
+            ))
+            ->orderBy('account_code')->get()->map(function (GlAccount $a) use ($balances, $reports) {
             $bal = $balances[$a->id] ?? ['debit' => 0, 'credit' => 0];
 
             return [
@@ -34,6 +37,7 @@ class ChartOfAccountsController extends Controller
         return Inertia::render('Finance/COA/Index', [
             'accounts' => $accounts,
             'groups' => ['asset' => 'Assets', 'liability' => 'Liabilities', 'equity' => 'Equity', 'revenue' => 'Revenue', 'expense' => 'Expenses'],
+            'filters' => ['search' => $request->string('search')->toString()],
         ]);
     }
 }

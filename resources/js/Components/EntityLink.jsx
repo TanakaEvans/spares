@@ -45,10 +45,11 @@ const ROUTES = {
     adjustment: ['inventory.adjustments.show', 'id'],
     transfer: ['inventory.transfers.show', 'id'],
     delivery_note: ['sales.delivery-notes.show', 'id'],
+    // detail page when an id is known, else the list pre-filtered by number/label
+    make: ['vehicle-ref.makes.show', 'id', ['vehicle-ref.makes.index', 'search']],
+    engine: ['vehicle-ref.engines.show', 'id', ['vehicle-ref.engines.index', 'search']],
     // list pages, pre-filtered
     stock: ['inventory.stock.index', 'search'],
-    make: ['vehicle-ref.models.index', 'search'],
-    engine: ['vehicle-ref.engines.index', 'search'],
     category: ['inventory.parts.index', 'category_id'],
     brand: ['inventory.brands.index', 'search'],
     gl_account: ['finance.gl.index', 'account'],
@@ -58,8 +59,14 @@ const ROUTES = {
 export function entityHref(type, { id, number, label, params } = {}) {
     const def = ROUTES[type];
     if (!def || typeof route !== 'function' || !route().has(def[0])) return null;
-    const [name, mode] = def;
-    if (mode === 'id') return id ? route(name, { ...(params ?? {}), [name.includes('vehicle-ref.models') ? 'model' : routeParam(name)]: id }) : null;
+    const [name, mode, fallback] = def;
+    if (mode === 'id') {
+        // Detail routes with a list fallback take only their own id — list-filter params don't apply.
+        if (id) return route(name, { ...(fallback ? {} : (params ?? {})), [routeParam(name)]: id });
+        if (!fallback) return null;
+        const value = number ?? label;
+        return value ? route(fallback[0], { [fallback[1]]: value }) : null;
+    }
     const value = number ?? label;
     if (mode === 'category_id') return id ? route(name, { ...(params ?? {}), category_id: id }) : null;
     return value ? route(name, { ...(params ?? {}), [mode]: value }) : null;
@@ -78,6 +85,7 @@ function routeParam(name) {
         'workshop.technicians.show': 'technician', 'workshop.warranty.show': 'claim', 'inventory.bins.show': 'bin',
         'inventory.adjustments.show': 'adjustment', 'inventory.transfers.show': 'transfer',
         'sales.laybys.show': 'layby', 'sales.delivery-notes.show': 'deliveryNote',
+        'vehicle-ref.models.show': 'model', 'vehicle-ref.makes.show': 'make', 'vehicle-ref.engines.show': 'engine',
     }[name] ?? 'id';
 }
 

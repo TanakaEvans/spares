@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Workshop;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\JobCard;
@@ -15,15 +16,25 @@ use Inertia\Response;
 
 class TechnicianController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    public function index(Request $request): Response
     {
         $active = JobCard::whereNotNull('technician_id')
             ->whereIn('status', ['allocated', 'in_progress', 'quality_check'])
             ->selectRaw('technician_id, COUNT(*) as c')->groupBy('technician_id')->pluck('c', 'technician_id');
 
         return Inertia::render('Workshop/Technicians/Index', [
-            'technicians' => Technician::with('branch:id,name')->orderBy('name')->get()
-                ->map(fn (Technician $t) => [
+            'technicians' => $this->listApply(
+                Technician::with('branch:id,name'),
+                $request,
+                [
+                    'searchable' => ['name', 'skill_level', 'branch.name'],
+                    'sortable' => ['name' => 'name', 'skill_level' => 'skill_level', 'is_active' => 'is_active'],
+                    'defaultSort' => ['name' => 'asc'],
+                ]
+            )->paginate(25)->withQueryString()
+                ->through(fn (Technician $t) => [
                     'id' => $t->id,
                     'name' => $t->name,
                     'skill_level' => $t->skill_level,
@@ -34,6 +45,7 @@ class TechnicianController extends Controller
                     'active_jobs' => (int) ($active[$t->id] ?? 0),
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

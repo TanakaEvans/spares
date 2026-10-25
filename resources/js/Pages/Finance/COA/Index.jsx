@@ -1,10 +1,13 @@
 import { Head } from '@inertiajs/react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
+import ListToolbar from '@/Components/ListToolbar';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function CoaIndex({ accounts, groups }) {
+export default function CoaIndex({ accounts, groups, filters = {} }) {
+    const filter = useListFilter('finance.coa.index', filters);
     const byType = Object.keys(groups).map((type) => ({
         type,
         label: groups[type],
@@ -20,6 +23,12 @@ export default function CoaIndex({ accounts, groups }) {
             <Head title="Chart of Accounts" />
 
             <div className="max-w-4xl space-y-6">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Code, name or category…"
+                    searchClass="w-64"
+                />
                 {byType.map((group) => group.rows.length > 0 && (
                     <div key={group.type} className="rounded-xl border border-slate-100 bg-white overflow-hidden">
                         <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">

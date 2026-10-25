@@ -2,26 +2,63 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\StockTake;
 use App\Models\StockTakeLine;
 use App\Services\SettingsService;
 use App\Services\StockTakeService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class StockTakeController extends Controller
 {
+    use ListQuery;
+
+    private function takesQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            StockTake::with('branch:id,name', 'startedBy:id,name')
+                ->withCount('lines')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('type')->toString(), fn ($q, $s) => $q->where('type', $s)),
+            $request,
+            [
+                'searchable' => ['take_number', 'notes', 'branch.name'],
+                'sortable' => [
+                    'take_number' => 'take_number', 'created_at' => 'created_at',
+                    'type' => 'type', 'status' => 'status',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered stock-take list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->takesQuery($request)->limit(5000)->get()->map(fn (StockTake $t) => [
+            $t->take_number, $t->branch?->name, ucfirst($t->type),
+            ucwords(str_replace('_', ' ', $t->status)),
+            $t->lines_count, $t->startedBy?->name,
+            $t->created_at?->toDateString(), $t->posted_at?->toDateTimeString() ?? '—',
+        ]);
+
+        return ListExport::respond($request, 'stock-takes', 'Stock Takes',
+            ['Take No', 'Branch', 'Type', 'Status', 'Lines', 'Started by', 'Started', 'Posted'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Inventory/StockTakes/Index', [
-            'takes' => StockTake::with('branch:id,name', 'startedBy:id,name')
-                ->withCount('lines')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->latest('id')
+            'takes' => $this->takesQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (StockTake $t) => [
@@ -36,7 +73,7 @@ class StockTakeController extends Controller
                     'started_by' => $t->startedBy?->name,
                     'created_at' => $t->created_at->toDateString(),
                 ]),
-            'filters' => $request->only('status'),
+            'filters' => $this->listFilters($request, ['status', 'type']),
         ]);
     }
 

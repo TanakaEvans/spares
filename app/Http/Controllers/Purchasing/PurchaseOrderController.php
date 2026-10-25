@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Part;
@@ -10,25 +11,56 @@ use App\Models\Supplier;
 use App\Models\SupplierPriceListItem;
 use App\Services\DocumentPdfService;
 use App\Services\NumberSequenceService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PurchaseOrderController extends Controller
 {
+    use ListQuery;
+
+    private function ordersQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            PurchaseOrder::with('supplier:id,name', 'branch:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['po_number', 'supplier_ref', 'notes', 'supplier.name'],
+                'sortable' => [
+                    'po_number' => 'po_number', 'order_date' => 'order_date',
+                    'expected_date' => 'expected_date', 'status' => 'status', 'total' => 'total',
+                ],
+                'dateColumn' => 'order_date',
+                'defaultSort' => ['order_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered order list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->ordersQuery($request)->limit(5000)->get()->map(fn (PurchaseOrder $po) => [
+            $po->po_number, $po->supplier?->name, $po->branch?->name,
+            $po->order_date?->toDateString(), $po->expected_date?->toDateString() ?? '—',
+            ucwords(str_replace('_', ' ', $po->status)),
+            number_format((float) $po->total, 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'purchase-orders', 'Purchase Orders',
+            ['PO No', 'Supplier', 'Branch', 'Ordered', 'Expected', 'Status', 'Total'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/Orders/Index', [
-            'orders' => PurchaseOrder::with('supplier:id,name', 'branch:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('po_number', 'like', "%{$s}%")
-                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('order_date')->latest('id')
+            'orders' => $this->ordersQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (PurchaseOrder $po) => [
@@ -53,7 +85,7 @@ class PurchaseOrderController extends Controller
                     ->whereNotNull('expected_date')->where('expected_date', '<', now()->toDateString())->count(),
                 'drafts' => (int) PurchaseOrder::where('status', 'draft')->count(),
             ],
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

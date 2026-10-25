@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\NumberSequence;
 use App\Services\NumberSequenceService;
@@ -12,13 +13,17 @@ use Inertia\Response;
 
 class NumberSequenceController extends Controller
 {
+    use ListQuery;
     public function __construct(private readonly NumberSequenceService $sequences) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         return Inertia::render('Admin/Sequences/Index', [
-            'sequences' => NumberSequence::with('branch:id,name')
-                ->orderBy('type')
+            'sequences' => $this->listApply(NumberSequence::with('branch:id,name'), $request, [
+                    'searchable' => ['type', 'prefix', 'branch.name'],
+                    'sortable' => ['type' => 'type', 'prefix' => 'prefix', 'next_number' => 'next_number'],
+                    'defaultSort' => ['type' => 'asc'],
+                ])
                 ->get()
                 ->map(fn (NumberSequence $s) => [
                     'id' => $s->id,
@@ -32,6 +37,7 @@ class NumberSequenceController extends Controller
                     'next_number' => $s->next_number,
                     'preview' => $this->sequences->peek($s->type, $s->branch_id),
                 ]),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

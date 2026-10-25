@@ -1,11 +1,15 @@
 import { Head, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import { DatabaseBackup, Download, Clock, HardDrive } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
+import SearchInput from '@/Components/SearchInput';
 
 export default function Backups({ files, latest, retentionDays, maxAgeHours, method, directory }) {
     const { post, processing } = useForm();
+    const [search, setSearch] = useState('');
     const stale = latest ? latest.age_hours > maxAgeHours : true;
+    const shown = search ? files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())) : files;
 
     return (
         <ModuleLayout navConfig={navConfig} title="Backup Management" breadcrumbs={[{ label: 'System Administration', href: route('modules.show', 'system-admin') }, { label: 'Backup Management' }]}>
@@ -33,14 +37,24 @@ export default function Backups({ files, latest, retentionDays, maxAgeHours, met
                     <span>Dumps are written to <code className="font-mono">{directory}</code>. A backup on the same disk is not a backup: download or sync the newest file to an external drive or cloud folder every day (operations/backup-and-resilience.md).</span>
                 </p>
 
+                {files.length > 5 && (
+                    <SearchInput
+                        id="backup-search"
+                        value={search}
+                        onSearch={setSearch}
+                        placeholder="Filter by filename…"
+                        className="max-w-sm"
+                    />
+                )}
+
                 <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-                    {files.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-slate-400"><DatabaseBackup className="w-8 h-8 mx-auto mb-2 text-slate-300" />No backups yet.</div>
+                    {shown.length === 0 ? (
+                        <div className="py-10 text-center text-sm text-slate-400"><DatabaseBackup className="w-8 h-8 mx-auto mb-2 text-slate-300" />{files.length === 0 ? 'No backups yet.' : 'No backups match that name.'}</div>
                     ) : (
                         <table className="w-full text-sm">
                             <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">File</th><th className="px-2 py-2 text-right">Size</th><th className="px-4 py-2 text-right">Created</th><th className="px-4 py-2" /></tr></thead>
                             <tbody className="divide-y divide-slate-50">
-                                {files.map((f) => (
+                                {shown.map((f) => (
                                     <tr key={f.name}>
                                         <td className="px-4 py-2 font-mono text-slate-700">{f.name}</td>
                                         <td className="px-2 py-2 text-right tabular-nums text-slate-500">{f.size_kb} KB</td>

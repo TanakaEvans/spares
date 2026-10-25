@@ -2,11 +2,15 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { Plus, ListOrdered, AlertTriangle, Star } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function PriceListsIndex({ priceLists, unpricedCount }) {
+export default function PriceListsIndex({ priceLists, unpricedCount, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({ name: '', type: 'custom' });
+    const filter = useListFilter('sales.price-lists.index', filters);
 
     function submit(e) {
         e.preventDefault();
@@ -14,7 +18,7 @@ export default function PriceListsIndex({ priceLists, unpricedCount }) {
     }
 
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
-    const defaultList = priceLists.find((p) => p.is_default);
+    const defaultList = priceLists.data.find((p) => p.is_default);
 
     return (
         <ModuleLayout
@@ -32,33 +36,33 @@ export default function PriceListsIndex({ priceLists, unpricedCount }) {
                 </Link>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
-                <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                <th className="px-4 py-2.5">Name</th>
-                                <th className="px-4 py-2.5">Type</th>
-                                <th className="px-4 py-2.5 text-right">Priced parts</th>
-                                <th className="px-4 py-2.5"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {priceLists.map((p) => (
-                                <tr key={p.id} className="hover:bg-slate-50">
-                                    <td className="px-4 py-2.5">
-                                        <span className="inline-flex items-center gap-2">
-                                            {p.is_default && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
-                                            <EntityLink type="price_list" id={p.id} label={p.name} className="font-semibold" />
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2.5 capitalize text-slate-500">{p.type}</td>
-                                    <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">{p.items_count}</td>
-                                    <td className="px-4 py-2.5 text-right">{!p.is_active && <StatusBadge status="inactive" />}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Price list name…"
+                searchClass="w-56"
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
+                <div className="lg:col-span-2">
+                    <DataTable
+                        columns={[
+                            { key: 'name', label: 'Name', sortable: 'name', render: (p) => (
+                                <span className="inline-flex items-center gap-2">
+                                    {p.is_default && <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />}
+                                    <EntityLink type="price_list" id={p.id} label={p.name} className="font-semibold" />
+                                </span>
+                            ) },
+                            { key: 'type', label: 'Type', sortable: 'type', render: (p) => <span className="capitalize text-slate-500">{p.type}</span> },
+                            { key: 'items_count', label: 'Priced parts', align: 'right', render: (p) => <span className="tabular-nums text-slate-500">{p.items_count}</span> },
+                            { key: 'status', label: '', align: 'right', render: (p) => !p.is_active && <StatusBadge status="inactive" /> },
+                        ]}
+                        rows={priceLists.data}
+                        pagination={priceLists}
+                        sorting={{ filters, onFilter: filter }}
+                        rowHref={(p) => route('sales.price-lists.show', p.id)}
+                        emptyTitle="No price lists"
+                        emptyIcon={ListOrdered}
+                    />
                 </div>
 
                 <form onSubmit={submit} className="rounded-xl border border-slate-100 bg-white p-5 space-y-4 h-fit">

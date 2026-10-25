@@ -1,18 +1,35 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import EntityLink from '@/Components/EntityLink';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function BulletinsIndex({ bulletins, makes }) {
+export default function BulletinsIndex({ bulletins, makes, filters = {} }) {
     const { data, setData, post, processing, reset } = useForm({ title: '', make_id: '', category: 'service_note', body: '' });
+    const filter = useListFilter('vehicle-ref.bulletins.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
     const badge = { fitment_warning: 'variance_review', recall: 'rejected', service_note: 'submitted' };
     return (
         <ModuleLayout navConfig={navConfig} title="Technical Bulletins" breadcrumbs={[{ label: 'Vehicle Reference', href: route('modules.show', 'vehicle-reference') }, { label: 'Technical Bulletins' }]}>
             <Head title="Technical Bulletins" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Title, body or category…"
+                searchClass="w-64"
+                dateRange
+            >
+                <select aria-label="Category" value={filters.category ?? ''} onChange={(e) => filter({ category: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">All categories</option>
+                    <option value="service_note">Service note</option>
+                    <option value="fitment_warning">Fitment warning</option>
+                    <option value="recall">Recall</option>
+                </select>
+            </ListToolbar>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
                 <div className="lg:col-span-2 space-y-3">
                     {bulletins.data.length === 0 ? (
                         <div className="rounded-xl border border-slate-100 bg-white py-10 text-center text-sm text-slate-400"><AlertTriangle className="w-8 h-8 mx-auto mb-2 text-slate-300" />No bulletins published.</div>
@@ -28,6 +45,18 @@ export default function BulletinsIndex({ bulletins, makes }) {
                             <p className="text-sm text-slate-600 mt-2 whitespace-pre-line">{b.body}</p>
                         </div>
                     ))}
+                    {bulletins.last_page > 1 && (
+                        <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-500">
+                            <span>{bulletins.from}–{bulletins.to} of {bulletins.total}</span>
+                            <div className="flex gap-1">
+                                {bulletins.links.map((link, i) => link.url ? (
+                                    <Link key={i} href={link.url} preserveState preserveScroll
+                                        className={`px-2.5 py-1 rounded-md ${link.active ? 'bg-orange-600 text-white font-semibold' : 'hover:bg-slate-100 text-slate-600'}`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }} />
+                                ) : <span key={i} className="px-2.5 py-1 text-slate-300" dangerouslySetInnerHTML={{ __html: link.label }} />)}
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); post(route('vehicle-ref.bulletins.store'), { onSuccess: () => reset() }); }} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">
                     <h2 className="text-sm font-semibold text-slate-700">New bulletin</h2>

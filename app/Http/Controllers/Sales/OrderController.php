@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -11,25 +12,54 @@ use App\Models\StockLevel;
 use App\Services\SalesPostingService;
 use App\Services\SalesQuoteService;
 use App\Services\SettingsService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class OrderController extends Controller
 {
+    use ListQuery;
+    private function ordersQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SalesDocument::query()
+                ->where('document_type', 'order')
+                ->with('customer:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['document_number', 'notes', 'customer.name'],
+                'sortable' => [
+                    'document_number' => 'document_number', 'document_date' => 'document_date',
+                    'total_incl' => 'total_incl', 'status' => 'status',
+                ],
+                'dateColumn' => 'document_date',
+                'defaultSort' => ['document_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered order list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->ordersQuery($request)->limit(5000)->get()->map(fn (SalesDocument $d) => [
+            $d->document_number, $d->customer?->name, $d->document_date?->toDateString(),
+            ucwords(str_replace('_', ' ', $d->status)),
+            number_format((float) $d->total_incl, 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'sales-orders', 'Sales Orders',
+            ['Order No', 'Customer', 'Ordered', 'Status', 'Total'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Sales/Orders/Index', [
-            'orders' => SalesDocument::query()
-                ->where('document_type', 'order')
-                ->with('customer:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('document_number', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('document_date')->latest('id')
+            'orders' => $this->ordersQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (SalesDocument $d) => [
@@ -42,7 +72,7 @@ class OrderController extends Controller
                     'status' => $d->status,
                 ]),
             'stats' => $this->stats(),
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

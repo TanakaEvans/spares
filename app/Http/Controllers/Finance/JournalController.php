@@ -3,27 +3,61 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Exceptions\DomainException;
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\GlAccount;
 use App\Models\GlJournal;
 use App\Services\GlPostingService;
 use App\Services\JournalSourceResolver;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class JournalController extends Controller
 {
+    use ListQuery;
+
+    private function journalsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            GlJournal::with('branch:id,name')
+                ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('journal_type', $t)),
+            $request,
+            [
+                'searchable' => ['journal_number', 'description', 'reference'],
+                'sortable' => [
+                    'journal_number' => 'journal_number', 'journal_date' => 'journal_date',
+                    'journal_type' => 'journal_type', 'status' => 'status',
+                ],
+                'dateColumn' => 'journal_date',
+                'defaultSort' => ['journal_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered journal register as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->journalsQuery($request)->limit(5000)->get()->map(fn (GlJournal $j) => [
+            $j->journal_number, $j->journal_date->toDateString(),
+            ucwords(str_replace('_', ' ', $j->journal_type)),
+            $j->description, $j->reference ?? '—',
+            number_format((float) $j->lines()->sum('debit'), 2, '.', ''),
+            ucfirst($j->status), $j->branch?->name ?? '—',
+        ]);
+
+        return ListExport::respond($request, 'journal-register', 'Journal Register',
+            ['Journal No', 'Date', 'Type', 'Description', 'Reference', 'Total', 'Status', 'Branch'], $rows);
+    }
+
     public function index(Request $request, JournalSourceResolver $sources): Response
     {
-        $journals = GlJournal::with('branch:id,name')
-            ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('journal_type', $t))
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                fn ($x) => $x->where('journal_number', 'like', "%{$s}%")->orWhere('description', 'like', "%{$s}%")
-            ))
-            ->latest('journal_date')->latest('id')
+        $journals = $this->journalsQuery($request)
             ->paginate(25)
             ->withQueryString();
 
@@ -41,7 +75,7 @@ class JournalController extends Controller
                 'total' => (float) $j->lines()->sum('debit'),
                 'source' => $links["{$j->source_type}:{$j->source_id}"] ?? null,
             ]),
-            'filters' => $request->only('search', 'type'),
+            'filters' => $this->listFilters($request, ['type']),
         ]);
     }
 

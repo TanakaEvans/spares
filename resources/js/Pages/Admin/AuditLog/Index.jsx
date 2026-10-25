@@ -108,11 +108,11 @@ export default function AuditLogIndex({ logs, filters, actions, users }) {
                     </label>
                     <label>
                         <span className="block text-xs font-medium text-slate-500 mb-1">From</span>
-                        <input type="date" value={form.from} onChange={(e) => set('from', e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                        <input type="date" value={form.date_from ?? ''} onChange={(e) => set('date_from', e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </label>
                     <label>
                         <span className="block text-xs font-medium text-slate-500 mb-1">To</span>
-                        <input type="date" value={form.to} onChange={(e) => set('to', e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                        <input type="date" value={form.date_to ?? ''} onChange={(e) => set('date_to', e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </label>
                     <button type="submit" className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">Filter</button>
                 </form>

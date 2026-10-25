@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\BinLocation;
 use App\Models\Branch;
@@ -12,16 +13,25 @@ use Inertia\Response;
 
 class BinLocationController extends Controller
 {
+    use ListQuery;
+
     public function index(Request $request): Response
     {
         return Inertia::render('Inventory/Bins/Index', [
-            'bins' => BinLocation::with('branch:id,name')
-                ->when($request->integer('branch_id'), fn ($q, $id) => $q->where('branch_id', $id))
-                ->orderBy('code')
+            'bins' => $this->listApply(
+                BinLocation::with('branch:id,name')
+                    ->when($request->integer('branch_id'), fn ($q, $id) => $q->where('branch_id', $id)),
+                $request,
+                [
+                    'searchable' => ['code', 'branch.name'],
+                    'sortable' => ['code' => 'code', 'created_at' => 'created_at'],
+                    'defaultSort' => ['code' => 'asc'],
+                ]
+            )
                 ->paginate(50)
                 ->withQueryString(),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
-            'filters' => $request->only('branch_id'),
+            'filters' => $this->listFilters($request, ['branch_id']),
         ]);
     }
 
@@ -86,5 +96,43 @@ class BinLocationController extends Controller
         BinLocation::create($data);
 
         return back()->with('success', "Bin {$data['code']} added.");
+    }
+
+    public function update(Request $request, BinLocation $bin): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:30'],
+            'notes' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+        ]);
+
+        $data['code'] = strtoupper($data['code']);
+
+        $exists = BinLocation::where('branch_id', $bin->branch_id)
+            ->where('code', $data['code'])
+            ->where('id', '!=', $bin->id)
+            ->exists();
+        if ($exists) {
+            return back()->withErrors(['code' => 'That bin code already exists at this branch.']);
+        }
+
+        $bin->update($data);
+
+        return back()->with('success', "Bin {$data['code']} updated.");
+    }
+
+    public function destroy(BinLocation $bin): RedirectResponse
+    {
+        // Stock history points at the bin by id forever — a referenced bin is
+        // deactivated, never hard-deleted, so ledgers keep their putaway trail.
+        if ($bin->stockLevels()->exists()) {
+            $bin->update(['is_active' => false]);
+
+            return back()->with('success', "Bin {$bin->code} has stock records — deactivated instead of deleted.");
+        }
+
+        $bin->delete();
+
+        return back()->with('success', "Bin {$bin->code} deleted.");
     }
 }

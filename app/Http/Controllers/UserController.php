@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -12,35 +13,28 @@ use Illuminate\Validation\Rules;
 
 class UserController extends Controller
 {
+    use ListQuery;
     /**
      * Display a listing of users.
      */
     public function index(Request $request)
     {
         try {
-            $query = User::with('roles');
-
-            // Search functionality
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%");
-                });
-            }
-
-            // Filter by status
-            if ($request->filled('status')) {
-                $query->where('status', $request->status);
-            }
-
-            // Filter by role
-            if ($request->filled('role')) {
-                $query->whereHas('roles', function ($q) use ($request) {
-                    $q->where('name', $request->role);
-                });
-            }
+            $query = $this->listApply(
+                User::with('roles')
+                    ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+                    ->when($request->filled('role'), fn ($q) => $q->whereHas('roles', fn ($r) => $r->where(fn ($x) => $x->where('roles.id', $request->role)->orWhere('roles.name', $request->role)))),
+                $request,
+                [
+                    'searchable' => ['name', 'email', 'username'],
+                    'sortable' => [
+                        'name' => 'name', 'email' => 'email',
+                        'status' => 'status', 'created_at' => 'created_at',
+                    ],
+                    'dateColumn' => 'created_at',
+                    'defaultSort' => ['name' => 'asc'],
+                ]
+            );
 
             $users = $query->paginate(15)->withQueryString();
             $roles = Role::all();
@@ -48,11 +42,7 @@ class UserController extends Controller
             return inertia('Admin/Users/Index', [
                 'users' => $users,
                 'roles' => $roles,
-                'filters' => [
-                    'search' => $request->search,
-                    'status' => $request->status,
-                    'role' => $request->role,
-                ],
+                'filters' => $this->listFilters($request, ['status', 'role']),
             ]);
         } catch (\Exception $e) {
             Log::error('Users index error: '.$e->getMessage());

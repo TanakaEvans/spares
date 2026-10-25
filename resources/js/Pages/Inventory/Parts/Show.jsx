@@ -8,6 +8,7 @@ import FormField from '@/Components/FormField';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import RelatedLinks from '@/Components/RelatedLinks';
 import StatusBadge from '@/Components/StatusBadge';
+import { useDeleteRecord } from '@/lib/records';
 
 const TABS = ['Stock', 'Movements', 'Fitments', 'Cross-refs', 'Supersession'];
 
@@ -21,6 +22,7 @@ const MOVEMENT_TYPE_LABEL = {
 
 export default function PartShow({ part, options }) {
     const [tab, setTab] = useState('Stock');
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
 
     const totalAvailable = part.stock.reduce((n, l) => n + l.qty_available, 0);
     const avgCost = part.stock.length ? part.stock[0].average_cost : 0;
@@ -56,13 +58,26 @@ export default function PartShow({ part, options }) {
                                 {part.oem_number ? ` · OEM ${part.oem_number}` : ''}
                             </p>
                         </div>
-                        <Link
-                            href={route('inventory.parts.edit', part.id)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                            <Pencil className="w-4 h-4" />
-                            Edit
-                        </Link>
+                        <div className="flex gap-2">
+                            <Link
+                                href={route('inventory.parts.edit', part.id)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                Edit
+                            </Link>
+                            <button
+                                onClick={() => confirmDelete({
+                                    url: route('inventory.parts.destroy', part.id),
+                                    label: `part ${part.part_number}`,
+                                    message: 'Parts with stock or document history are deactivated — the ledger keeps pointing at them. A never-used part is deleted outright.',
+                                })}
+                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </button>
+                        </div>
                     </div>
 
                     {part.superseded_by && (
@@ -125,6 +140,7 @@ export default function PartShow({ part, options }) {
 
                 <RelatedLinks groups={relatedGroups(part)} />
             </div>
+            {deleteDialog}
         </ModuleLayout>
     );
 }
@@ -137,7 +153,7 @@ function relatedGroups(part) {
     ]);
     const suppliers = [...part.suppliers]
         .sort((a, b) => Number(b.is_preferred) - Number(a.is_preferred))
-        .map((s) => ({ type: 'supplier', id: s.id, label: s.is_preferred ? `${s.name} ★` : s.name }));
+        .map((s) => ({ type: 'supplier', id: s.id, label: `${s.is_preferred ? `${s.name} ★` : s.name}${s.supplier_part_number ? ` · ${s.supplier_part_number}` : ''}` }));
     const fitments = part.fitments
         .filter((f) => f.model_id)
         .map((f) => ({ type: 'model', id: f.model_id, label: `${f.make} ${f.model}${f.years ? ` (${f.years})` : ''}` }));

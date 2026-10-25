@@ -1,18 +1,36 @@
-// Reports & Analytics nav — content only (styling lives in ModuleLayout).
+// Reports & Analytics nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    BarChart3, LayoutDashboard, ShoppingCart, Package, Users, Truck, Wrench, Banknote,
+    Banknote, BarChart3, Clock, Columns2, Landmark, LayoutDashboard, Package, ScanBarcode,
+    ShoppingCart, TrendingUp, Truck, Users, Wrench,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'reports',
     moduleLabel: 'Reports & Analytics',
     moduleIcon: BarChart3,
 
-    module: [
+    sections: [
         {
             section: 'Overview',
             items: [
-                { label: 'Executive Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
+                {
+                    label: 'Executive Dashboard', route: 'reports.dashboard', icon: LayoutDashboard,
+                    related: [
+                        { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: Columns2 },
+                        { label: 'Income Statement', route: 'finance.reports.income-statement', icon: TrendingUp },
+                        { label: 'Balance Sheet', route: 'finance.reports.balance-sheet', icon: Landmark },
+                    ],
+                },
+            ],
+        },
+        {
+            section: 'Daily',
+            items: [
+                {
+                    label: 'Daily Cash-up', route: 'reports.cashup', icon: Banknote,
+                    related: [{ label: 'Point of Sale', route: 'sales.pos', icon: ScanBarcode }],
+                },
             ],
         },
         {
@@ -26,72 +44,10 @@ const navConfig = {
             ],
         },
         {
-            section: 'Receipting',
+            section: 'Automation',
             items: [
-                { label: 'Daily Cash-up', route: 'reports.cashup', icon: Banknote },
+                { label: 'Scheduled Reports', route: 'reports.scheduled.index', icon: Clock },
             ],
         },
     ],
-
-    subModules: {
-        dashboard: {
-            label: 'Executive Dashboard', icon: LayoutDashboard, routePrefix: 'reports.dashboard',
-            work: [{ label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard }],
-            quickLinks: [
-                { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
-                { label: 'Inventory Reports', route: 'reports.inventory.index', icon: Package },
-            ],
-        },
-        sales: {
-            label: 'Sales Reports', icon: ShoppingCart, routePrefix: 'reports.sales',
-            work: [{ label: 'Sales', route: 'reports.sales.index', icon: ShoppingCart }],
-            quickLinks: [
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-                { label: 'Customer Reports', route: 'reports.customers.index', icon: Users },
-            ],
-        },
-        inventory: {
-            label: 'Inventory Reports', icon: Package, routePrefix: 'reports.inventory',
-            work: [{ label: 'Inventory', route: 'reports.inventory.index', icon: Package }],
-            quickLinks: [
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-                { label: 'Supplier Reports', route: 'reports.suppliers.index', icon: Truck },
-            ],
-        },
-        customers: {
-            label: 'Customer Reports', icon: Users, routePrefix: 'reports.customers',
-            work: [{ label: 'Customers', route: 'reports.customers.index', icon: Users }],
-            quickLinks: [
-                { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-            ],
-        },
-        suppliers: {
-            label: 'Supplier Reports', icon: Truck, routePrefix: 'reports.suppliers',
-            work: [{ label: 'Suppliers', route: 'reports.suppliers.index', icon: Truck }],
-            quickLinks: [
-                { label: 'Inventory Reports', route: 'reports.inventory.index', icon: Package },
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-            ],
-        },
-        workshop: {
-            label: 'Workshop Reports', icon: Wrench, routePrefix: 'reports.workshop',
-            work: [{ label: 'Workshop', route: 'reports.workshop.index', icon: Wrench }],
-            quickLinks: [
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-                { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
-            ],
-        },
-        cashup: {
-            label: 'Daily Cash-up', icon: Banknote, routePrefix: 'reports.cashup',
-            work: [{ label: 'Cash-up', route: 'reports.cashup', icon: Banknote }],
-            quickLinks: [
-                { label: 'Point of Sale', route: 'sales.pos', icon: ShoppingCart },
-                { label: 'Sales Reports', route: 'reports.sales.index', icon: ShoppingCart },
-                { label: 'Dashboard', route: 'reports.dashboard', icon: LayoutDashboard },
-            ],
-        },
-    },
 };
-
-export default navConfig;

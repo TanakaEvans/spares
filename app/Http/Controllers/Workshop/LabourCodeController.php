@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Workshop;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\LabourCode;
 use App\Models\VehicleMake;
@@ -12,11 +13,24 @@ use Inertia\Response;
 
 class LabourCodeController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    public function index(Request $request): Response
     {
         return Inertia::render('Workshop/Labour/Index', [
-            'labourCodes' => LabourCode::with('rates.make:id,name')->orderBy('code')->get()
-                ->map(fn (LabourCode $c) => [
+            'labourCodes' => $this->listApply(
+                LabourCode::with('rates.make:id,name'),
+                $request,
+                [
+                    'searchable' => ['code', 'description', 'category'],
+                    'sortable' => [
+                        'code' => 'code', 'category' => 'category', 'rate_type' => 'rate_type',
+                        'standard_hours' => 'standard_hours', 'default_rate' => 'default_rate',
+                    ],
+                    'defaultSort' => ['code' => 'asc'],
+                ]
+            )->paginate(25)->withQueryString()
+                ->through(fn (LabourCode $c) => [
                     'id' => $c->id,
                     'code' => $c->code,
                     'description' => $c->description,
@@ -30,6 +44,7 @@ class LabourCodeController extends Controller
                     ]),
                 ]),
             'makes' => VehicleMake::orderBy('name')->get(['id', 'name']),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

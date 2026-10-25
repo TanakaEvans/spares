@@ -1,69 +1,47 @@
-// Suppliers module nav — content only.
+// Suppliers nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    FileInput, LayoutList, ListOrdered, PackageCheck, Plus, Truck, Upload,
-    BadgeCheck, UsersRound, TrendingUp,
+    BadgeCheck, FileInput, FileSpreadsheet, RefreshCw, Rows3, Scale, TrendingUp, Truck, UsersRound,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'suppliers',
     moduleLabel: 'Suppliers',
     moduleIcon: Truck,
 
-    module: [
+    sections: [
         {
             section: 'Suppliers',
             items: [
-                { label: 'All Suppliers', route: 'suppliers.index', icon: LayoutList },
-                { label: 'New Supplier', route: 'suppliers.create', icon: Plus },
+                {
+                    // 'suppliers' owns profiles + per-supplier price-list import; the
+                    // approved/contacts/performance prefixes below win by longest-match.
+                    label: 'All Suppliers', route: 'suppliers.index', icon: Truck, match: 'suppliers',
+                    children: [{ label: 'New Supplier', route: 'suppliers.create' }],
+                    related: [
+                        { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
+                        { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+                        { label: 'Supplier Payments', route: 'finance.payments.index', icon: Rows3 },
+                    ],
+                },
+                { label: 'Contacts', route: 'suppliers.contacts.index', icon: UsersRound },
             ],
         },
         {
-            section: 'Lists',
+            section: 'Sourcing',
             items: [
-                { label: 'Approved Suppliers', route: 'suppliers.approved.index', icon: BadgeCheck },
-                { label: 'Contacts', route: 'suppliers.contacts.index', icon: UsersRound },
-                { label: 'Performance', route: 'suppliers.performance.index', icon: TrendingUp },
+                {
+                    label: 'Approved Suppliers', route: 'suppliers.approved.index', icon: BadgeCheck,
+                    related: [
+                        { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
+                        { label: 'Price Comparison', route: 'purchasing.price-comparison.index', icon: Scale },
+                    ],
+                },
+                {
+                    label: 'Performance', route: 'suppliers.performance.index', icon: TrendingUp,
+                    related: [{ label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput }],
+                },
             ],
         },
     ],
-
-    subModules: {
-        approved: {
-            label: 'Approved Suppliers', icon: BadgeCheck, routePrefix: 'suppliers.approved',
-            work: [{ label: 'Approved List', route: 'suppliers.approved.index', icon: LayoutList }],
-            quickLinks: [
-                { label: 'All Suppliers', route: 'suppliers.index', icon: Truck },
-                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: ListOrdered },
-            ],
-        },
-        contacts: {
-            label: 'Supplier Contacts', icon: UsersRound, routePrefix: 'suppliers.contacts',
-            work: [{ label: 'All Contacts', route: 'suppliers.contacts.index', icon: LayoutList }],
-            quickLinks: [{ label: 'All Suppliers', route: 'suppliers.index', icon: Truck }],
-        },
-        performance: {
-            label: 'Supplier Performance', icon: TrendingUp, routePrefix: 'suppliers.performance',
-            work: [{ label: 'Performance', route: 'suppliers.performance.index', icon: TrendingUp }],
-            quickLinks: [
-                { label: 'All Suppliers', route: 'suppliers.index', icon: Truck },
-                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
-            ],
-        },
-        suppliers: {
-            label: 'Supplier Profiles',
-            icon: Truck,
-            routePrefix: 'suppliers.',
-            work: [
-                { label: 'All Suppliers', route: 'suppliers.index', icon: LayoutList },
-                { label: 'New Supplier', route: 'suppliers.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Approved Suppliers', route: 'suppliers.approved.index', icon: BadgeCheck },
-                { label: 'Contacts', route: 'suppliers.contacts.index', icon: UsersRound },
-                { label: 'Performance', route: 'suppliers.performance.index', icon: TrendingUp },
-            ],
-        },
-    },
 };
-
-export default navConfig;

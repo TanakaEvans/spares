@@ -1,11 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
+import ModuleLayout from '@/Layouts/ModuleLayout';
 import { getModule } from '@/modules';
+import { navFor } from '@/nav';
 import { useCan } from '@/lib/can';
 
 export default function ModuleShow({ auth, moduleKey }) {
     const module = getModule(moduleKey);
+    const navConfig = navFor(moduleKey);
     const { can } = useCan();
 
     if (!module) return null;
@@ -15,8 +18,8 @@ export default function ModuleShow({ auth, moduleKey }) {
 
     const Icon = module.icon;
 
-    return (
-        <AppLayout title={module.title} auth={auth}>
+    const body = (
+        <>
             <Head title={module.title} />
 
             <div className="space-y-6">
@@ -110,6 +113,14 @@ export default function ModuleShow({ auth, moduleKey }) {
                     </div>
                 </div>
             </div>
-        </AppLayout>
+        </>
+    );
+
+    // The landing wears the module's own sidebar, so entering a module never
+    // makes the menu appear/disappear (docs/design/navigation-and-layout.md §2).
+    return navConfig ? (
+        <ModuleLayout navConfig={navConfig} title={module.title} breadcrumbs={[{ label: module.title }]}>{body}</ModuleLayout>
+    ) : (
+        <AppLayout title={module.title} auth={auth}>{body}</AppLayout>
     );
 }

@@ -2,33 +2,49 @@ import { Head, useForm } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function CommsIndex({ notes, customers }) {
+export default function CommsIndex({ notes, customers, filters = {} }) {
     const { data, setData, post, processing, reset } = useForm({ customer_id: '', channel: 'call', subject: '', body: '' });
+    const filter = useListFilter('customers.comms.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
     return (
         <ModuleLayout navConfig={navConfig} title="Communication Log" breadcrumbs={[{ label: 'Customers', href: route('modules.show', 'customers') }, { label: 'Communication Log' }]}>
             <Head title="Communication Log" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
-                <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white overflow-hidden">
-                    {notes.data.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-slate-400"><MessageSquare className="w-8 h-8 mx-auto mb-2 text-slate-300" />No communications logged.</div>
-                    ) : (
-                        <ul className="divide-y divide-slate-50">
-                            {notes.data.map((n) => (
-                                <li key={n.id} className="px-4 py-3">
-                                    <div className="flex items-center justify-between">
-                                        <EntityLink type="customer" id={n.customer_id} label={n.customer} className="text-sm font-semibold" />
-                                        <span className="text-xs text-slate-400 capitalize">{n.channel} · {n.at}</span>
-                                    </div>
-                                    <div className="text-sm text-slate-700 mt-0.5">{n.subject}</div>
-                                    {n.body && <div className="text-xs text-slate-500 mt-0.5">{n.body}</div>}
-                                    {n.user && <div className="text-[11px] text-slate-400 mt-0.5">by <EntityLink type="user" id={n.user_id} label={n.user} muted /></div>}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Subject, details or customer…"
+                searchClass="w-64"
+                dateRange
+            >
+                <select aria-label="Channel" value={filters.channel ?? ''} onChange={(e) => filter({ channel: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                    <option value="">All channels</option>
+                    {['call', 'email', 'visit', 'note'].map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+            </ListToolbar>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
+                <div className="lg:col-span-2">
+                    <DataTable
+                        columns={[
+                            { key: 'customer', label: 'Customer', render: (n) => <EntityLink type="customer" id={n.customer_id} label={n.customer} className="text-sm font-semibold" /> },
+                            { key: 'subject', label: 'Communication', render: (n) => (
+                                <div><div className="text-sm text-slate-700">{n.subject}</div>{n.body && <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</div>}</div>
+                            ) },
+                            { key: 'channel', label: 'Channel', sortable: 'channel', render: (n) => <span className="text-xs text-slate-400 capitalize">{n.channel}</span> },
+                            { key: 'at', label: 'When', sortable: 'created_at', render: (n) => (
+                                <div className="text-xs text-slate-400">{n.at}{n.user && <div className="text-[11px]">by <EntityLink type="user" id={n.user_id} label={n.user} muted /></div>}</div>
+                            ) },
+                        ]}
+                        rows={notes.data}
+                        pagination={notes}
+                        sorting={{ filters, onFilter: filter }}
+                        emptyTitle="No communications logged"
+                        emptyIcon={MessageSquare}
+                    />
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); post(route('customers.comms.store'), { onSuccess: () => reset('subject', 'body') }); }} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">
                     <h2 className="text-sm font-semibold text-slate-700">Log communication</h2>

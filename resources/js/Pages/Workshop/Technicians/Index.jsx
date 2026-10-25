@@ -2,13 +2,17 @@ import { Head, useForm } from '@inertiajs/react';
 import { Plus, HardHat } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/workshop';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function TechniciansIndex({ technicians, branches }) {
+export default function TechniciansIndex({ technicians, branches, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '', skill_level: 'qualified', specialisations: '', cost_rate: '', branch_id: '',
     });
+    const filter = useListFilter('workshop.technicians.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
     return (
@@ -16,32 +20,29 @@ export default function TechniciansIndex({ technicians, branches }) {
             breadcrumbs={[{ label: 'Workshop', href: route('modules.show', 'workshop') }, { label: 'Technicians' }]}>
             <Head title="Technicians" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
-                <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white overflow-hidden">
-                    {technicians.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-slate-400"><HardHat className="w-8 h-8 mx-auto mb-2 text-slate-300" />No technicians yet.</div>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                    <th className="px-4 py-2">Name</th><th className="px-2 py-2">Skill</th>
-                                    <th className="px-2 py-2">Specialisations</th><th className="px-2 py-2 text-right">Cost/hr</th>
-                                    <th className="px-4 py-2 text-right">Active jobs</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {technicians.map((t) => (
-                                    <tr key={t.id} className={t.is_active ? '' : 'opacity-50'}>
-                                        <td className="px-4 py-2"><EntityLink type="technician" id={t.id} label={t.name} className="font-semibold" /></td>
-                                        <td className="px-2 py-2"><StatusBadge status={t.skill_level === 'master' ? 'special_order' : t.skill_level === 'apprentice' ? 'pending' : 'active'} label={t.skill_level} /></td>
-                                        <td className="px-2 py-2 text-slate-500">{t.specialisations ?? '—'}</td>
-                                        <td className="px-2 py-2 text-right tabular-nums text-slate-500">{t.cost_rate.toFixed(2)}</td>
-                                        <td className="px-4 py-2 text-right tabular-nums font-medium text-slate-700">{t.active_jobs}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Name, skill or branch…"
+                searchClass="w-64"
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
+                <div className="lg:col-span-2">
+                    <DataTable
+                        columns={[
+                            { key: 'name', label: 'Name', sortable: 'name', render: (t) => <EntityLink type="technician" id={t.id} label={t.name} className="font-semibold" /> },
+                            { key: 'skill_level', label: 'Skill', sortable: 'skill_level', render: (t) => <StatusBadge status={t.skill_level === 'master' ? 'special_order' : t.skill_level === 'apprentice' ? 'pending' : 'active'} label={t.skill_level} /> },
+                            { key: 'specialisations', label: 'Specialisations', render: (t) => <span className="text-slate-500">{t.specialisations ?? '—'}</span> },
+                            { key: 'cost_rate', label: 'Cost/hr', align: 'right', render: (t) => <span className="tabular-nums text-slate-500">{t.cost_rate.toFixed(2)}</span> },
+                            { key: 'active_jobs', label: 'Active jobs', align: 'right', render: (t) => <span className="tabular-nums font-medium text-slate-700">{t.active_jobs}</span> },
+                        ]}
+                        rows={technicians.data}
+                        pagination={technicians}
+                        sorting={{ filters, onFilter: filter }}
+                        rowClassName={(t) => (t.is_active ? '' : 'opacity-50')}
+                        emptyTitle="No technicians yet"
+                        emptyIcon={HardHat}
+                    />
                 </div>
 
                 <form onSubmit={(e) => { e.preventDefault(); post(route('workshop.technicians.store'), { onSuccess: () => reset() }); }} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">

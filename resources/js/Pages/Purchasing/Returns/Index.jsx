@@ -5,11 +5,12 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
 import { fmt } from '@/Components/Pos/posMath';
+import { useListFilter } from '@/lib/listFilters';
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog';
@@ -25,12 +26,7 @@ export default function ReturnsIndex({ returns, stats, filters }) {
     const [action, setAction] = useState(null); // {type: 'ship'|'credit', return}
     const [value, setValue] = useState('');
     const [value2, setValue2] = useState('');
-
-    function filter(params) {
-        router.get(route('purchasing.returns.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true });
-    }
+    const filter = useListFilter('purchasing.returns.index', filters);
 
     function run() {
         if (action.type === 'ship') {
@@ -64,7 +60,14 @@ export default function ReturnsIndex({ returns, stats, filters }) {
                     ]}
                 />
 
-                <div className="flex flex-wrap items-center gap-3">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Return, RMA or supplier…"
+                    searchClass="w-64"
+                    dateRange
+                    exportRoute="purchasing.returns.export"
+                >
                     <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
                         {PILLS.map((p) => (
                             <button
@@ -80,31 +83,24 @@ export default function ReturnsIndex({ returns, stats, filters }) {
                             </button>
                         ))}
                     </div>
-                    <SearchInput
-                        id="sr-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => filter({ search: s })}
-                        placeholder="Return, RMA or supplier…"
-                        className="w-64"
-                    />
                     <Link
                         href={route('purchasing.returns.create')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+                        className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                     >
                         <Plus className="w-4 h-4" />
                         New Return
                     </Link>
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
-                        { key: 'return_number', label: 'Return No', render: (r) => <EntityLink type="supplier_return" id={r.id} label={r.return_number} mono className="font-semibold" /> },
+                        { key: 'return_number', label: 'Return No', sortable: 'return_number', render: (r) => <EntityLink type="supplier_return" id={r.id} label={r.return_number} mono className="font-semibold" /> },
                         { key: 'supplier', label: 'Supplier', render: (r) => <EntityLink type="supplier" id={r.supplier_id} label={r.supplier} /> },
                         { key: 'reason', label: 'Reason', render: (r) => <span className="capitalize text-slate-500">{r.reason.replace('_', ' ')}</span> },
                         { key: 'supplier_rma', label: 'RMA', render: (r) => <span className="font-mono text-slate-500">{r.supplier_rma ?? '—'}</span> },
                         { key: 'value', label: 'Stock value', align: 'right', render: (r) => <MoneyDisplay amount={r.value} /> },
                         { key: 'credit_total', label: 'Credited', align: 'right', render: (r) => r.credit_total !== null ? <MoneyDisplay amount={r.credit_total} /> : <span className="text-slate-300">—</span> },
-                        { key: 'status', label: 'Status', render: (r) => <StatusBadge status={r.status} /> },
+                        { key: 'status', label: 'Status', sortable: 'status', render: (r) => <StatusBadge status={r.status} /> },
                         {
                             key: 'actions', label: '',
                             render: (r) => (
@@ -125,6 +121,7 @@ export default function ReturnsIndex({ returns, stats, filters }) {
                     ]}
                     rows={returns.data}
                     pagination={returns}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(r) => route('purchasing.returns.show', r.id)}
                     emptyTitle="No supplier returns"
                     emptyMessage="Return damaged, incorrect or excess stock and recover the money."

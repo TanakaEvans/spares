@@ -4,11 +4,12 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
 import { fmt } from '@/Components/Pos/posMath';
+import { useListFilter } from '@/lib/listFilters';
 
 const PILLS = [
     { key: '', label: 'All' },
@@ -19,11 +20,7 @@ const PILLS = [
 ];
 
 export default function InvoicesIndex({ invoices, uninvoicedGrns, stats, filters }) {
-    function filter(params) {
-        router.get(route('purchasing.invoices.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true });
-    }
+    const filter = useListFilter('purchasing.invoices.index', filters);
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -66,7 +63,14 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, stats, filters
                     </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-3">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Invoice ref or supplier…"
+                    searchClass="w-64"
+                    dateRange
+                    exportRoute="purchasing.invoices.export"
+                >
                     <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
                         {PILLS.map((p) => (
                             <button
@@ -82,25 +86,18 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, stats, filters
                             </button>
                         ))}
                     </div>
-                    <SearchInput
-                        id="si-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => filter({ search: s })}
-                        placeholder="Invoice ref or supplier…"
-                        className="w-64"
-                    />
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
-                        { key: 'supplier_ref', label: 'Supplier Ref', render: (i) => <EntityLink type="supplier_invoice" id={i.id} label={i.supplier_ref} mono className="font-semibold" /> },
+                        { key: 'supplier_ref', label: 'Supplier Ref', sortable: 'supplier_ref', render: (i) => <EntityLink type="supplier_invoice" id={i.id} label={i.supplier_ref} mono className="font-semibold" /> },
                         { key: 'supplier', label: 'Supplier', render: (i) => <EntityLink type="supplier" id={i.supplier_id} label={i.supplier} /> },
                         { key: 'grn_number', label: 'GRN', render: (i) => <EntityLink type="grn" id={i.grn_id} label={i.grn_number} mono muted /> },
-                        { key: 'invoice_date', label: 'Date', render: (i) => <span className="tabular-nums text-slate-500">{i.invoice_date}</span> },
-                        { key: 'due_date', label: 'Due', render: (i) => <span className="tabular-nums text-slate-500">{i.due_date}</span> },
-                        { key: 'total', label: 'Total', align: 'right', render: (i) => <MoneyDisplay amount={i.total} /> },
+                        { key: 'invoice_date', label: 'Date', sortable: 'invoice_date', render: (i) => <span className="tabular-nums text-slate-500">{i.invoice_date}</span> },
+                        { key: 'due_date', label: 'Due', sortable: 'due_date', render: (i) => <span className="tabular-nums text-slate-500">{i.due_date}</span> },
+                        { key: 'total', label: 'Total', align: 'right', sortable: 'total', render: (i) => <MoneyDisplay amount={i.total} /> },
                         {
-                            key: 'status', label: 'Status',
+                            key: 'status', label: 'Status', sortable: 'status',
                             render: (i) => (
                                 <div>
                                     <StatusBadge status={i.status} />
@@ -122,6 +119,7 @@ export default function InvoicesIndex({ invoices, uninvoicedGrns, stats, filters
                     ]}
                     rows={invoices.data}
                     pagination={invoices}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(i) => route('purchasing.invoices.show', i.id)}
                     emptyTitle="No supplier invoices"
                     emptyMessage="Capture an invoice against a posted GRN — 3-way matching runs automatically."

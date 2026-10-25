@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Role;
 use App\Models\SystemModule;
 use App\Models\User;
@@ -10,31 +11,27 @@ use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
+    use ListQuery;
     /**
      * Display a listing of roles.
      */
     public function index(Request $request)
     {
-        $query = Role::withCount(['users', 'users as active_users_count' => function ($query) {
-            $query->where('status', 'active');
-        }, 'systemRoutes']);
-
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        $roles = $query->orderBy('name')->paginate(15)->withQueryString();
+        $roles = $this->listApply(
+            Role::withCount(['users', 'users as active_users_count' => function ($query) {
+                $query->where('status', 'active');
+            }, 'systemRoutes']),
+            $request,
+            [
+                'searchable' => ['name', 'description'],
+                'sortable' => ['name' => 'name'],
+                'defaultSort' => ['name' => 'asc'],
+            ]
+        )->paginate(15)->withQueryString();
 
         return inertia('Roles/Index', [
             'roles' => $roles,
-            'filters' => [
-                'search' => $request->search,
-            ],
+            'filters' => $this->listFilters($request),
         ]);
     }
 

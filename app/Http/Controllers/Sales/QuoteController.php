@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -10,6 +11,8 @@ use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
 use App\Services\SalesQuoteService;
 use App\Services\SettingsService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,18 +21,46 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class QuoteController extends Controller
 {
+    use ListQuery;
+
+    private function quotesQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SalesDocument::query()
+                ->where('document_type', 'quotation')
+                ->with('customer:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['document_number', 'notes', 'customer.name'],
+                'sortable' => [
+                    'document_number' => 'document_number', 'document_date' => 'document_date',
+                    'expiry_date' => 'expiry_date', 'total_incl' => 'total_incl', 'status' => 'status',
+                ],
+                'dateColumn' => 'document_date',
+                'defaultSort' => ['document_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered quotation list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->quotesQuery($request)->limit(5000)->get()->map(fn (SalesDocument $d) => [
+            $d->document_number, $d->customer?->name, $d->document_date?->toDateString(),
+            $d->expiry_date?->toDateString() ?? '—',
+            ucwords(str_replace('_', ' ', $d->isExpired() && $d->status === 'open' ? 'expired' : $d->status)),
+            number_format((float) $d->total_incl, 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'quotations', 'Quotations',
+            ['Quote No', 'Customer', 'Quoted', 'Expires', 'Status', 'Total'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Sales/Quotes/Index', [
-            'quotes' => SalesDocument::query()
-                ->where('document_type', 'quotation')
-                ->with('customer:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('document_number', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('document_date')->latest('id')
+            'quotes' => $this->quotesQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (SalesDocument $d) => [
@@ -51,7 +82,7 @@ class QuoteController extends Controller
                 'expiring' => (int) SalesDocument::query()->where('document_type', 'quotation')->where('status', 'open')
                     ->whereBetween('expiry_date', [now()->toDateString(), now()->addDays(5)->toDateString()])->count(),
             ],
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

@@ -1,7 +1,13 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
+import { useListFilter } from '@/lib/listFilters';
+import { Store, Plus } from 'lucide-react';
 
-export default function DepartmentsIndex({ auth, departments }) {
+export default function DepartmentsIndex({ auth, departments, filters = {} }) {
+    const filter = useListFilter('admin.departments.index', filters);
+
     const handleDelete = (department) => {
         if (confirm(`Are you sure you want to delete "${department.name}"?`)) {
             router.delete(route('admin.departments.destroy', department.id));
@@ -16,8 +22,7 @@ export default function DepartmentsIndex({ auth, departments }) {
         <AdminLayout title="Departments" auth={auth}>
             <Head title="Departments" />
 
-            <div className="space-y-6">
-                {/* Header */}
+            <div className="space-y-4">
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900">Departments</h2>
@@ -27,145 +32,55 @@ export default function DepartmentsIndex({ auth, departments }) {
                         href={route('admin.departments.create')}
                         className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
                     >
-                        <span>+</span>
+                        <Plus className="w-4 h-4" />
                         Add Department
                     </Link>
                 </div>
 
-                {/* Departments Table */}
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Department
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Code
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Branch
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Head
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Employees
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {departments.data.length > 0 ? (
-                                departments.data.map((department) => (
-                                    <tr key={department.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                    <span className="text-blue-600">🏬</span>
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {department.name}
-                                                    </div>
-                                                    {department.description && (
-                                                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                                                            {department.description}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 py-1 text-xs font-mono bg-gray-100 rounded">
-                                                {department.code}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {department.branch?.name || '-'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
-                                                {department.head_name || '-'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm text-gray-900">
-                                                {department.employees_count || 0}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <button
-                                                onClick={() => handleToggleStatus(department)}
-                                                className={`px-3 py-1 text-xs font-semibold rounded-full ${department.status === 'active'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-red-100 text-red-800'
-                                                    }`}
-                                            >
-                                                {department.status}
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-2">
-                                                <Link
-                                                    href={route('admin.departments.edit', department.id)}
-                                                    className="text-orange-600 hover:text-orange-900"
-                                                >
-                                                    Edit
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(department)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
-                                        No departments found. Create your first department to get started.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Name, code or branch…"
+                    searchClass="w-64"
+                />
 
-                    {/* Pagination */}
-                    {departments.links && departments.links.length > 3 && (
-                        <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-                            <div className="text-sm text-gray-500">
-                                Showing {departments.from} to {departments.to} of {departments.total} results
+                <DataTable
+                    columns={[
+                        { key: 'name', label: 'Department', sortable: 'name', render: (d) => (
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <Store className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div className="ml-4">
+                                    <div className="text-sm font-medium text-gray-900">{d.name}</div>
+                                    {d.description && <div className="text-sm text-gray-500 truncate max-w-xs">{d.description}</div>}
+                                </div>
                             </div>
-                            <div className="flex gap-2">
-                                {departments.links.map((link, index) => (
-                                    <Link
-                                        key={index}
-                                        href={link.url || '#'}
-                                        preserveState
-                                        preserveScroll
-                                        className={`px-3 py-1 text-sm rounded ${link.active
-                                                ? 'bg-orange-600 text-white'
-                                                : link.url
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                                            }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
+                        ) },
+                        { key: 'code', label: 'Code', render: (d) => <span className="px-2 py-1 text-xs font-mono bg-gray-100 rounded">{d.code}</span> },
+                        { key: 'branch', label: 'Branch', render: (d) => <span className="text-sm text-gray-900">{d.branch?.name || '-'}</span> },
+                        { key: 'head', label: 'Head', render: (d) => <span className="text-sm text-gray-900">{d.head_name || '-'}</span> },
+                        { key: 'employees', label: 'Employees', render: (d) => <span className="text-sm text-gray-900">{d.employees_count || 0}</span> },
+                        { key: 'status', label: 'Status', render: (d) => (
+                            <button onClick={(e) => { e.stopPropagation(); handleToggleStatus(d); }}
+                                className={`px-3 py-1 text-xs font-semibold rounded-full ${d.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {d.status}
+                            </button>
+                        ) },
+                        { key: 'actions', label: '', align: 'right', render: (d) => (
+                            <div className="flex justify-end gap-2 text-sm font-medium" onClick={(e) => e.stopPropagation()}>
+                                <Link href={route('admin.departments.edit', d.id)} className="text-orange-600 hover:text-orange-900">Edit</Link>
+                                <button onClick={() => handleDelete(d)} className="text-red-600 hover:text-red-900">Delete</button>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) },
+                    ]}
+                    rows={departments.data}
+                    pagination={departments}
+                    sorting={{ filters, onFilter: filter }}
+                    emptyTitle="No departments found"
+                    emptyMessage="Create your first department to get started."
+                    emptyIcon={Store}
+                />
             </div>
         </AdminLayout>
     );

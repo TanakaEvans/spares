@@ -6,16 +6,27 @@ import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
+import ListToolbar from '@/Components/ListToolbar';
 import PartLinePicker from '@/Components/PartLinePicker';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function TransfersIndex({ transfers, branches }) {
+const STATUS_PILLS = [
+    { key: '', label: 'All' },
+    { key: 'draft', label: 'Draft' },
+    { key: 'dispatched', label: 'In transit' },
+    { key: 'received', label: 'Received' },
+    { key: 'cancelled', label: 'Cancelled' },
+];
+
+export default function TransfersIndex({ transfers, branches, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         from_branch_id: branches[0]?.id ?? '',
         to_branch_id: branches[1]?.id ?? '',
         notes: '', lines: [],
     });
     const [lines, setLines] = useState([]);
+    const filter = useListFilter('inventory.transfers.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
     function sync(next) {
@@ -34,11 +45,29 @@ export default function TransfersIndex({ transfers, branches }) {
         >
             <Head title="Stock Transfers" />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Transfer number or branch…"
+                searchClass="w-64"
+                dateRange
+                exportRoute="inventory.transfers.export"
+            >
+                <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" role="tablist" aria-label="Status filter">
+                    {STATUS_PILLS.map((s) => (
+                        <button key={s.key} role="tab" aria-selected={(filters.status ?? '') === s.key} onClick={() => filter({ status: s.key })}
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${(filters.status ?? '') === s.key ? 'bg-orange-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+            </ListToolbar>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start mt-4">
                 <div className="xl:col-span-2">
                     <DataTable
                         columns={[
-                            { key: 'transfer_number', label: 'Number', render: (t) => <EntityLink type="transfer" id={t.id} label={t.transfer_number} mono className="font-semibold" /> },
+                            { key: 'transfer_number', label: 'Number', sortable: 'transfer_number', render: (t) => <EntityLink type="transfer" id={t.id} label={t.transfer_number} mono className="font-semibold" /> },
                             { key: 'from', label: 'From', render: (t) => <EntityLink type="branch" id={t.from_branch_id} label={t.from} muted /> },
                             { key: 'to', label: 'To', render: (t) => <EntityLink type="branch" id={t.to_branch_id} label={t.to} muted /> },
                             {
@@ -54,7 +83,7 @@ export default function TransfersIndex({ transfers, branches }) {
                                     </span>
                                 ),
                             },
-                            { key: 'status', label: 'Status', render: (t) => <StatusBadge status={t.status} /> },
+                            { key: 'status', label: 'Status', sortable: 'status', render: (t) => <StatusBadge status={t.status} /> },
                             {
                                 key: 'actions', label: '',
                                 render: (t) => (
@@ -81,6 +110,7 @@ export default function TransfersIndex({ transfers, branches }) {
                         ]}
                         rows={transfers.data}
                         pagination={transfers}
+                        sorting={{ filters, onFilter: filter }}
                         rowHref={(t) => route('inventory.transfers.show', t.id)}
                         emptyTitle="No transfers yet"
                         emptyMessage="Move stock between branches — dispatch reduces the source, receive lands it at the destination."

@@ -298,20 +298,31 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     Route::prefix('vehicle-ref')->name('vehicle-ref.')->group(function () {
         Route::get('fitment', \App\Http\Controllers\VehicleRef\FitmentLookupController::class)
             ->name('fitment')->defaults('description', 'Find every part that fits a vehicle');
+        Route::get('fitment/vehicles', [\App\Http\Controllers\VehicleRef\FitmentLookupController::class, 'vehicles'])
+            ->name('fitment.vehicles')->defaults('description', 'Type-a-vehicle search for the fitment lookup');
         Route::get('cross-ref', \App\Http\Controllers\VehicleRef\CrossReferenceController::class)
             ->name('cross-ref')->defaults('description', 'Search any part number across all references');
 
         Route::get('makes', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'index'])->name('makes.index');
         Route::post('makes', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'store'])->name('makes.store');
+        Route::get('makes/{make}', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'show'])->name('makes.show')->defaults('description', 'Vehicle make detail — models, engines, fitted parts');
         Route::patch('makes/{make}', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'update'])->name('makes.update');
+        Route::delete('makes/{make}', [\App\Http\Controllers\VehicleRef\VehicleMakeController::class, 'destroy'])->name('makes.destroy')->defaults('description', 'Delete (or deactivate if in use) a vehicle make');
 
         Route::get('models', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'index'])->name('models.index');
         Route::post('models', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'store'])->name('models.store');
         Route::get('models/{model}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'show'])->name('models.show');
+        Route::patch('models/{model}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'update'])->name('models.update')->defaults('description', 'Edit a vehicle model');
+        Route::delete('models/{model}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'destroy'])->name('models.destroy')->defaults('description', 'Delete (or deactivate if in use) a vehicle model');
         Route::post('models/{model}/variants', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'storeVariant'])->name('models.variants.store');
+        Route::patch('models/{model}/variants/{variant}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'updateVariant'])->name('models.variants.update')->defaults('description', 'Edit a vehicle variant');
+        Route::delete('models/{model}/variants/{variant}', [\App\Http\Controllers\VehicleRef\VehicleModelController::class, 'destroyVariant'])->name('models.variants.destroy')->defaults('description', 'Delete an unused vehicle variant');
 
         Route::get('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'index'])->name('engines.index');
         Route::post('engines', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'store'])->name('engines.store');
+        Route::get('engines/{engine}', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'show'])->name('engines.show')->defaults('description', 'Engine code detail — vehicles and fitted parts');
+        Route::patch('engines/{engine}', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'update'])->name('engines.update')->defaults('description', 'Edit an engine code');
+        Route::delete('engines/{engine}', [\App\Http\Controllers\VehicleRef\EngineCodeController::class, 'destroy'])->name('engines.destroy')->defaults('description', 'Delete an unused engine code');
 
         Route::get('supersessions', [\App\Http\Controllers\VehicleRef\SupersessionController::class, 'index'])->name('supersessions.index')->defaults('description', 'Part supersessions');
         Route::get('bulletins', [\App\Http\Controllers\VehicleRef\BulletinController::class, 'index'])->name('bulletins.index')->defaults('description', 'Technical bulletins');
@@ -327,6 +338,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'show'])->name('parts.show');
         Route::get('parts/{part}/edit', [\App\Http\Controllers\Inventory\PartController::class, 'edit'])->name('parts.edit');
         Route::patch('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'update'])->name('parts.update');
+        Route::delete('parts/{part}', [\App\Http\Controllers\Inventory\PartController::class, 'destroy'])->name('parts.destroy')->defaults('description', 'Delete (or retire) a part');
 
         Route::post('parts/{part}/cross-references', [\App\Http\Controllers\Inventory\PartRelationController::class, 'storeCrossReference'])->name('parts.crossrefs.store');
         Route::delete('parts/{part}/cross-references/{crossReference}', [\App\Http\Controllers\Inventory\PartRelationController::class, 'destroyCrossReference'])->name('parts.crossrefs.destroy');
@@ -337,23 +349,31 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('categories', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'index'])->name('categories.index');
         Route::post('categories', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'store'])->name('categories.store');
         Route::patch('categories/{category}', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('categories/{category}', [\App\Http\Controllers\Inventory\PartCategoryController::class, 'destroy'])->name('categories.destroy')->defaults('description', 'Delete (or deactivate if in use) a category');
 
         Route::get('brands', [\App\Http\Controllers\Inventory\PartBrandController::class, 'index'])->name('brands.index');
         Route::post('brands', [\App\Http\Controllers\Inventory\PartBrandController::class, 'store'])->name('brands.store');
+        Route::get('brands/{brand}', [\App\Http\Controllers\Inventory\PartBrandController::class, 'show'])->name('brands.show')->defaults('description', 'Brand detail — its parts and stock');
+        Route::patch('brands/{brand}', [\App\Http\Controllers\Inventory\PartBrandController::class, 'update'])->name('brands.update');
+        Route::delete('brands/{brand}', [\App\Http\Controllers\Inventory\PartBrandController::class, 'destroy'])->name('brands.destroy')->defaults('description', 'Delete (or deactivate if in use) a brand');
 
         Route::get('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'index'])->name('bins.index');
         Route::get('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'show'])->name('bins.show')->defaults('description', 'Bin location detail — parts stored here');
         Route::post('bins', [\App\Http\Controllers\Inventory\BinLocationController::class, 'store'])->name('bins.store');
+        Route::patch('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'update'])->name('bins.update');
+        Route::delete('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'destroy'])->name('bins.destroy');
 
         Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
         Route::get('stock/export', [\App\Http\Controllers\Inventory\StockLevelController::class, 'export'])->name('stock.export')->defaults('description', 'Export stock on hand to CSV');
         Route::patch('stock/{level}/reorder-levels', [\App\Http\Controllers\Inventory\StockMovementController::class, 'updateReorderLevels'])->name('stock.reorder-levels');
 
         Route::get('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'adjustments'])->name('adjustments.index');
+        Route::get('adjustments/export', [\App\Http\Controllers\Inventory\StockMovementController::class, 'exportAdjustments'])->name('adjustments.export')->defaults('description', 'Export stock adjustments');
         Route::get('adjustments/{adjustment}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'showAdjustment'])->name('adjustments.show')->defaults('description', 'Stock adjustment detail');
         Route::post('adjustments', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeAdjustment'])->name('adjustments.store');
 
         Route::get('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'transfers'])->name('transfers.index');
+        Route::get('transfers/export', [\App\Http\Controllers\Inventory\StockMovementController::class, 'exportTransfers'])->name('transfers.export')->defaults('description', 'Export stock transfers');
         Route::get('transfers/{transfer}', [\App\Http\Controllers\Inventory\StockMovementController::class, 'showTransfer'])->name('transfers.show')->defaults('description', 'Stock transfer detail');
         Route::post('transfers', [\App\Http\Controllers\Inventory\StockMovementController::class, 'storeTransfer'])->name('transfers.store');
         Route::post('transfers/{transfer}/dispatch', [\App\Http\Controllers\Inventory\StockMovementController::class, 'dispatchTransfer'])->name('transfers.dispatch');
@@ -364,6 +384,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('reorder/preferred-supplier', [\App\Http\Controllers\Inventory\StockMovementController::class, 'setPreferredSupplier'])->name('reorder.preferred-supplier');
 
         Route::get('stock-takes', [\App\Http\Controllers\Inventory\StockTakeController::class, 'index'])->name('stock-takes.index')->defaults('description', 'Stock takes — full and spot counts');
+        Route::get('stock-takes/export', [\App\Http\Controllers\Inventory\StockTakeController::class, 'export'])->name('stock-takes.export')->defaults('description', 'Export stock takes');
         Route::get('stock-takes/create', [\App\Http\Controllers\Inventory\StockTakeController::class, 'create'])->name('stock-takes.create')->defaults('description', 'Start a new stock take');
         Route::post('stock-takes', [\App\Http\Controllers\Inventory\StockTakeController::class, 'store'])->name('stock-takes.store')->defaults('description', 'Snapshot stock and begin counting');
         Route::get('stock-takes/{stockTake}', [\App\Http\Controllers\Inventory\StockTakeController::class, 'show'])->name('stock-takes.show')->defaults('description', 'Count and review a stock take');
@@ -387,6 +408,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::patch('{supplier}', [\App\Http\Controllers\Suppliers\SupplierController::class, 'update'])->name('update');
         Route::post('{supplier}/contacts', [\App\Http\Controllers\Suppliers\SupplierController::class, 'storeContact'])->name('contacts.store');
 
+        Route::get('{supplier}/price-lists/template', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'template'])->name('pricelists.template');
         Route::get('{supplier}/price-lists/import', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'import'])->name('pricelists.import');
         Route::post('{supplier}/price-lists/preview', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'preview'])->name('pricelists.preview');
         Route::post('{supplier}/price-lists', [\App\Http\Controllers\Suppliers\SupplierPriceListController::class, 'store'])->name('pricelists.store');
@@ -400,6 +422,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
     // ── Purchasing module ────────────────────────────────────────────────
     Route::prefix('purchasing')->name('purchasing.')->group(function () {
         Route::get('orders', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'index'])->name('orders.index');
+        Route::get('orders/export', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'export'])->name('orders.export')->defaults('description', 'Export purchase orders');
         Route::get('orders/create', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'create'])->name('orders.create');
         Route::get('orders/part-lookup', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'partLookup'])->name('orders.part-lookup');
         Route::post('orders', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'store'])->name('orders.store');
@@ -408,17 +431,20 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::get('orders/{order}/print', [\App\Http\Controllers\Purchasing\PurchaseOrderController::class, 'print'])->name('orders.print');
 
         Route::get('grns', [\App\Http\Controllers\Purchasing\GrnController::class, 'index'])->name('grns.index');
+        Route::get('grns/export', [\App\Http\Controllers\Purchasing\GrnController::class, 'export'])->name('grns.export')->defaults('description', 'Export goods received notes');
         Route::get('grns/{grn}', [\App\Http\Controllers\Purchasing\GrnController::class, 'show'])->name('grns.show')->defaults('description', 'Goods received note detail');
         Route::get('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'create'])->name('grns.create');
         Route::post('orders/{order}/receive', [\App\Http\Controllers\Purchasing\GrnController::class, 'store'])->name('grns.store');
 
         Route::get('invoices', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'index'])->name('invoices.index');
+        Route::get('invoices/export', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'export'])->name('invoices.export')->defaults('description', 'Export supplier invoices');
         Route::get('invoices/{supplierInvoice}', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'show'])->name('invoices.show')->defaults('description', 'Supplier invoice detail');
         Route::get('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'create'])->name('invoices.create');
         Route::post('grns/{grn}/invoice', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'store'])->name('invoices.store');
         Route::post('invoices/{invoice}/post', [\App\Http\Controllers\Purchasing\SupplierInvoiceController::class, 'post'])->name('invoices.post');
 
         Route::get('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'index'])->name('returns.index');
+        Route::get('returns/export', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'export'])->name('returns.export')->defaults('description', 'Export supplier returns');
         Route::get('returns/create', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'create'])->name('returns.create');
         Route::get('returns/{supplierReturn}', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'show'])->name('returns.show')->defaults('description', 'Supplier return detail');
         Route::post('returns', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'store'])->name('returns.store');
@@ -426,6 +452,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('returns/{return}/credit', [\App\Http\Controllers\Purchasing\SupplierReturnController::class, 'credit'])->name('returns.credit');
 
         Route::get('supplier-credits', [\App\Http\Controllers\Purchasing\SupplierCreditController::class, 'index'])->name('supplier-credits.index')->defaults('description', 'Supplier credit notes');
+        Route::get('supplier-credits/export', [\App\Http\Controllers\Purchasing\SupplierCreditController::class, 'export'])->name('supplier-credits.export')->defaults('description', 'Export supplier credits');
 
         Route::get('imports', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'index'])->name('imports.index')->defaults('description', 'Import shipments');
         Route::get('imports/{shipment}', [\App\Http\Controllers\Purchasing\ImportShipmentController::class, 'show'])->name('imports.show')->defaults('description', 'Import shipment detail');
@@ -467,12 +494,14 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Invoices
         Route::get('invoices', [\App\Http\Controllers\Sales\InvoiceController::class, 'index'])->name('invoices.index')->defaults('description', 'Tax invoices');
+        Route::get('invoices/export', [\App\Http\Controllers\Sales\InvoiceController::class, 'export'])->name('invoices.export')->defaults('description', 'Export tax invoices');
         Route::get('invoices/{invoice}', [\App\Http\Controllers\Sales\InvoiceController::class, 'show'])->name('invoices.show')->defaults('description', 'Invoice detail');
         Route::get('invoices/{invoice}/print', [\App\Http\Controllers\Sales\InvoiceController::class, 'print'])->name('invoices.print')->defaults('description', 'Print an A4 tax invoice');
         Route::get('invoices/{invoice}/receipt', [\App\Http\Controllers\Sales\InvoiceController::class, 'receipt'])->name('invoices.receipt')->defaults('description', 'Print an 80mm receipt');
 
         // Credit notes
         Route::get('credit-notes', [\App\Http\Controllers\Sales\CreditNoteController::class, 'index'])->name('credit-notes.index')->defaults('description', 'Credit notes and returns');
+        Route::get('credit-notes/export', [\App\Http\Controllers\Sales\CreditNoteController::class, 'export'])->name('credit-notes.export')->defaults('description', 'Export credit notes');
         Route::get('invoices/{invoice}/credit', [\App\Http\Controllers\Sales\CreditNoteController::class, 'create'])->name('credit-notes.create')->defaults('description', 'Raise a credit note');
         Route::post('invoices/{invoice}/credit', [\App\Http\Controllers\Sales\CreditNoteController::class, 'store'])->name('credit-notes.store')->defaults('description', 'Post a credit note');
         Route::get('credit-notes/{creditNote}', [\App\Http\Controllers\Sales\CreditNoteController::class, 'show'])->name('credit-notes.show')->defaults('description', 'Credit note detail');
@@ -480,6 +509,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Quotations
         Route::get('quotes', [\App\Http\Controllers\Sales\QuoteController::class, 'index'])->name('quotes.index')->defaults('description', 'Quotations');
+        Route::get('quotes/export', [\App\Http\Controllers\Sales\QuoteController::class, 'export'])->name('quotes.export')->defaults('description', 'Export quotations');
         Route::get('quotes/create', [\App\Http\Controllers\Sales\QuoteController::class, 'create'])->name('quotes.create')->defaults('description', 'New quotation');
         Route::post('quotes', [\App\Http\Controllers\Sales\QuoteController::class, 'store'])->name('quotes.store')->defaults('description', 'Save a quotation');
         Route::get('quotes/{quote}', [\App\Http\Controllers\Sales\QuoteController::class, 'show'])->name('quotes.show')->defaults('description', 'Quotation detail');
@@ -488,6 +518,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Sales orders
         Route::get('orders', [\App\Http\Controllers\Sales\OrderController::class, 'index'])->name('orders.index')->defaults('description', 'Sales orders');
+        Route::get('orders/export', [\App\Http\Controllers\Sales\OrderController::class, 'export'])->name('orders.export')->defaults('description', 'Export sales orders');
         Route::get('orders/create', [\App\Http\Controllers\Sales\OrderController::class, 'create'])->name('orders.create')->defaults('description', 'New sales order');
         Route::post('orders', [\App\Http\Controllers\Sales\OrderController::class, 'store'])->name('orders.store')->defaults('description', 'Save a sales order');
         Route::get('orders/{order}', [\App\Http\Controllers\Sales\OrderController::class, 'show'])->name('orders.show')->defaults('description', 'Sales order detail');
@@ -508,11 +539,13 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::post('promotions/{promotion}/toggle', [\App\Http\Controllers\Sales\PromotionController::class, 'toggle'])->name('promotions.toggle')->defaults('description', 'Activate/deactivate a promotion');
         // Lay-bys
         Route::get('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'index'])->name('laybys.index')->defaults('description', 'Lay-by management');
+        Route::get('laybys/export', [\App\Http\Controllers\Sales\LaybyController::class, 'export'])->name('laybys.export')->defaults('description', 'Export lay-bys');
         Route::get('laybys/{layby}', [\App\Http\Controllers\Sales\LaybyController::class, 'show'])->name('laybys.show')->defaults('description', 'Lay-by detail and payments');
         Route::post('laybys', [\App\Http\Controllers\Sales\LaybyController::class, 'store'])->name('laybys.store')->defaults('description', 'Create a lay-by');
         Route::post('laybys/{layby}/payment', [\App\Http\Controllers\Sales\LaybyController::class, 'addPayment'])->name('laybys.payment')->defaults('description', 'Record a lay-by payment');
         // Delivery notes
         Route::get('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'index'])->name('delivery-notes.index')->defaults('description', 'Delivery notes');
+        Route::get('delivery-notes/export', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'export'])->name('delivery-notes.export')->defaults('description', 'Export delivery notes');
         Route::get('delivery-notes/{deliveryNote}', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'show'])->name('delivery-notes.show')->defaults('description', 'Delivery note detail');
         Route::post('delivery-notes', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'store'])->name('delivery-notes.store')->defaults('description', 'Create a delivery note');
         Route::post('delivery-notes/{deliveryNote}/transition', [\App\Http\Controllers\Sales\DeliveryNoteController::class, 'transition'])->name('delivery-notes.transition')->defaults('description', 'Update delivery status');
@@ -528,6 +561,7 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         // General ledger + journals
         Route::get('gl', [\App\Http\Controllers\Finance\GeneralLedgerController::class, 'index'])->name('gl.index')->defaults('description', 'General ledger enquiry');
         Route::get('journals', [\App\Http\Controllers\Finance\JournalController::class, 'index'])->name('journals.index')->defaults('description', 'Journal register');
+        Route::get('journals/export', [\App\Http\Controllers\Finance\JournalController::class, 'export'])->name('journals.export')->defaults('description', 'Export the journal register');
         Route::get('journals/create', [\App\Http\Controllers\Finance\JournalController::class, 'create'])->name('journals.create')->defaults('description', 'Capture a manual journal');
         Route::post('journals', [\App\Http\Controllers\Finance\JournalController::class, 'store'])->name('journals.store')->defaults('description', 'Post a manual journal');
         Route::get('journals/{journal}', [\App\Http\Controllers\Finance\JournalController::class, 'show'])->name('journals.show')->defaults('description', 'Journal detail');
@@ -535,16 +569,18 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
 
         // Accounts receivable
         Route::get('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'index'])->name('receipts.index')->defaults('description', 'Customer receipts & AR ageing');
-        Route::get('receipts/{receipt}', [\App\Http\Controllers\Finance\ReceiptController::class, 'show'])->name('receipts.show')->defaults('description', 'Customer receipt detail and allocations');
         Route::get('receipts/create', [\App\Http\Controllers\Finance\ReceiptController::class, 'create'])->name('receipts.create')->defaults('description', 'Capture a customer receipt');
         Route::get('receipts/customer-lookup', [\App\Http\Controllers\Finance\ReceiptController::class, 'customerLookup'])->name('receipts.customer-lookup')->defaults('description', 'Customer & open-invoice lookup');
+        Route::get('receipts/export', [\App\Http\Controllers\Finance\ReceiptController::class, 'export'])->name('receipts.export')->defaults('description', 'Export customer receipts');
+        Route::get('receipts/{receipt}', [\App\Http\Controllers\Finance\ReceiptController::class, 'show'])->name('receipts.show')->defaults('description', 'Customer receipt detail and allocations');
         Route::post('receipts', [\App\Http\Controllers\Finance\ReceiptController::class, 'store'])->name('receipts.store')->defaults('description', 'Post a customer receipt');
 
         // Accounts payable + payment run
         Route::get('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'index'])->name('payments.index')->defaults('description', 'Supplier payments & AP ageing');
-        Route::get('payments/{payment}', [\App\Http\Controllers\Finance\PaymentController::class, 'show'])->name('payments.show')->defaults('description', 'Supplier payment detail and allocations');
         Route::get('payments/create', [\App\Http\Controllers\Finance\PaymentController::class, 'create'])->name('payments.create')->defaults('description', 'Capture a supplier payment');
         Route::get('payments/supplier-lookup', [\App\Http\Controllers\Finance\PaymentController::class, 'supplierLookup'])->name('payments.supplier-lookup')->defaults('description', 'Supplier & open-invoice lookup');
+        Route::get('payments/export', [\App\Http\Controllers\Finance\PaymentController::class, 'export'])->name('payments.export')->defaults('description', 'Export supplier payments');
+        Route::get('payments/{payment}', [\App\Http\Controllers\Finance\PaymentController::class, 'show'])->name('payments.show')->defaults('description', 'Supplier payment detail and allocations');
         Route::post('payments', [\App\Http\Controllers\Finance\PaymentController::class, 'store'])->name('payments.store')->defaults('description', 'Post a supplier payment');
         Route::get('payment-run', [\App\Http\Controllers\Finance\PaymentController::class, 'runIndex'])->name('payment-run.index')->defaults('description', 'Batch payment run');
         Route::post('payment-run', [\App\Http\Controllers\Finance\PaymentController::class, 'runExecute'])->name('payment-run.execute')->defaults('description', 'Execute a batch payment run');

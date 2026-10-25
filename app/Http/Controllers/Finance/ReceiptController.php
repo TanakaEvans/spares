@@ -2,26 +2,65 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\CustomerReceipt;
 use App\Services\ArReceiptService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class ReceiptController extends Controller
 {
+    use ListQuery;
+
+    private function receiptsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            CustomerReceipt::with('customer:id,name')
+                ->when($request->string('method')->toString(), fn ($q, $m) => $q->where('method', $m)),
+            $request,
+            [
+                'searchable' => ['receipt_number', 'reference', 'customer.name'],
+                'sortable' => [
+                    'receipt_number' => 'receipt_number', 'receipt_date' => 'receipt_date',
+                    'method' => 'method', 'amount' => 'amount', 'allocated' => 'allocated',
+                ],
+                'dateColumn' => 'receipt_date',
+                'defaultSort' => ['receipt_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered receipt list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->receiptsQuery($request)->limit(5000)->get()->map(fn (CustomerReceipt $r) => [
+            $r->receipt_number, $r->receipt_date->toDateString(), $r->customer?->name,
+            ucwords(str_replace('_', ' ', $r->method)),
+            number_format((float) $r->amount, 2, '.', ''),
+            number_format((float) $r->allocated, 2, '.', ''),
+            number_format($r->unallocated(), 2, '.', ''),
+            $r->reference ?? '—',
+        ]);
+
+        return ListExport::respond($request, 'customer-receipts', 'Customer Receipts',
+            ['Receipt No', 'Date', 'Customer', 'Method', 'Amount', 'Allocated', 'Unallocated', 'Reference'], $rows);
+    }
+
     public function index(Request $request, ArReceiptService $ar): Response
     {
         $asOf = $request->date('as_of')?->toDateString() ?? now()->toDateString();
 
         return Inertia::render('Finance/Receipts/Index', [
-            'receipts' => CustomerReceipt::with('customer:id,name')
-                ->latest('receipt_date')->latest('id')
+            'receipts' => $this->receiptsQuery($request)
                 ->paginate(15)
                 ->through(fn (CustomerReceipt $r) => [
                     'id' => $r->id,
@@ -34,7 +73,7 @@ class ReceiptController extends Controller
                     'unallocated' => $r->unallocated(),
                 ]),
             'ageing' => $ar->ageing($asOf),
-            'filters' => ['as_of' => $asOf],
+            'filters' => array_merge($this->listFilters($request, ['method']), ['as_of' => $asOf]),
         ]);
     }
 

@@ -49,3 +49,193 @@ L13A,HON,1.3L i-DSI petrol (Fit/Jazz),1339,petrol,naturally_aspirated,4
 L15A,HON,1.5L VTEC petrol (Fit/Jazz),1497,petrol,naturally_aspirated,4
 ZJ-VE,MAZ,1.3L petrol (Demio/Mazda2),1349,petrol,naturally_aspirated,4
 GW4D20,GWM,2.0L diesel turbo (Steed/H5),1996,diesel,turbo,4
+1Y,TOY,1.6L petrol (HiAce/Hilux older),1626,petrol,naturally_aspirated,4
+2Y,TOY,1.8L petrol (HiAce older),1812,petrol,naturally_aspirated,4
+3Y,TOY,2.0L petrol (HiAce/Hilux),1998,petrol,naturally_aspirated,4
+4Y,TOY,2.2L petrol (HiAce/Hilux),2237,petrol,naturally_aspirated,4
+4Y-E,TOY,2.2L petrol EFI (HiAce),2237,petrol,naturally_aspirated,4
+2L,TOY,2.4L diesel (Hilux/HiAce),2446,diesel,naturally_aspirated,4
+3L,TOY,2.8L diesel (Hilux/HiAce),2779,diesel,naturally_aspirated,4
+2C,TOY,2.0L diesel (Corolla/Townace),1974,diesel,naturally_aspirated,4
+3C-E,TOY,2.2L diesel (Estima/Townace),2184,diesel,naturally_aspirated,4
+3K,TOY,1.3L petrol (Corolla older),1166,petrol,naturally_aspirated,4
+4K,TOY,1.3L petrol (Corolla older),1290,petrol,naturally_aspirated,4
+5K,TOY,1.5L petrol (Liteace),1486,petrol,naturally_aspirated,4
+12R,TOY,1.6L petrol (Corona/HiAce older),1587,petrol,naturally_aspirated,4
+18R,TOY,2.0L petrol (Cressida/Celica),1968,petrol,naturally_aspirated,4
+22R,TOY,2.4L petrol (Hilux/Cressida),2367,petrol,naturally_aspirated,4
+1RZ,TOY,2.0L petrol EFI (HiAce),1998,petrol,naturally_aspirated,4
+2RZ,TOY,2.4L petrol EFI (HiAce/Hilux),2438,petrol,naturally_aspirated,4
+3RZ-FE,TOY,2.7L petrol EFI (Hilux/Prado),2693,petrol,naturally_aspirated,4
+1KZ-TE,TOY,3.0L turbo diesel (Hilux/Prado),2982,diesel,turbo,4
+7A-FE,TOY,1.8L petrol (Corolla/Conquest),1762,petrol,naturally_aspirated,4
+5A-FE,TOY,1.5L petrol (Corolla),1498,petrol,naturally_aspirated,4
+4E-FE,TOY,1.3L petrol (Corolla/Tazz),1331,petrol,naturally_aspirated,4
+2E,TOY,1.3L petrol (Corolla/Tazz),1295,petrol,naturally_aspirated,4
+1E,TOY,1.0L petrol (Starlet),999,petrol,naturally_aspirated,4
+4A-GE,TOY,1.6L petrol twin-cam (Corolla/Conquest RSI),1587,petrol,naturally_aspirated,4
+3S-FE,TOY,2.0L petrol (Camry/RAV4),1998,petrol,naturally_aspirated,4
+A14,NIS,1.4L petrol (1400/Sunny),1397,petrol,naturally_aspirated,4
+A15,NIS,1.5L petrol (1400/Sunny),1487,petrol,naturally_aspirated,4
+E13,NIS,1.3L petrol (Sentra older),1270,petrol,naturally_aspirated,4
+E16,NIS,1.6L petrol (Sentra/Langley),1597,petrol,naturally_aspirated,4
+GA15DS,NIS,1.5L petrol (Sentra),1498,petrol,naturally_aspirated,4
+SR20,NIS,2.0L petrol (Sentra/Primera),1998,petrol,naturally_aspirated,4
+KA20,NIS,2.0L petrol (Hardbody),1998,petrol,naturally_aspirated,4
+KA24,NIS,2.4L petrol (Hardbody/Navara),2389,petrol,naturally_aspirated,4
+Z20,NIS,2.0L petrol (Hardbody older),1952,petrol,naturally_aspirated,4
+Z22,NIS,2.2L petrol (Hardbody/720),2188,petrol,naturally_aspirated,4
+Z24,NIS,2.4L petrol (720/Hardbody),2389,petrol,naturally_aspirated,4
+H20,NIS,2.0L petrol (Caravan/Urvan),1982,petrol,naturally_aspirated,4
+H25,NIS,2.5L petrol (Urvan),2472,petrol,naturally_aspirated,4
+NA20,NIS,2.0L petrol (1-Tonner older),1998,petrol,naturally_aspirated,4
+L28,NIS,2.8L petrol (Laurel/280ZX),2753,petrol,naturally_aspirated,6
+RD28,NIS,2.8L diesel (Patrol/Laurel),2826,diesel,naturally_aspirated,6
+TD25,NIS,2.5L diesel (Hardbody),2494,diesel,naturally_aspirated,4
+QD32,NIS,3.2L diesel (Hardbody/Urvan),3153,diesel,naturally_aspirated,4
+SD22,NIS,2.2L diesel (720 older),2164,diesel,naturally_aspirated,4
+SD23,NIS,2.3L diesel (720/Caravan),2289,diesel,naturally_aspirated,4
+SD25,NIS,2.5L diesel (720/Urvan),2488,diesel,naturally_aspirated,4
+CD17,NIS,1.7L diesel (Sentra),1680,diesel,naturally_aspirated,4
+VG30,NIS,3.0L petrol V6 (300ZX/Maxima),2960,petrol,naturally_aspirated,6
+CA18,NIS,1.8L petrol (Skyline/Bluebird),1809,petrol,naturally_aspirated,4
+CA20,NIS,2.0L petrol (Bluebird),1974,petrol,naturally_aspirated,4
+LD28,NIS,2.8L diesel (Skyline/Laurel),2746,diesel,naturally_aspirated,6
+4JB1,ISU,2.8L diesel (KB/Trooper),2771,diesel,naturally_aspirated,4
+4JB1-T,ISU,2.8L turbo diesel (KB/Frontier),2771,diesel,turbo,4
+4ZD1,ISU,2.3L petrol (KB230),2294,petrol,naturally_aspirated,4
+4ZC1,ISU,2.0L petrol (KB/Trooper),1949,petrol,naturally_aspirated,4
+4ZE1,ISU,2.6L petrol (KB260/Trooper),2559,petrol,naturally_aspirated,4
+C190,ISU,1.9L diesel (KB/Gemini older),1951,diesel,naturally_aspirated,4
+C223,ISU,2.2L diesel (KB220),2238,diesel,naturally_aspirated,4
+C240,ISU,2.4L diesel (KB24/WFR),2369,diesel,naturally_aspirated,4
+4BC2,ISU,3.3L diesel (N-Series/NPR),3268,diesel,naturally_aspirated,4
+4BD1,ISU,3.9L diesel (N-Series/NPR),3856,diesel,naturally_aspirated,4
+4BD1-T,ISU,3.9L turbo diesel (N-Series/NPR),3856,diesel,turbo,4
+4HF1,ISU,4.3L diesel (NPR/NQR),4334,diesel,naturally_aspirated,4
+6HE1,ISU,7.1L diesel (FSR),7127,diesel,naturally_aspirated,6
+6VE1,ISU,3.5L petrol V6 (Trooper/Frontier),3494,petrol,naturally_aspirated,6
+G161Z,ISU,1.6L petrol (KB/Gemini),1584,petrol,naturally_aspirated,4
+G180Z,ISU,1.8L petrol (KB180),1817,petrol,naturally_aspirated,4
+G200Z,ISU,1.9L petrol (KB200/Frontera),1949,petrol,naturally_aspirated,4
+B6,MAZ,1.6L petrol (323/Familia),1597,petrol,naturally_aspirated,4
+BP,MAZ,1.8L petrol (323/626),1840,petrol,naturally_aspirated,4
+F2,MAZ,2.2L petrol (626/B2200),2184,petrol,naturally_aspirated,4
+F8,MAZ,1.8L petrol (626/B1800),1789,petrol,naturally_aspirated,4
+FE,MAZ,2.0L petrol (626/E2000/B2000),1998,petrol,naturally_aspirated,4
+FP,MAZ,1.8L petrol (Etude/Familia),1840,petrol,naturally_aspirated,4
+NA,MAZ,1.6L petrol (B1600/E1600),1586,petrol,naturally_aspirated,4
+RF,MAZ,2.0L diesel (626/B-series),1998,diesel,naturally_aspirated,4
+R2,MAZ,2.2L diesel (B2200/E2200),2184,diesel,naturally_aspirated,4
+SL,MAZ,3.5L diesel (T3500/E3000),3455,diesel,naturally_aspirated,4
+G6,MAZ,2.6L petrol (B2600/E2600),2606,petrol,naturally_aspirated,4
+WL,MAZ,2.5L diesel (B2500/Ranger),2499,diesel,naturally_aspirated,4
+WLT,MAZ,2.5L turbo diesel (B2500),2499,diesel,turbo,4
+4G13,MIT,1.3L petrol (Colt/Lancer),1298,petrol,naturally_aspirated,4
+4G15,MIT,1.5L petrol (Colt/Lancer),1468,petrol,naturally_aspirated,4
+4G63,MIT,2.0L petrol (Lancer/Galant),1997,petrol,naturally_aspirated,4
+4G54,MIT,2.6L petrol (L300/Pajero older),2555,petrol,naturally_aspirated,4
+4G94,MIT,1.8L petrol (Lancer),1834,petrol,naturally_aspirated,4
+6G72,MIT,3.0L petrol V6 (Pajero),2972,petrol,naturally_aspirated,6
+4G69,MIT,2.4L petrol (Outlander),2378,petrol,naturally_aspirated,4
+G4ED,HYU,1.6L petrol (Accent/Elantra),1599,petrol,naturally_aspirated,4
+G4GC,HYU,2.0L petrol (Elantra/Tucson),1975,petrol,naturally_aspirated,4
+G4EK,HYU,1.5L petrol (Accent older),1495,petrol,naturally_aspirated,4
+D4BA,HYU,2.5L diesel (H-100/Grace),2476,diesel,naturally_aspirated,4
+D4BH,HYU,2.5L turbo diesel (H-100/H-1),2476,diesel,turbo,4
+G4CS,HYU,2.4L petrol (Sonata/H-100),2351,petrol,naturally_aspirated,4
+G4JP,HYU,2.0L petrol (Sonata),1997,petrol,naturally_aspirated,4
+G6BA,HYU,2.7L V6 petrol (Tucson/Santa Fe),2656,petrol,naturally_aspirated,6
+G4KD,HYU,2.0L petrol (i30/Sonata),1998,petrol,naturally_aspirated,4
+J3,KIA,2.9L diesel (K2700/Bongo),2865,diesel,naturally_aspirated,4
+JT,KIA,3.0L diesel (K2700 older),2873,diesel,naturally_aspirated,4
+B5,KIA,1.5L petrol (Pride/Festiva),1498,petrol,naturally_aspirated,4
+TB,KIA,1.8L petrol (Sephia/Shuma),1793,petrol,naturally_aspirated,4
+CVH,FOR,1.6L petrol (Escort/Fiesta older),1596,petrol,naturally_aspirated,4
+F6,FOR,1.6L petrol (Laser/Meteor older),1597,petrol,naturally_aspirated,4
+FEU,FOR,2.0L petrol (Cortina/Sierra),1993,petrol,naturally_aspirated,4
+XLD418,FOR,1.8L diesel (Escort/Fiesta),1753,diesel,naturally_aspirated,4
+ROCAM,FOR,1.3L petrol (Bantam/Fiesta),1299,petrol,naturally_aspirated,4
+V4,FOR,3.0L petrol V6 (Cortina/Courier),2994,petrol,naturally_aspirated,6
+ZETEC,FOR,1.8/2.0L petrol (Fiesta/Focus),1796,petrol,naturally_aspirated,4
+PINTO,FOR,2.0L petrol OHC (Cortina/Sierra),1993,petrol,naturally_aspirated,4
+ABF,VW,2.0L 16V petrol (Golf/Jetta III),1984,petrol,naturally_aspirated,4
+ADY,VW,2.0L petrol (Golf/Jetta III),1984,petrol,naturally_aspirated,4
+AKL,VW,1.6L petrol (Golf IV/Polo),1595,petrol,naturally_aspirated,4
+AGU,VW,1.8L turbo petrol (Golf IV),1781,petrol,turbo,4
+AVU,VW,1.6L petrol (Polo/Golf IV),1598,petrol,naturally_aspirated,4
+BAH,VW,2.0L petrol (Golf/Jetta IV),1984,petrol,naturally_aspirated,4
+AAF,VW,1.8L pe
+EV,VW,1.8L petrol (Golf/Jetta II),1781,petrol,naturally_aspirated,4
+GY,VW,1.3L petrol (Golf I/Jetta I),1272,petrol,naturally_aspirated,4
+HK,VW,1.5L petrol (Golf I),1457,petrol,naturally_aspirated,4
+2E-SE,VW,2.0L petrol (Transporter/Microbus),1984,petrol,naturally_aspirated,4
+ACT,VW,1.4L petrol (Polo),1390,petrol,naturally_aspirated,4
+AEA,VW,1.6L petrol (Polo),1595,petrol,naturally_aspirated,4
+AGN,VW,1.8L petrol (Golf IV/Polo),1781,petrol,naturally_aspirated,4
+AJM,VW,1.9L TDI diesel (Golf IV/Polo),1896,diesel,turbo,4
+AFN,VW,1.9L TDI diesel (Passat/Polo),1896,diesel,turbo,4
+AAZ,VW,1.9L turbo diesel (Golf III),1896,diesel,turbo,4
+16SE,OPE,1.6L petrol (Corsa/Kadett),1598,petrol,naturally_aspirated,4
+18SE,OPE,1.8L petrol (Astra/Kadett),1796,petrol,naturally_aspirated,4
+20SE,OPE,2.0L petrol (Astra/Monza),1998,petrol,naturally_aspirated,4
+C16SE,OPE,1.6L petrol (Astra/Kadett),1598,petrol,naturally_aspirated,4
+X14XE,OPE,1.4L petrol (Corsa),1389,petrol,naturally_aspirated,4
+X16SZR,OPE,1.6L petrol (Corsa),1598,petrol,naturally_aspirated,4
+C20XE,OPE,2.0L 16V petrol (Astra/Kadett GSi),1998,petrol,naturally_aspirated,4
+17D,OPE,1.7L diesel (Kadett),1699,diesel,naturally_aspirated,4
+B12,CHE,1.2L petrol (Spark),1150,petrol,naturally_aspirated,4
+F8CV,CHE,0.8L petrol (Spark),796,petrol,naturally_aspirated,3
+F16D3,CHE,1.6L petrol (Aveo/Cruze),1598,petrol,naturally_aspirated,4
+F18D3,CHE,1.8L petrol (Lumina/Aveo),1796,petrol,naturally_aspirated,4
+G13B,SUZ,1.3L petrol (Swift/Carry),1298,petrol,naturally_aspirated,4
+G16B,SUZ,1.6L petrol (Vitara/Sidekick),1590,petrol,naturally_aspirated,4
+F8B,SUZ,0.8L petrol (Carry/Alto),797,petrol,naturally_aspirated,3
+F10A,SUZ,1.0L petrol (Carry),970,petrol,naturally_aspirated,4
+J20A,SUZ,2.0L petrol (Grand Vitara),1995,petrol,naturally_aspirated,4
+K14B,SUZ,1.4L petrol (Swift/Ertiga),1372,petrol,naturally_aspirated,4
+M16A,SUZ,1.6L petrol (SX4/Swift),1586,petrol,naturally_aspirated,4
+G15A,SUZ,1.5L petrol (Swift older),1498,petrol,naturally_aspirated,4
+K4M,REN,1.6L petrol (Clio/Megane/Logan),1598,petrol,naturally_aspirated,4
+K7M,REN,1.6L petrol (Logan/Sandero),1598,petrol,naturally_aspirated,4
+F4R,REN,2.0L petrol (Megane/Clio RS),1998,petrol,naturally_aspirated,4
+C3J,REN,1.4L petrol (Clio older),1390,petrol,naturally_aspirated,4
+E7J,REN,1.4L petrol (Clio/Megane),1390,petrol,naturally_aspirated,4
+TU3,PEU,1.4L petrol (206/306),1360,petrol,naturally_aspirated,4
+TU5,PEU,1.6L petrol (206/307),1587,petrol,naturally_aspirated,4
+XU7,PEU,1.8L petrol (306/405),1761,petrol,naturally_aspirated,4
+XUD9,PEU,1.9L diesel (306/405),1905,diesel,naturally_aspirated,4
+FIRE,FIA,1.1L petrol (Uno/Palio),1108,petrol,naturally_aspirated,4
+146A,FIA,1.4L petrol (Uno Turbo),1372,petrol,turbo,4
+M40,BMW,1.8L petrol (316i/318i E30/E36),1796,petrol,naturally_aspirated,4
+M42,BMW,1.8L petrol (318iS E36),1795,petrol,naturally_aspirated,4
+M43,BMW,1.8L petrol (316i/318i E36),1796,petrol,naturally_aspirated,4
+M50,BMW,2.5L petrol (325i/525i E34/E36),2494,petrol,naturally_aspirated,6
+M52,BMW,2.8L petrol (328i/528i E36/E39),2793,petrol,naturally_aspirated,6
+M54,BMW,3.0L petrol (330i/530i E46/E39),2979,petrol,naturally_aspirated,6
+N42,BMW,1.8L petrol (316i/318i E46),1796,petrol,naturally_aspirated,4
+N46,BMW,2.0L petrol (318i/320i E46/E90),1995,petrol,naturally_aspirated,4
+M20,BMW,2.0L petrol (320i E30),1990,petrol,naturally_aspirated,6
+M10,BMW,1.8L petrol (316/318 E30 older),1766,petrol,naturally_aspirated,4
+M102,MB,2.0L petrol (190E/W124),1997,petrol,naturally_aspirated,4
+M111,MB,2.0L petrol (C200/C230 W202),1998,petrol,naturally_aspirated,4
+M271,MB,1.8L petrol Kompressor (C-Class W203),1796,petrol,turbo,4
+OM601,MB,2.0L diesel (190D/W124),1997,diesel,naturally_aspirated,4
+OM602,MB,2.5L diesel (250D W124),2497,diesel,naturally_aspirated,5
+OM604,MB,2.2L diesel (C220 W202),2155,diesel,naturally_aspirated,4
+OM615,MB,2.0L diesel (W115/123 older),1988,diesel,naturally_aspirated,4
+OM616,MB,2.4L diesel (240D W123),2399,diesel,naturally_aspirated,4
+OM617,MB,3.0L diesel (300D W123/W126),2998,diesel,naturally_aspirated,5
+D15B,HON,1.5L petrol (Civic/Ballade),1493,petrol,naturally_aspirated,4
+D16A,HON,1.6L petrol (Civic/Ballade),1590,petrol,naturally_aspirated,4
+B16B,HON,1.6L petrol VTEC (Civic Type R),1595,petrol,naturally_aspirated,4
+B18B,HON,1.8L petrol (Integra/Civic),1797,petrol,naturally_aspirated,4
+B20B,HON,2.0L petrol (CR-V/Orthia),1973,petrol,naturally_aspirated,4
+F20A,HON,2.0L petrol (Accord),1997,petrol,naturally_aspirated,4
+CB,DAI,0.8L petrol (Charade/Move),847,petrol,naturally_aspirated,3
+ED,DAI,0.8L petrol (Cuore),847,petrol,naturally_aspirated,3
+HE-E,DAI,1.5L petrol (Applause/Charade),1589,petrol,naturally_aspirated,4
+K3-VE,DAI,1.3L petrol (Terios/Sirion),1297,petrol,naturally_aspirated,4
+EJ20,SUB,2.0L petrol boxer (Impreza/Legacy),1994,petrol,naturally_aspirated,4
+EJ25,SUB,2.5L petrol boxer (Forester/Outback),2457,petrol,naturally_aspirated,4
+F8C,DAE,0.8L petrol (Matiz),796,petrol,naturally_aspirated,3

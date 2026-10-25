@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\RetiresRecords;
 use App\Http\Controllers\Controller;
+use App\Models\Part;
 use App\Models\PartCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,6 +13,7 @@ use Inertia\Response;
 
 class PartCategoryController extends Controller
 {
+    use RetiresRecords;
     public function index(): Response
     {
         return Inertia::render('Inventory/Categories/Index', [
@@ -52,5 +55,13 @@ class PartCategoryController extends Controller
         $category->update($data);
 
         return back()->with('success', "Category {$category->name} updated.");
+    }
+
+    public function destroy(PartCategory $category): RedirectResponse
+    {
+        return $this->retireOrDelete($category, "Category {$category->name}", [
+            'part' => Part::withTrashed()->where('category_id', $category->id)->count(),
+            'sub-category' => $category->children()->count(),
+        ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerGroup;
@@ -19,6 +20,7 @@ use App\Services\DocumentPdfService;
 use App\Services\NumberSequenceService;
 use App\Support\CsvExport;
 use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -28,19 +30,31 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class CustomerController extends Controller
 {
+    use ListQuery;
+
+    private function customersQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            Customer::query()
+                ->with('group:id,name')
+                ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('type', $t))
+                ->when($request->boolean('on_hold'), fn ($q) => $q->where('on_hold', true)),
+            $request,
+            [
+                'searchable' => ['name', 'customer_number', 'phone', 'email', 'vat_number'],
+                'sortable' => [
+                    'customer_number' => 'customer_number', 'name' => 'name',
+                    'type' => 'type', 'credit_limit' => 'credit_limit',
+                ],
+                'defaultSort' => ['name' => 'asc'],
+            ]
+        );
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Customers/Index', [
-            'customers' => Customer::query()
-                ->with('group:id,name')
-                ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('type', $t))
-                ->when($request->boolean('on_hold'), fn ($q) => $q->where('on_hold', true))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('name', 'like', "%{$s}%")
-                        ->orWhere('customer_number', 'like', "%{$s}%")
-                        ->orWhere('phone', 'like', "%{$s}%")
-                ))
-                ->orderBy('name')
+            'customers' => $this->customersQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (Customer $c) => [
@@ -54,7 +68,7 @@ class CustomerController extends Controller
                     'on_hold' => $c->on_hold,
                     'is_walk_in' => $c->is_walk_in,
                 ]),
-            'filters' => $request->only('search', 'type', 'on_hold'),
+            'filters' => $this->listFilters($request, ['type', 'on_hold']),
         ]);
     }
 
@@ -229,16 +243,7 @@ class CustomerController extends Controller
     /** The customer directory as a CSV or PDF export (honours the same filters). */
     public function export(Request $request): HttpResponse
     {
-        $rows = Customer::query()
-            ->with('group:id,name')
-            ->when($request->string('type')->toString(), fn ($q, $t) => $q->where('type', $t))
-            ->when($request->boolean('on_hold'), fn ($q) => $q->where('on_hold', true))
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                fn ($x) => $x->where('name', 'like', "%{$s}%")
-                    ->orWhere('customer_number', 'like', "%{$s}%")
-                    ->orWhere('phone', 'like', "%{$s}%")
-            ))
-            ->orderBy('name')->get()
+        $rows = $this->customersQuery($request)->limit(5000)->get()
             ->map(fn (Customer $c) => [
                 $c->customer_number, $c->name, $c->type, $c->group?->name, $c->phone, $c->email, $c->city,
                 number_format((float) $c->credit_limit, 2, '.', ''),

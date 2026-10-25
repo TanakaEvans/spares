@@ -2,7 +2,7 @@
 
 > The definitive **module-level** sidebar design for each module. **Rule: every module has its own sidebar; every sub-module is reachable from it.** Rendered by the shared `ModuleLayout` from a per-module `nav.js` config (see [navigation-and-layout.md](navigation-and-layout.md)); items are permission-filtered; icons are Lucide names.
 >
-> **Level 3 — inside a sub-module the sidebar switches to that sub-module's own contextual menu** (only its screens + curated quick links). Those layouts are in [sidebars/](sidebars/README.md), one design per sub-module (all 82).
+> **Stable-menu rule (2026-10-25):** this module menu is shown on EVERY page of the module, including its landing — it is never swapped for a sub-module menu ([navigation-and-layout.md §2](navigation-and-layout.md)). The live configs in `resources/js/nav/*.js` are authoritative where they differ from the trees below (they add screens built since, e.g. Serial & Batch, Bank Accounts, Technical Bulletins, Employees/Sections, Backups); sub-module actions appear as `children`, cross-module jumps as `related`.
 
 **Config shape** (`Modules/{X}/resources/js/nav.js`):
 ```js
@@ -205,6 +205,6 @@ GOVERNANCE
 
 ### Behaviour rules
 1. `(Ph6)` items render greyed with a "Coming soon" tag until the feature ships (driven by `system_routes.status`) — the menu structure is stable from day one so muscle memory never breaks.
-2. Active item: accent left-border + light background; its section auto-expands; sections are collapsible and remember state per user (`localStorage`).
+2. Active item: accent left-border + light background (longest route-prefix match); its section is forced open; sections are collapsible and remember state per module (`localStorage`) — **built 2026-10-25**.
 3. Badge counts on operational items where noted in module docs (e.g. Reorder Report shows count of below-reorder parts; Job Board shows open jobs; GRN shows POs awaiting receipt).
 4. Default landing per module is the ★-marked item, overridable per role in the Configuration Centre.

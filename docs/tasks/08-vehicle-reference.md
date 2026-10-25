@@ -5,6 +5,9 @@
 
 Runs alongside [tasks/01-inventory.md](01-inventory.md) — the cross-reference, supersession and fitment *tables* (`part_cross_references`, `part_supersessions`, `part_fitments`) belong to Module 1; this file owns the vehicle master data and the reference/search screens. Seeding detail: [local-data-seeding](../integrations/local-data-seeding.md).
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** all five VehicleRef lists on the shared contract — Makes (search + sort), Models (make dropdown + relation search incl. variant engine codes), Engine codes (make filter + code/cc/fuel sorting), Technical Bulletins (search + category + date range + pagination), Supersessions (old/new part search + active filter + sort).
+
 ## ✅ Phase 1 delivery status — 2026-09-23
 
 Delivered (code + 15 feature tests + browser functional pass; suite at 106 green):

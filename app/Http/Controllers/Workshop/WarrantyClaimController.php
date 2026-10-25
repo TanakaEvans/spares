@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Workshop;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\JobCard;
 use App\Models\Supplier;
@@ -14,11 +15,26 @@ use Inertia\Response;
 
 class WarrantyClaimController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    public function index(Request $request): Response
     {
         return Inertia::render('Workshop/Warranty/Index', [
-            'claims' => WarrantyClaim::with('supplier:id,name', 'jobCard:id,job_number', 'part:id,part_number')
-                ->latest('id')->paginate(20)
+            'claims' => $this->listApply(
+                WarrantyClaim::with('supplier:id,name', 'jobCard:id,job_number', 'part:id,part_number')
+                    ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+                $request,
+                [
+                    'searchable' => ['claim_number', 'fault', 'supplier.name', 'jobCard.job_number', 'part.part_number'],
+                    'sortable' => [
+                        'claim_number' => 'claim_number', 'status' => 'status',
+                        'claim_amount' => 'claim_amount', 'credit_amount' => 'credit_amount',
+                        'created_at' => 'created_at',
+                    ],
+                    'dateColumn' => 'created_at',
+                    'defaultSort' => ['id' => 'desc'],
+                ]
+            )->paginate(20)->withQueryString()
                 ->through(fn (WarrantyClaim $c) => [
                     'id' => $c->id, 'claim_number' => $c->claim_number,
                     'supplier' => $c->supplier?->name, 'supplier_id' => $c->supplier_id,
@@ -28,6 +44,7 @@ class WarrantyClaimController extends Controller
                 ]),
             'suppliers' => Supplier::active()->orderBy('name')->get(['id', 'name']),
             'jobs' => JobCard::whereIn('status', ['completed', 'invoiced', 'closed'])->latest('id')->limit(50)->get(['id', 'job_number']),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

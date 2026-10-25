@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Section;
@@ -10,9 +11,14 @@ use Inertia\Inertia;
 
 class SectionController extends Controller
 {
-    public function index()
+    use ListQuery;
+    public function index(Request $request)
     {
-        $sections = Section::with(['department', 'head'])->latest()->paginate(10);
+        $sections = $this->listApply(Section::with(['department', 'head']), $request, [
+            'searchable' => ['name', 'department.name'],
+            'sortable' => ['name' => 'name', 'created_at' => 'created_at'],
+            'defaultSort' => ['id' => 'desc'],
+        ])->paginate(10)->withQueryString();
         $departments = Department::where('status', 'active')->get();
         // Optimize: select only necessary fields for dropdown
         $employees = Employee::select('id', 'first_name', 'last_name', 'employee_number')->get();
@@ -21,6 +27,7 @@ class SectionController extends Controller
             'sections' => $sections,
             'departments' => $departments,
             'employees' => $employees,
+            'filters' => $this->listFilters($request),
         ]);
     }
 

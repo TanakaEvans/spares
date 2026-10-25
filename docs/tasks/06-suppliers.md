@@ -3,6 +3,9 @@
 > Phase 2 of the [implementation plan](../implementation-plan.md). Spec: [module doc](../modules/06-supplier-management.md).
 > Legend: `[ ]` todo · `[~]` in progress · `[x]` done — a task is only `[x]` when code is written, automated tests pass, AND the feature was functionally exercised per the [testing strategy](../testing-strategy.md). Update this file in the same commit as the completed work.
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** supplier sub-lists upgraded — Approved suppliers + Contacts on `DataTable` with search + pagination; Performance report gained supplier search.
+
 ## ✅ Phase 2 delivery status — 2026-09-23
 
 Delivered (tests + browser pass):

@@ -1,14 +1,15 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Plus, TriangleAlert } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import StatChips from '@/Components/StatChips';
 import EntityLink from '@/Components/EntityLink';
 import { fmt } from '@/Components/Pos/posMath';
+import { useListFilter } from '@/lib/listFilters';
 
 const PILLS = [
     { key: '', label: 'All' },
@@ -22,11 +23,7 @@ const PILLS = [
 ];
 
 export default function OrdersIndex({ orders, stats, filters }) {
-    function filter(params) {
-        router.get(route('purchasing.orders.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true });
-    }
+    const filter = useListFilter('purchasing.orders.index', filters);
 
     return (
         <ModuleLayout
@@ -49,7 +46,14 @@ export default function OrdersIndex({ orders, stats, filters }) {
                     ]}
                 />
 
-                <div className="flex flex-wrap items-center gap-3">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="PO number or supplier…"
+                    searchClass="w-64"
+                    dateRange
+                    exportRoute="purchasing.orders.export"
+                >
                     <div className="flex rounded-lg border border-slate-200 bg-white p-0.5" role="tablist">
                         {PILLS.map((p) => (
                             <button
@@ -65,30 +69,23 @@ export default function OrdersIndex({ orders, stats, filters }) {
                             </button>
                         ))}
                     </div>
-                    <SearchInput
-                        id="po-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => filter({ search: s })}
-                        placeholder="PO number or supplier…"
-                        className="w-64"
-                    />
                     <Link
                         href={route('purchasing.orders.create')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+                        className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
                     >
                         <Plus className="w-4 h-4" />
                         New Order
                     </Link>
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
-                        { key: 'po_number', label: 'PO No', render: (po) => <EntityLink type="purchase_order" id={po.id} label={po.po_number} mono className="font-semibold" /> },
+                        { key: 'po_number', label: 'PO No', sortable: 'po_number', render: (po) => <EntityLink type="purchase_order" id={po.id} label={po.po_number} mono className="font-semibold" /> },
                         { key: 'supplier', label: 'Supplier', render: (po) => <EntityLink type="supplier" id={po.supplier_id} label={po.supplier} /> },
                         { key: 'branch', label: 'Branch', render: (po) => <EntityLink type="branch" id={po.branch_id} label={po.branch} muted /> },
-                        { key: 'order_date', label: 'Ordered', render: (po) => <span className="tabular-nums text-slate-500">{po.order_date}</span> },
+                        { key: 'order_date', label: 'Ordered', sortable: 'order_date', render: (po) => <span className="tabular-nums text-slate-500">{po.order_date}</span> },
                         {
-                            key: 'expected_date', label: 'Expected',
+                            key: 'expected_date', label: 'Expected', sortable: 'expected_date',
                             render: (po) => po.expected_date ? (
                                 <span className={`inline-flex items-center gap-1 tabular-nums ${po.is_overdue ? 'font-semibold text-red-600' : 'text-slate-500'}`}>
                                     {po.is_overdue && <TriangleAlert className="w-3.5 h-3.5" />}
@@ -96,11 +93,12 @@ export default function OrdersIndex({ orders, stats, filters }) {
                                 </span>
                             ) : <span className="text-slate-300">—</span>,
                         },
-                        { key: 'total', label: 'Total', align: 'right', render: (po) => <MoneyDisplay amount={po.total} /> },
-                        { key: 'status', label: 'Status', render: (po) => <StatusBadge status={po.status} /> },
+                        { key: 'total', label: 'Total', align: 'right', sortable: 'total', render: (po) => <MoneyDisplay amount={po.total} /> },
+                        { key: 'status', label: 'Status', sortable: 'status', render: (po) => <StatusBadge status={po.status} /> },
                     ]}
                     rows={orders.data}
                     pagination={orders}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(po) => route('purchasing.orders.show', po.id)}
                     emptyTitle="No purchase orders"
                     emptyMessage="Create the first order — or let the reorder report draft them for you."

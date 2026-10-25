@@ -2,12 +2,15 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { ArrowLeft, Coins, Plus, TriangleAlert } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
+import SearchInput from '@/Components/SearchInput';
+import { useListFilter } from '@/lib/listFilters';
 
 function today() {
     return new Date().toISOString().slice(0, 10);
 }
 
-export default function CurrenciesIndex({ auth, currencies, rateHistory }) {
+export default function CurrenciesIndex({ auth, currencies, rateHistory, filters = {} }) {
+    const filter = useListFilter('admin.currencies.index', filters);
     const { data, setData, post, processing, errors, reset } = useForm({
         currency_id: '',
         buy_rate: '',
@@ -212,11 +215,18 @@ export default function CurrenciesIndex({ auth, currencies, rateHistory }) {
                             <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
                                 Recent Rates
                             </h2>
-                            {rateHistory.length === 0 ? (
+                            <SearchInput
+                                id="rate-search"
+                                value={filters.search ?? ''}
+                                onSearch={(s) => filter({ search: s })}
+                                placeholder="Filter by currency code…"
+                                className="mb-3"
+                            />
+                            {rateHistory.data.length === 0 ? (
                                 <p className="text-sm text-slate-400">No rates captured yet.</p>
                             ) : (
                                 <ul className="divide-y divide-slate-50 text-sm">
-                                    {rateHistory.map((r) => (
+                                    {rateHistory.data.map((r) => (
                                         <li key={r.id} className="py-2 flex items-center justify-between">
                                             <span>
                                                 <span className="font-mono font-semibold text-slate-700">{r.currency}</span>
@@ -228,6 +238,15 @@ export default function CurrenciesIndex({ auth, currencies, rateHistory }) {
                                         </li>
                                     ))}
                                 </ul>
+                            )}
+                            {rateHistory.last_page > 1 && (
+                                <div className="flex gap-1 pt-3 border-t border-slate-50 mt-3">
+                                    {rateHistory.links.map((link, i) => link.url ? (
+                                        <Link key={i} href={link.url} preserveState preserveScroll
+                                            className={`px-2 py-0.5 text-xs rounded ${link.active ? 'bg-orange-600 text-white font-semibold' : 'text-slate-500 hover:bg-slate-100'}`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }} />
+                                    ) : <span key={i} className="px-2 py-0.5 text-xs text-slate-300" dangerouslySetInnerHTML={{ __html: link.label }} />)}
+                                </div>
                             )}
                         </div>
                     </div>

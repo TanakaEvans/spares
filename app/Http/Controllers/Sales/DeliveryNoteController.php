@@ -2,22 +2,60 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\DeliveryNote;
 use App\Services\NumberSequenceService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class DeliveryNoteController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    private function notesQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            DeliveryNote::with('customer:id,name', 'document:id,document_number,document_type')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['delivery_number', 'driver', 'vehicle_reg', 'customer.name', 'document.document_number'],
+                'sortable' => [
+                    'delivery_number' => 'delivery_number', 'delivery_date' => 'delivery_date',
+                    'driver' => 'driver', 'status' => 'status',
+                ],
+                'dateColumn' => 'delivery_date',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered delivery-note list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->notesQuery($request)->limit(5000)->get()->map(fn (DeliveryNote $d) => [
+            $d->delivery_number, $d->customer?->name, $d->document?->document_number,
+            $d->delivery_date?->toDateString(), $d->driver ?? '—', $d->vehicle_reg ?? '—',
+            ucwords($d->status),
+        ]);
+
+        return ListExport::respond($request, 'delivery-notes', 'Delivery Notes',
+            ['Delivery No', 'Customer', 'Document', 'Date', 'Driver', 'Vehicle', 'Status'], $rows);
+    }
+
+    public function index(Request $request): Response
     {
         return Inertia::render('Sales/DeliveryNotes/Index', [
-            'notes' => DeliveryNote::with('customer:id,name', 'document:id,document_number,document_type')->latest('id')->paginate(20)
+            'notes' => $this->notesQuery($request)->paginate(20)
+                ->withQueryString()
                 ->through(fn (DeliveryNote $d) => [
                     'id' => $d->id, 'delivery_number' => $d->delivery_number,
                     'customer' => $d->customer?->name, 'customer_id' => $d->customer_id,
@@ -26,6 +64,7 @@ class DeliveryNoteController extends Controller
                 ]),
             'customers' => Customer::orderBy('name')->limit(200)->get(['id', 'name']),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Part;
 use App\Models\PriceList;
@@ -14,11 +15,21 @@ use Inertia\Response;
 
 class PriceListController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    public function index(Request $request): Response
     {
         return Inertia::render('Sales/PriceLists/Index', [
-            'priceLists' => PriceList::withCount('items')->orderByDesc('is_default')->orderBy('name')->get()
-                ->map(fn (PriceList $p) => [
+            'priceLists' => $this->listApply(
+                PriceList::withCount('items'),
+                $request,
+                [
+                    'searchable' => ['name'],
+                    'sortable' => ['name' => 'name', 'type' => 'type', 'is_active' => 'is_active'],
+                    'defaultSort' => ['is_default' => 'desc', 'name' => 'asc'],
+                ]
+            )->paginate(25)->withQueryString()
+                ->through(fn (PriceList $p) => [
                     'id' => $p->id,
                     'name' => $p->name,
                     'type' => $p->type,
@@ -27,6 +38,7 @@ class PriceListController extends Controller
                     'items_count' => $p->items_count,
                 ]),
             'unpricedCount' => $this->unpricedPartsQuery()->count(),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

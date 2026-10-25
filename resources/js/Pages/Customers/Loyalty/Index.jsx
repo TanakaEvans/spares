@@ -2,14 +2,23 @@ import { Head } from '@inertiajs/react';
 import { Award } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function LoyaltyIndex({ balances, recent, enabled, earnRate }) {
+export default function LoyaltyIndex({ balances, recent, enabled, earnRate, filters = {} }) {
+    const filter = useListFilter('customers.loyalty.index', filters);
     return (
         <ModuleLayout navConfig={navConfig} title="Loyalty Programme" breadcrumbs={[{ label: 'Customers', href: route('modules.show', 'customers') }, { label: 'Loyalty Programme' }]}>
             <Head title="Loyalty Programme" />
             <div className="max-w-4xl space-y-4">
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Customer name…"
+                    searchClass="w-64"
+                />
                 <div className="flex items-center gap-3 text-sm text-slate-500">
                     <StatusBadge status={enabled ? 'active' : 'inactive'} label={enabled ? 'Enabled' : 'Disabled'} />
                     <span>Earn rate: <strong className="text-slate-700">{earnRate}</strong> point(s) per $1 spent (configurable in the Configuration Centre).</span>

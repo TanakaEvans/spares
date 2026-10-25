@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Part;
@@ -14,19 +15,32 @@ use Inertia\Response;
 
 class SerialNumberController extends Controller
 {
+    use ListQuery;
+
     public function index(Request $request): Response
     {
         return Inertia::render('Inventory/Serials/Index', [
-            'serials' => SerialNumber::with('part:id,part_number', 'branch:id,name')
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where('serial', 'like', "%{$s}%")->orWhere('batch', 'like', "%{$s}%"))
-                ->latest('id')->paginate(25)
+            'serials' => $this->listApply(
+                SerialNumber::with('part:id,part_number', 'branch:id,name')
+                    ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                    ->when($request->integer('branch_id'), fn ($q, $id) => $q->where('branch_id', $id)),
+                $request,
+                [
+                    'searchable' => ['serial', 'batch', 'reference', 'part.part_number'],
+                    'sortable' => [
+                        'serial' => 'serial', 'batch' => 'batch',
+                        'status' => 'status', 'created_at' => 'created_at',
+                    ],
+                    'defaultSort' => ['id' => 'desc'],
+                ]
+            )->paginate(25)
                 ->withQueryString()
                 ->through(fn (SerialNumber $n) => [
                     'id' => $n->id, 'serial' => $n->serial, 'batch' => $n->batch, 'part_number' => $n->part?->part_number,
                     'part_id' => $n->part_id, 'branch_id' => $n->branch_id, 'branch' => $n->branch?->name, 'status' => $n->status, 'reference' => $n->reference,
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
-            'filters' => $request->only('search'),
+            'filters' => $this->listFilters($request, ['status', 'branch_id']),
         ]);
     }
 

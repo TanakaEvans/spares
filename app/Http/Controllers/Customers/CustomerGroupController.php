@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerGroup;
 use App\Models\PriceList;
@@ -12,11 +13,20 @@ use Inertia\Response;
 
 class CustomerGroupController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+    public function index(Request $request): Response
     {
         return Inertia::render('Customers/Groups/Index', [
-            'groups' => CustomerGroup::withCount('customers')->with('priceList:id,name')->orderBy('name')->get()
-                ->map(fn (CustomerGroup $g) => [
+            'groups' => $this->listApply(
+                CustomerGroup::withCount('customers')->with('priceList:id,name'),
+                $request,
+                [
+                    'searchable' => ['name'],
+                    'sortable' => ['name' => 'name', 'created_at' => 'created_at'],
+                    'defaultSort' => ['name' => 'asc'],
+                ]
+            )->paginate(25)->withQueryString()
+                ->through(fn (CustomerGroup $g) => [
                     'id' => $g->id,
                     'name' => $g->name,
                     'price_list' => $g->priceList?->name,
@@ -24,6 +34,7 @@ class CustomerGroupController extends Controller
                     'customers_count' => $g->customers_count,
                 ]),
             'priceLists' => PriceList::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

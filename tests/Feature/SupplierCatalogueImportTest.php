@@ -159,12 +159,66 @@ class SupplierCatalogueImportTest extends TestCase
             ->map(fn ($d, $k) => $csv->guess($header, $d['keywords'], $d['label'], $k))->all();
 
         $this->assertSame(
-            ['part_number' => 2, 'description' => 3, 'category' => 0, 'category_name' => 1, 'specification' => 4, 'unit' => 5],
+            ['part_number' => 2, 'description' => 3, 'category' => 0, 'category_name' => 1, 'specification' => 4, 'unit' => 5, 'brand' => null],
             $guess(self::OCT_HEADER),
         );
         $this->assertSame(
-            ['part_number' => 1, 'description' => 2, 'category' => 0, 'category_name' => null, 'specification' => 3, 'unit' => null],
+            ['part_number' => 1, 'description' => 2, 'category' => 0, 'category_name' => null, 'specification' => 3, 'unit' => null, 'brand' => null],
             $guess(['Category', 'Item', 'Application', 'Specification']),
         );
+    }
+
+    public function test_application_text_becomes_vehicle_fitments_and_brand(): void
+    {
+        (new ReferenceDataSeeder)->run();
+        (new NumberSequenceSeeder)->run();
+
+        $this->upload(self::OCT_HEADER, [
+            ['CH', 'CYLINDER HEAD', 'CH13', 'HILUX 2.4D 2L BARE 88-97', '', 'PC'],
+            ['AF', 'AIR FILTER', 'AF213', 'SORENTO I 2.5CRDi 03-06', '', 'PC'],
+            ['AL', 'ALTERNATOR', 'AL100', 'AVANZA 1.5', 'BOSCH 12V 70A', 'PC'],
+            ['BU', 'BUSHES', 'BU1', 'STABILISER BAR BUSH (5 PER PACK)', '', 'PC'],
+        ], ['supplier_name' => 'Mravat Wholesale'])->assertRedirect();
+
+        // Model + engine + year range resolved from trade shorthand.
+        $ch13 = Part::where('part_number', 'CH13')->firstOrFail();
+        $fit = $ch13->fitments()->sole();
+        $this->assertSame('Toyota', $fit->make->name);
+        $this->assertSame('Hilux', $fit->model->name);
+        $this->assertSame('2L', $fit->engine_code);
+        $this->assertSame(1988, $fit->year_from);
+        $this->assertSame(1997, $fit->year_to);
+        $this->assertSame('catalogue', $fit->source);
+        $this->assertFalse($fit->confirmed);
+
+        // Sorento isn't a seeded model → make-level Kia fitment.
+        $af213 = Part::where('part_number', 'AF213')->firstOrFail();
+        $afFit = $af213->fitments()->sole();
+        $this->assertSame('Kia', $afFit->make->name);
+        $this->assertNull($afFit->model_id);
+        $this->assertSame([2003, 2006], [$afFit->year_from, $afFit->year_to]);
+
+        // A named brand in the text links that brand; everything else is Aftermarket.
+        $this->assertSame('Bosch', Part::where('part_number', 'AL100')->firstOrFail()->brand->name);
+        $this->assertSame('Aftermarket', $ch13->brand->name);
+        $this->assertNotNull($ch13->short_description);
+
+        // Full linkage: scannable barcode, provenance note, supplier's own code
+        // preserved on the approved-supplier link (and reachable via part search).
+        $this->assertSame('CH13', $ch13->barcode_code128);
+        $this->assertSame('Imported: Mravat Wholesale catalogue (CH · CYLINDER HEAD)', $ch13->notes);
+        $link = $ch13->approvedSuppliers()->sole();
+        $this->assertSame('CH13', $link->supplier_part_number);
+        $this->assertTrue($link->is_preferred);
+
+        // No vehicle tokens → no fitments, part still imports fine.
+        $this->assertSame(0, Part::where('part_number', 'BU1')->firstOrFail()->fitments()->count());
+
+        // Re-import syncs catalogue fitments instead of duplicating them.
+        $this->upload(self::OCT_HEADER, [
+            ['CH', 'CYLINDER HEAD', 'CH13', 'HIACE 2.4D 2L BARE 90-95', '', 'PC'],
+        ], ['supplier_name' => 'Mravat Wholesale'])->assertRedirect();
+        $this->assertSame(1, $ch13->fitments()->where('source', 'catalogue')->count());
+        $this->assertSame('HiAce', $ch13->fresh()->fitments()->sole()->model->name);
     }
 }

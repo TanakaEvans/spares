@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\ListQuery;
+use App\Http\Controllers\Concerns\RetiresRecords;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovedSupplier;
 use App\Models\GoodsReceivedNote;
@@ -19,6 +21,7 @@ use App\Models\SupplierReturn;
 use App\Models\UnitOfMeasure;
 use App\Models\VehicleMake;
 use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -28,15 +31,33 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PartController extends Controller
 {
+    use ListQuery, RetiresRecords;
     /** Parts catalogue as a CSV or PDF export (honours search/category/status filters). */
+    private function partsQuery(Request $request, bool $withSupersession = false): Builder
+    {
+        return $this->listApply(
+            Part::with(array_filter(['category:id,name', 'brand:id,name',
+                $withSupersession ? 'supersededBy.newPart:id,part_number' : null, 'stockLevels']))
+                ->when($request->string('search')->toString(), fn ($q, $s) => $q->search($s))
+                ->when($request->integer('category_id'), fn ($q, $id) => $q->where('category_id', $id))
+                ->when($request->integer('brand_id'), fn ($q, $id) => $q->where('brand_id', $id))
+                ->when($request->string('status')->toString() === 'active', fn ($q) => $q->where('is_active', true))
+                ->when($request->string('status')->toString() === 'inactive', fn ($q) => $q->where('is_active', false)),
+            $request,
+            [
+                'sortable' => [
+                    'part_number' => 'part_number', 'oem_number' => 'oem_number',
+                    'description' => 'description', 'is_active' => 'is_active', 'created_at' => 'created_at',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['part_number' => 'asc'],
+            ]
+        );
+    }
+
     public function export(Request $request): HttpResponse
     {
-        $rows = Part::with(['category:id,name', 'brand:id,name', 'stockLevels'])
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->search($s))
-            ->when($request->integer('category_id'), fn ($q, $id) => $q->where('category_id', $id))
-            ->when($request->string('status')->toString() === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($request->string('status')->toString() === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->orderBy('part_number')->get()
+        $rows = $this->partsQuery($request)->limit(5000)->get()
             ->map(fn (Part $p) => [
                 $p->part_number, $p->oem_number, $p->description,
                 $p->category?->name, $p->brand?->name,
@@ -52,14 +73,7 @@ class PartController extends Controller
 
     public function index(Request $request): Response
     {
-        $parts = Part::with(['category:id,name', 'brand:id,name',
-            'supersededBy.newPart:id,part_number', 'stockLevels'])
-            ->when($request->string('search')->toString(), fn ($q, $s) => $q->search($s))
-            ->when($request->integer('category_id'), fn ($q, $id) => $q->where('category_id', $id))
-            ->when($request->integer('brand_id'), fn ($q, $id) => $q->where('brand_id', $id))
-            ->when($request->string('status')->toString() === 'active', fn ($q) => $q->where('is_active', true))
-            ->when($request->string('status')->toString() === 'inactive', fn ($q) => $q->where('is_active', false))
-            ->orderBy('part_number')
+        $parts = $this->partsQuery($request, true)
             ->paginate(25)
             ->withQueryString()
             ->through(fn (Part $p) => [
@@ -84,7 +98,7 @@ class PartController extends Controller
             'parts' => $parts,
             'categories' => PartCategory::active()->orderBy('sort_order')->get(['id', 'name', 'parent_id']),
             'brands' => PartBrand::active()->orderBy('name')->get(['id', 'name']),
-            'filters' => $request->only('search', 'category_id', 'brand_id', 'status'),
+            'filters' => $this->listFilters($request, ['category_id', 'brand_id', 'status']),
         ]);
     }
 
@@ -122,6 +136,7 @@ class PartController extends Controller
                 'id' => $a->supplier_id,
                 'name' => $a->supplier->name,
                 'supplier_number' => $a->supplier->supplier_number,
+                'supplier_part_number' => $a->supplier_part_number,
                 'is_preferred' => (bool) $a->is_preferred,
                 'lead_time_days' => $a->lead_time_days,
             ])->values();
@@ -233,6 +248,35 @@ class PartController extends Controller
 
         return redirect()->route('inventory.parts.show', $part)
             ->with('success', "Part {$part->part_number} updated.");
+    }
+
+    /** Tables whose rows are transaction history — a part named in any of them is retired, never removed. */
+    private const HISTORY_TABLES = [
+        'stock_ledger' => 'stock movement', 'sales_document_lines' => 'sales document line',
+        'purchase_order_lines' => 'purchase order line', 'grn_lines' => 'goods-received line',
+        'supplier_return_lines' => 'supplier return line', 'stock_adjustment_lines' => 'adjustment line',
+        'stock_transfer_lines' => 'transfer line', 'stock_take_lines' => 'stock-take line',
+        'job_card_parts' => 'job card line', 'warranty_claims' => 'warranty claim', 'serial_numbers' => 'serial number',
+    ];
+
+    /**
+     * Never-traded parts (e.g. a mistyped number) are soft-deleted — the
+     * catalogue import will not resurrect them; anything with history is
+     * deactivated so documents and the ledger keep pointing at it.
+     */
+    public function destroy(Part $part): RedirectResponse
+    {
+        $usage = [];
+        foreach (self::HISTORY_TABLES as $table => $noun) {
+            $usage[$noun] = \Illuminate\Support\Facades\DB::table($table)->where('part_id', $part->id)->count();
+        }
+
+        $onHand = (float) $part->stockLevels()->sum('qty_on_hand');
+        if ($onHand != 0.0) {
+            return back()->with('error', "Part {$part->part_number} still has {$onHand} on hand — adjust or transfer the stock out first.");
+        }
+
+        return $this->retireOrDelete($part, "Part {$part->part_number}", $usage, 'inventory.parts.index');
     }
 
     /**

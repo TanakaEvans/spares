@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Reports;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\ScheduledReport;
 use Illuminate\Http\RedirectResponse;
@@ -11,14 +12,24 @@ use Inertia\Response;
 
 class ScheduledReportController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+    public function index(Request $request): Response
     {
         return Inertia::render('Reports/Scheduled/Index', [
-            'reports' => ScheduledReport::latest('id')->get()->map(fn (ScheduledReport $r) => [
+            'reports' => $this->listApply(ScheduledReport::query(), $request, [
+                    'searchable' => ['name', 'report_key', 'recipients'],
+                    'sortable' => [
+                        'name' => 'name', 'report_key' => 'report_key', 'frequency' => 'frequency',
+                        'is_active' => 'is_active', 'last_run_at' => 'last_run_at',
+                    ],
+                    'defaultSort' => ['id' => 'desc'],
+                ])->paginate(20)->withQueryString()
+                ->through(fn (ScheduledReport $r) => [
                 'id' => $r->id, 'name' => $r->name, 'report_key' => $r->report_key, 'frequency' => $r->frequency,
                 'run_time' => $r->run_time, 'recipients' => $r->recipients, 'format' => $r->format,
                 'is_active' => $r->is_active, 'last_run_at' => $r->last_run_at?->toDateTimeString(),
             ]),
+            'filters' => $this->listFilters($request),
             'reportKeys' => [
                 'sales_summary' => 'Daily Sales Summary', 'ar_ageing' => 'AR Ageing', 'ap_ageing' => 'AP Ageing',
                 'stock_reorder' => 'Stock Reorder', 'income_statement' => 'Income Statement', 'top_customers' => 'Top Customers',

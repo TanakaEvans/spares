@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\BinLocation;
 use App\Models\GoodsReceivedNote;
@@ -10,25 +11,53 @@ use App\Models\PurchaseOrder;
 use App\Models\StockLevel;
 use App\Models\SupplierInvoice;
 use App\Services\GrnPostingService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class GrnController extends Controller
 {
+    use ListQuery;
+    private function grnsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            GoodsReceivedNote::with('supplier:id,name', 'purchaseOrder:id,po_number', 'branch:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['grn_number', 'delivery_note_number', 'supplier.name', 'purchaseOrder.po_number'],
+                'sortable' => [
+                    'grn_number' => 'grn_number', 'received_date' => 'received_date',
+                    'delivery_note_number' => 'delivery_note_number', 'status' => 'status',
+                ],
+                'dateColumn' => 'received_date',
+                'defaultSort' => ['received_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered GRN list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->grnsQuery($request)->limit(5000)->get()->map(fn (GoodsReceivedNote $g) => [
+            $g->grn_number, $g->purchaseOrder?->po_number, $g->supplier?->name, $g->branch?->name,
+            $g->received_date?->toDateString(), $g->delivery_note_number,
+            ucwords(str_replace('_', ' ', $g->status)),
+            number_format($g->acceptedValue(), 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'goods-received-notes', 'Goods Received Notes',
+            ['GRN No', 'PO No', 'Supplier', 'Branch', 'Received', 'Supplier DN', 'Status', 'Value'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/GRNs/Index', [
-            'grns' => GoodsReceivedNote::with('supplier:id,name', 'purchaseOrder:id,po_number', 'branch:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('grn_number', 'like', "%{$s}%")
-                        ->orWhere('delivery_note_number', 'like', "%{$s}%")
-                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                        ->orWhereHas('purchaseOrder', fn ($y) => $y->where('po_number', 'like', "%{$s}%"))
-                ))
-                ->latest('received_date')->latest('id')
+            'grns' => $this->grnsQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (GoodsReceivedNote $g) => [
@@ -59,7 +88,7 @@ class GrnController extends Controller
                 'today_value' => round((float) GoodsReceivedNote::whereDate('received_date', now()->toDateString())
                     ->get()->sum(fn ($g) => $g->acceptedValue()), 2),
             ],
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

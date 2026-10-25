@@ -1,28 +1,19 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Car, PackageSearch, Plus, Search } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Car, PackageSearch, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
 import RelatedLinks from '@/Components/RelatedLinks';
+import RowActions from '@/Components/RowActions';
 import StatusBadge from '@/Components/StatusBadge';
-import FormField from '@/Components/FormField';
+import { useDeleteRecord, useRecordEditor } from '@/lib/records';
+import { BLANK_MODEL, BLANK_VARIANT, ModelDialog, VariantDialog, modelValues, variantValues } from './ModelDialogs';
 
-export default function ModelShow({ model, fittingParts = [], fittingPartsTotal = 0 }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '', engine_code: '', engine_size_cc: '', fuel_type: '',
-        transmission: '', drive: '', year_from: '', year_to: '',
-    });
-
-    function addVariant(e) {
-        e.preventDefault();
-        post(route('vehicle-ref.models.variants.store', model.id), {
-            preserveScroll: true,
-            onSuccess: () => reset(),
-        });
-    }
-
-    const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+export default function ModelShow({ model, fittingParts = [], fittingPartsTotal = 0, makes = [], engineCodes = [], variantUsage = {} }) {
+    const modelEditor = useRecordEditor(BLANK_MODEL);
+    const variantEditor = useRecordEditor(BLANK_VARIANT);
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
 
     return (
         <ModuleLayout
@@ -51,92 +42,72 @@ export default function ModelShow({ model, fittingParts = [], fittingPartsTotal 
                                 <Car className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900">
-                                    <EntityLink type="make" id={model.make_id} label={model.make?.name} params={{ make_id: model.make_id }} className="text-slate-900" title="All models of this make" /> {model.name}
-                                </h1>
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-2xl font-bold text-slate-900">
+                                        <EntityLink type="make" id={model.make_id} label={model.make?.name} className="text-slate-900" title="Open this make" /> {model.name}
+                                    </h1>
+                                    {!model.is_active && <StatusBadge status="inactive" />}
+                                </div>
                                 <p className="text-sm text-slate-500 capitalize">
-                                    {model.body_type} · {model.year_from ?? '?'}–{model.year_to ?? 'now'} · {model.variants.length} variant{model.variants.length === 1 ? '' : 's'}
+                                    {model.body_type ?? 'body n/a'}{model.generation ? ` · ${model.generation}` : ''} · {model.year_from ?? '?'}–{model.year_to ?? 'now'} · {model.variants.length} variant{model.variants.length === 1 ? '' : 's'}
                                 </p>
                             </div>
                         </div>
-                        <Link
-                            href={route('vehicle-ref.fitment', { make_id: model.make_id, model_id: model.id })}
-                            className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                            <Search className="w-4 h-4" />
-                            Parts that fit this model
-                        </Link>
+                        <div className="flex flex-wrap gap-2">
+                            <Link
+                                href={route('vehicle-ref.fitment', { make_id: model.make_id, model_id: model.id })}
+                                className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
+                            >
+                                <Search className="w-4 h-4" /> Parts that fit
+                            </Link>
+                            <button onClick={() => modelEditor.open(model, modelValues(model))} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                <Pencil className="w-4 h-4" /> Edit
+                            </button>
+                            <button
+                                onClick={() => confirmDelete({ url: route('vehicle-ref.models.destroy', model.id), label: `${model.make?.name} ${model.name}`, message: 'Its variants go with it. If parts or customer vehicles still reference it, it is deactivated instead.' })}
+                                className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+                            >
+                                <Trash2 className="w-4 h-4" /> Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                    <div className="lg:col-span-2">
-                        <DataTable
-                            columns={[
-                                { key: 'name', label: 'Variant', render: (v) => <span className="font-medium text-slate-800">{v.name}</span> },
-                                { key: 'engine_code', label: 'Engine', render: (v) => <EntityLink type="engine" number={v.engine_code} label={v.engine_code} mono muted title="Engine code" /> },
-                                { key: 'engine_size_cc', label: 'CC', align: 'right' },
-                                { key: 'fuel_type', label: 'Fuel', render: (v) => <span className="capitalize text-slate-500">{v.fuel_type}</span> },
-                                { key: 'transmission', label: 'Trans', render: (v) => <span className="capitalize text-slate-500">{v.transmission}</span> },
-                                { key: 'drive', label: 'Drive', render: (v) => <span className="uppercase text-slate-500">{v.drive}</span> },
-                                { key: 'years', label: 'Years', render: (v) => <span className="tabular-nums text-slate-500">{v.year_from ?? ''}–{v.year_to ?? 'now'}</span> },
-                            ]}
-                            rows={model.variants}
-                            emptyTitle="No variants yet"
-                            emptyMessage="Add the engine/trim variants of this model on the right."
-                        />
-                    </div>
-
-                    <form onSubmit={addVariant} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 space-y-3">
-                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Add Variant</h2>
-                        <FormField label="Variant name" htmlFor="var-name" required error={errors.name} help="e.g. 2.8 GD-6 4x4 AT">
-                            <input id="var-name" value={data.name} onChange={(e) => setData('name', e.target.value)} className={input} />
-                        </FormField>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Engine code" htmlFor="var-engine" error={errors.engine_code}>
-                                <input id="var-engine" value={data.engine_code} onChange={(e) => setData('engine_code', e.target.value.toUpperCase())} className={`${input} font-mono`} />
-                            </FormField>
-                            <FormField label="Size (cc)" htmlFor="var-cc" error={errors.engine_size_cc}>
-                                <input id="var-cc" type="number" value={data.engine_size_cc} onChange={(e) => setData('engine_size_cc', e.target.value)} className={input} />
-                            </FormField>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <FormField label="Fuel" htmlFor="var-fuel" error={errors.fuel_type}>
-                                <select id="var-fuel" value={data.fuel_type} onChange={(e) => setData('fuel_type', e.target.value)} className={input}>
-                                    <option value="">—</option>
-                                    {['petrol', 'diesel', 'hybrid', 'electric', 'lpg'].map((f) => <option key={f} value={f}>{f}</option>)}
-                                </select>
-                            </FormField>
-                            <FormField label="Transmission" htmlFor="var-trans" error={errors.transmission}>
-                                <select id="var-trans" value={data.transmission} onChange={(e) => setData('transmission', e.target.value)} className={input}>
-                                    <option value="">—</option>
-                                    {['manual', 'automatic', 'cvt', 'amt'].map((t) => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </FormField>
-                        </div>
-                        <div className="grid grid-cols-3 gap-3">
-                            <FormField label="Drive" htmlFor="var-drive" error={errors.drive}>
-                                <select id="var-drive" value={data.drive} onChange={(e) => setData('drive', e.target.value)} className={input}>
-                                    <option value="">—</option>
-                                    {['4x2', '4x4', 'awd', 'fwd', 'rwd'].map((d) => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </FormField>
-                            <FormField label="From" htmlFor="var-yf" error={errors.year_from}>
-                                <input id="var-yf" type="number" value={data.year_from} onChange={(e) => setData('year_from', e.target.value)} className={input} />
-                            </FormField>
-                            <FormField label="To" htmlFor="var-yt" error={errors.year_to}>
-                                <input id="var-yt" type="number" value={data.year_to} onChange={(e) => setData('year_to', e.target.value)} className={input} />
-                            </FormField>
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={processing || !data.name}
-                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40 transition-colors"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Variant
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Variants ({model.variants.length})</h2>
+                        <button onClick={() => variantEditor.open()} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            <Plus className="w-4 h-4" /> Add variant
                         </button>
-                    </form>
+                    </div>
+                    <DataTable
+                        columns={[
+                            { key: 'name', label: 'Variant', render: (v) => <span className="font-medium text-slate-800">{v.name}</span> },
+                            { key: 'engine_code', label: 'Engine', render: (v) => <EntityLink type="engine" number={v.engine_code} label={v.engine_code} mono muted title="Engine code" /> },
+                            { key: 'engine_size_cc', label: 'CC', align: 'right' },
+                            { key: 'fuel_type', label: 'Fuel', render: (v) => <span className="capitalize text-slate-500">{v.fuel_type}</span> },
+                            { key: 'transmission', label: 'Trans', render: (v) => <span className="capitalize text-slate-500">{v.transmission}</span> },
+                            { key: 'drive', label: 'Drive', render: (v) => <span className="uppercase text-slate-500">{v.drive}</span> },
+                            { key: 'years', label: 'Years', render: (v) => <span className="tabular-nums text-slate-500">{v.year_from ?? ''}–{v.year_to ?? 'now'}</span> },
+                            {
+                                key: 'actions', label: '', align: 'right', render: (v) => (
+                                    <RowActions actions={[
+                                        { label: 'Edit', icon: Pencil, onSelect: () => variantEditor.open(v, variantValues(v)) },
+                                        { label: 'Parts that fit', icon: Search, href: route('vehicle-ref.fitment', { make_id: model.make_id, model_id: model.id, variant_id: v.id }) },
+                                        {
+                                            label: 'Delete', icon: Trash2, destructive: true,
+                                            disabled: variantUsage[v.id] ? `${variantUsage[v.id]} part fitment(s) name this variant.` : false,
+                                            onSelect: () => confirmDelete({ url: route('vehicle-ref.models.variants.destroy', [model.id, v.id]), label: `variant ${v.name}`, message: 'Nothing references this variant; it will be removed.' }),
+                                        },
+                                    ]} />
+                                ),
+                            },
+                        ]}
+                        rows={model.variants}
+                        emptyIcon={Car}
+                        emptyTitle="No variants yet"
+                        emptyMessage="Add the engine/trim variants of this model."
+                    />
                 </div>
 
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
@@ -177,7 +148,7 @@ export default function ModelShow({ model, fittingParts = [], fittingPartsTotal 
 
                 <RelatedLinks
                     groups={[
-                        { title: 'Make', items: [{ type: 'make', id: model.make_id, label: model.make?.name, params: { make_id: model.make_id } }] },
+                        { title: 'Make', items: [{ type: 'make', id: model.make_id, label: model.make?.name }] },
                         {
                             title: 'Engine codes',
                             items: [...new Set(model.variants.map((v) => v.engine_code).filter(Boolean))].map((code) => ({ type: 'engine', number: code, label: code, mono: true })),
@@ -186,6 +157,10 @@ export default function ModelShow({ model, fittingParts = [], fittingPartsTotal 
                     ]}
                 />
             </div>
+
+            <ModelDialog editor={modelEditor} makes={makes} />
+            <VariantDialog editor={variantEditor} model={model} engineCodes={engineCodes} />
+            {deleteDialog}
         </ModuleLayout>
     );
 }

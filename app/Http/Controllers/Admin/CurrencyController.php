@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\ExchangeRate;
@@ -13,9 +14,10 @@ use Inertia\Response;
 
 class CurrencyController extends Controller
 {
+    use ListQuery;
     public function __construct(private readonly CurrencyService $currency) {}
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $currencies = Currency::orderByDesc('is_base')->orderBy('code')->get()
             ->map(function (Currency $c) {
@@ -40,11 +42,14 @@ class CurrencyController extends Controller
 
         return Inertia::render('Admin/Currencies/Index', [
             'currencies' => $currencies,
-            'rateHistory' => ExchangeRate::with('currency:id,code')
-                ->orderByDesc('rate_date')
-                ->limit(30)
-                ->get()
-                ->map(fn (ExchangeRate $r) => [
+            'filters' => $this->listFilters($request),
+            'rateHistory' => $this->listApply(ExchangeRate::with('currency:id,code'), $request, [
+                    'searchable' => ['currency.code'],
+                    'sortable' => ['rate_date' => 'rate_date', 'buy_rate' => 'buy_rate', 'sell_rate' => 'sell_rate'],
+                    'defaultSort' => ['rate_date' => 'desc'],
+                ])
+                ->paginate(20)->withQueryString()
+                ->through(fn (ExchangeRate $r) => [
                     'id' => $r->id,
                     'currency' => $r->currency->code,
                     'date' => $r->rate_date->toDateString(),

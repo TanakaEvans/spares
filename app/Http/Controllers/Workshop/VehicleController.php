@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Workshop;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CustomerVehicle;
@@ -15,17 +16,20 @@ use Inertia\Response;
 
 class VehicleController extends Controller
 {
+    use ListQuery;
+
     public function index(Request $request): Response
     {
         return Inertia::render('Workshop/Vehicles/Index', [
-            'vehicles' => CustomerVehicle::with('customer:id,name', 'make:id,name', 'model:id,name')
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('registration', 'like', "%{$s}%")
-                        ->orWhere('vin', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->orderBy('registration')
-                ->paginate(20)
+            'vehicles' => $this->listApply(
+                CustomerVehicle::with('customer:id,name', 'make:id,name', 'model:id,name'),
+                $request,
+                [
+                    'searchable' => ['registration', 'vin', 'customer.name'],
+                    'sortable' => ['registration' => 'registration', 'year' => 'year', 'created_at' => 'created_at'],
+                    'defaultSort' => ['registration' => 'asc'],
+                ]
+            )->paginate(20)
                 ->withQueryString()
                 ->through(fn (CustomerVehicle $v) => [
                     'id' => $v->id,
@@ -36,7 +40,7 @@ class VehicleController extends Controller
                     'customer' => $v->customer?->name,
                     'customer_id' => $v->customer_id,
                 ]),
-            'filters' => $request->only('search'),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

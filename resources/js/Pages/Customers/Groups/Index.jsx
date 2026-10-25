@@ -2,11 +2,14 @@ import { Head, useForm } from '@inertiajs/react';
 import { Plus, UsersRound } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/customers';
-import EmptyState from '@/Components/EmptyState';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function CustomerGroupsIndex({ groups, priceLists }) {
+export default function CustomerGroupsIndex({ groups, priceLists, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({ name: '', price_list_id: '' });
+    const filter = useListFilter('customers.groups.index', filters);
 
     function submit(e) {
         e.preventDefault();
@@ -26,34 +29,27 @@ export default function CustomerGroupsIndex({ groups, priceLists }) {
         >
             <Head title="Customer Groups" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Group name…"
+                searchClass="w-56"
+            />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
                 <div className="lg:col-span-2">
-                    <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-                        {groups.length === 0 ? (
-                            <EmptyState icon={UsersRound} title="No groups yet" message="Groups let you attach a price list to many customers at once." />
-                        ) : (
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                        <th className="px-4 py-2.5">Group</th>
-                                        <th className="px-4 py-2.5">Price list</th>
-                                        <th className="px-4 py-2.5 text-right">Customers</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {groups.map((g) => (
-                                        <tr key={g.id} className="hover:bg-slate-50">
-                                            <td className="px-4 py-2.5 font-semibold text-slate-800">{g.name}</td>
-                                            <td className="px-4 py-2.5 text-slate-500">
-                                                <EntityLink type="price_list" id={g.price_list_id} label={g.price_list ?? '—'} muted />
-                                            </td>
-                                            <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">{g.customers_count}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    <DataTable
+                        columns={[
+                            { key: 'name', label: 'Group', sortable: 'name', render: (g) => <span className="font-semibold text-slate-800">{g.name}</span> },
+                            { key: 'price_list', label: 'Price list', render: (g) => <EntityLink type="price_list" id={g.price_list_id} label={g.price_list ?? '—'} muted /> },
+                            { key: 'customers_count', label: 'Customers', align: 'right', render: (g) => <span className="tabular-nums text-slate-500">{g.customers_count}</span> },
+                        ]}
+                        rows={groups.data}
+                        pagination={groups}
+                        sorting={{ filters, onFilter: filter }}
+                        emptyTitle="No groups yet"
+                        emptyMessage="Groups let you attach a price list to many customers at once."
+                        emptyIcon={UsersRound}
+                    />
                 </div>
 
                 <form onSubmit={submit} className="rounded-xl border border-slate-100 bg-white p-5 space-y-4 h-fit">

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Suppliers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\Supplier;
 use App\Services\NumberSequenceService;
 use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,15 +36,28 @@ class SupplierController extends Controller
         ], $rows);
     }
 
+    use ListQuery;
+
+    private function suppliersQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            Supplier::withCount('purchaseOrders'),
+            $request,
+            [
+                'searchable' => ['name', 'supplier_number', 'phone', 'email'],
+                'sortable' => [
+                    'supplier_number' => 'supplier_number', 'name' => 'name',
+                    'type' => 'type', 'lead_time_days' => 'lead_time_days',
+                ],
+                'defaultSort' => ['name' => 'asc'],
+            ]
+        );
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Suppliers/Index', [
-            'suppliers' => Supplier::withCount('purchaseOrders')
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('name', 'like', "%{$s}%")
-                        ->orWhere('supplier_number', 'like', "%{$s}%")
-                ))
-                ->orderBy('name')
+            'suppliers' => $this->suppliersQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (Supplier $s) => [
@@ -56,7 +71,7 @@ class SupplierController extends Controller
                     'purchase_orders_count' => $s->purchase_orders_count,
                     'ap_balance' => $s->apBalance(),
                 ]),
-            'filters' => $request->only('search'),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

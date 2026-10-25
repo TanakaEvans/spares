@@ -28,6 +28,13 @@ function saveRecent(item) {
     }
 }
 
+const OPEN_EVENT = 'sparespro:command-palette';
+
+/** Open the palette from a click (sidebar search box) — same as Ctrl+K. */
+export function openCommandPalette() {
+    window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 export default function CommandPalette() {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState('');
@@ -46,8 +53,13 @@ export default function CommandPalette() {
             }
             if (e.key === 'Escape') setOpen(false);
         }
+        const onOpen = () => setOpen(true);
         window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
+        window.addEventListener(OPEN_EVENT, onOpen);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            window.removeEventListener(OPEN_EVENT, onOpen);
+        };
     }, []);
 
     useEffect(() => {

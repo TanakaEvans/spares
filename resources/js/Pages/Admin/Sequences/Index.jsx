@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { ArrowLeft, Hash, Pencil, X } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/system-admin';
+import ListToolbar from '@/Components/ListToolbar';
+import { useListFilter } from '@/lib/listFilters';
 
 const TYPE_LABELS = {
     invoice: 'Tax Invoice',
@@ -117,8 +119,9 @@ function EditRow({ sequence, onClose }) {
     );
 }
 
-export default function SequencesIndex({ auth, sequences }) {
+export default function SequencesIndex({ auth, sequences, filters = {} }) {
     const [editingId, setEditingId] = useState(null);
+    const filter = useListFilter('admin.sequences.index', filters);
 
     return (
         <ModuleLayout
@@ -147,6 +150,12 @@ export default function SequencesIndex({ auth, sequences }) {
                     </div>
                 </div>
 
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Document type, prefix or branch…"
+                    searchClass="w-64"
+                />
                 <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>

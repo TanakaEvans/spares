@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Employee;
@@ -10,15 +11,22 @@ use Inertia\Inertia;
 
 class BranchController extends Controller
 {
-    public function index()
+    use ListQuery;
+    public function index(Request $request)
     {
-        $branches = Branch::with(['company', 'head'])
-            ->withCount(['employees', 'departments'])
-            ->orderBy('name')
-            ->paginate(10);
+        $branches = $this->listApply(
+            Branch::with(['company', 'head'])->withCount(['employees', 'departments']),
+            $request,
+            [
+                'searchable' => ['name', 'code', 'phone', 'email', 'company.name'],
+                'sortable' => ['name' => 'name', 'created_at' => 'created_at'],
+                'defaultSort' => ['name' => 'asc'],
+            ]
+        )->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Branches/Index', [
             'branches' => $branches,
+            'filters' => $this->listFilters($request),
         ]);
     }
 

@@ -1,14 +1,16 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Download, Upload } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Plus, Upload } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/suppliers';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
+import { useListFilter } from '@/lib/listFilters';
 
 export default function SuppliersIndex({ suppliers, filters }) {
+    const filter = useListFilter('suppliers.index', filters);
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -21,35 +23,20 @@ export default function SuppliersIndex({ suppliers, filters }) {
             <Head title="Suppliers" />
 
             <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                    <SearchInput
-                        id="suppliers-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => router.get(route('suppliers.index'), s ? { search: s } : {}, { preserveState: true })}
-                        placeholder="Search name or number…"
-                        className="w-72"
-                    />
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Search name, number or phone…"
+                    searchClass="w-72"
+                    exportRoute="suppliers.export"
+                >
                     <Link
                         href={route('imports.show', 'suppliers')}
-                        className="ml-auto inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                     >
                         <Upload className="w-4 h-4" />
                         Import CSV
                     </Link>
-                    <a
-                        href={route('suppliers.export', filters?.search ? { search: filters.search } : {})}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                        <Download className="w-4 h-4" />
-                        CSV
-                    </a>
-                    <a
-                        href={route('suppliers.export', { ...(filters?.search ? { search: filters.search } : {}), format: 'pdf' })}
-                        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                        <Download className="w-4 h-4" />
-                        PDF
-                    </a>
                     <Link
                         href={route('suppliers.create')}
                         className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700"
@@ -57,21 +44,22 @@ export default function SuppliersIndex({ suppliers, filters }) {
                         <Plus className="w-4 h-4" />
                         New Supplier
                     </Link>
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
-                        { key: 'supplier_number', label: 'Number', render: (s) => <EntityLink type="supplier" id={s.id} label={s.supplier_number} mono muted /> },
-                        { key: 'name', label: 'Supplier', render: (s) => <EntityLink type="supplier" id={s.id} label={s.name} className="font-medium" /> },
-                        { key: 'type', label: 'Type', render: (s) => <span className="capitalize text-slate-500">{s.type}</span> },
+                        { key: 'supplier_number', label: 'Number', sortable: 'supplier_number', render: (s) => <EntityLink type="supplier" id={s.id} label={s.supplier_number} mono muted /> },
+                        { key: 'name', label: 'Supplier', sortable: 'name', render: (s) => <EntityLink type="supplier" id={s.id} label={s.name} className="font-medium" /> },
+                        { key: 'type', label: 'Type', sortable: 'type', render: (s) => <span className="capitalize text-slate-500">{s.type}</span> },
                         { key: 'phone', label: 'Phone', render: (s) => <span className="text-slate-500">{s.phone}</span> },
-                        { key: 'lead_time_days', label: 'Lead', align: 'right', render: (s) => <span className="text-slate-500">{s.lead_time_days}d</span> },
+                        { key: 'lead_time_days', label: 'Lead', align: 'right', sortable: 'lead_time_days', render: (s) => <span className="text-slate-500">{s.lead_time_days}d</span> },
                         { key: 'purchase_orders_count', label: 'Orders', align: 'right' },
                         { key: 'ap_balance', label: 'AP Balance', align: 'right', render: (s) => <MoneyDisplay amount={s.ap_balance} /> },
                         { key: 'is_active', label: 'Status', render: (s) => <StatusBadge status={s.is_active ? 'active' : 'inactive'} /> },
                     ]}
                     rows={suppliers.data}
                     pagination={suppliers}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(s) => route('suppliers.show', s.id)}
                     emptyTitle="No suppliers yet"
                     emptyMessage="Add your first supplier to start ordering stock."

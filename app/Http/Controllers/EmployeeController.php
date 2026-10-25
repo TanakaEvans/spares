@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Employee;
@@ -15,20 +16,17 @@ use Inertia\Inertia;
 
 class EmployeeController extends Controller
 {
+    use ListQuery;
     public function index(Request $request)
     {
-        $query = Employee::with(['branch', 'department', 'user.roles']);
-
-        // Search
-        if ($request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('employee_number', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+        $query = $this->listApply(Employee::with(['branch', 'department', 'user.roles']), $request, [
+            'searchable' => ['first_name', 'last_name', 'employee_number', 'email', 'branch.name', 'department.name'],
+            'sortable' => [
+                'first_name' => 'first_name', 'last_name' => 'last_name',
+                'employee_number' => 'employee_number', 'status' => 'status',
+            ],
+            'defaultSort' => ['first_name' => 'asc'],
+        ]);
 
         // Filter by branch
         if ($request->branch_id) {
@@ -54,7 +52,7 @@ class EmployeeController extends Controller
             'employees' => $employees,
             'branches' => $branches,
             'departments' => $departments,
-            'filters' => $request->only(['search', 'branch_id', 'department_id', 'status']),
+            'filters' => $this->listFilters($request, ['branch_id', 'department_id', 'status']),
         ]);
     }
 

@@ -2,29 +2,60 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\GoodsReceivedNote;
 use App\Models\SupplierInvoice;
 use App\Services\SettingsService;
 use App\Services\SupplierInvoiceService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class SupplierInvoiceController extends Controller
 {
+    use ListQuery;
+    private function invoicesQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SupplierInvoice::with('supplier:id,name', 'grn:id,grn_number')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['invoice_number', 'supplier_ref', 'dispute_reason', 'supplier.name', 'grn.grn_number'],
+                'sortable' => [
+                    'invoice_number' => 'invoice_number', 'supplier_ref' => 'supplier_ref',
+                    'invoice_date' => 'invoice_date', 'due_date' => 'due_date',
+                    'total' => 'total', 'status' => 'status',
+                ],
+                'dateColumn' => 'invoice_date',
+                'defaultSort' => ['invoice_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered supplier-invoice list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->invoicesQuery($request)->limit(5000)->get()->map(fn (SupplierInvoice $inv) => [
+            $inv->invoice_number, $inv->supplier_ref, $inv->supplier?->name, $inv->grn?->grn_number,
+            $inv->invoice_date?->toDateString(), $inv->due_date?->toDateString() ?? '—',
+            ucwords(str_replace('_', ' ', $inv->status)),
+            number_format((float) $inv->total, 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'supplier-invoices', 'Supplier Invoices',
+            ['Invoice No', 'Supplier Ref', 'Supplier', 'GRN', 'Invoice date', 'Due date', 'Status', 'Total'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/Invoices/Index', [
-            'invoices' => SupplierInvoice::with('supplier:id,name', 'grn:id,grn_number')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('supplier_ref', 'like', "%{$s}%")
-                        ->orWhere('invoice_number', 'like', "%{$s}%")
-                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('invoice_date')->latest('id')
+            'invoices' => $this->invoicesQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (SupplierInvoice $inv) => [
@@ -57,7 +88,7 @@ class SupplierInvoiceController extends Controller
                 'posted_month' => round((float) SupplierInvoice::where('status', 'posted')
                     ->whereBetween('invoice_date', [now()->startOfMonth()->toDateString(), now()->toDateString()])->sum('total'), 2),
             ],
-            'filters' => $request->only('status', 'search'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

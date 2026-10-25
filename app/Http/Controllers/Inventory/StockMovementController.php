@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Inventory;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovedSupplier;
 use App\Models\Branch;
@@ -14,23 +15,62 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ReorderService;
 use App\Services\StockMovementService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 /**
  * Adjustments, transfers and the reorder report (Modules 1.2/1.5).
  */
 class StockMovementController extends Controller
 {
+    use ListQuery;
+
     // ── Adjustments ──────────────────────────────────────────────────────
 
-    public function adjustments(): Response
+    private function adjustmentsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            StockAdjustment::with('branch:id,name', 'lines.part:id,part_number')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
+                ->when($request->string('reason')->toString(), fn ($q, $s) => $q->where('reason_code', $s))
+                ->when($request->integer('branch_id'), fn ($q, $id) => $q->where('branch_id', $id)),
+            $request,
+            [
+                'searchable' => ['adjustment_number', 'reason_code', 'notes'],
+                'sortable' => [
+                    'adjustment_number' => 'adjustment_number', 'created_at' => 'created_at',
+                    'reason_code' => 'reason_code', 'status' => 'status', 'posted_at' => 'posted_at',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered adjustment list as CSV or branded PDF (same filters as the grid). */
+    public function exportAdjustments(Request $request): HttpResponse
+    {
+        $rows = $this->adjustmentsQuery($request)->limit(5000)->get()->map(fn (StockAdjustment $a) => [
+            $a->adjustment_number, $a->branch?->name,
+            ucwords(str_replace('_', ' ', $a->reason_code)),
+            ucfirst($a->status),
+            $a->created_at?->toDateString(), $a->posted_at?->toDateTimeString() ?? '—',
+            $a->lines->count(),
+        ]);
+
+        return ListExport::respond($request, 'stock-adjustments', 'Stock Adjustments',
+            ['Adjustment No', 'Branch', 'Reason', 'Status', 'Created', 'Posted', 'Lines'], $rows);
+    }
+
+    public function adjustments(Request $request): Response
     {
         return Inertia::render('Inventory/Adjustments/Index', [
-            'adjustments' => StockAdjustment::with('branch:id,name', 'lines.part:id,part_number')
-                ->latest()
+            'adjustments' => $this->adjustmentsQuery($request)
                 ->paginate(25)
                 ->through(fn (StockAdjustment $a) => [
                     'id' => $a->id,
@@ -48,6 +88,7 @@ class StockMovementController extends Controller
                     ])->values(),
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
+            'filters' => $this->listFilters($request, ['status', 'reason', 'branch_id']),
         ]);
     }
 
@@ -120,11 +161,44 @@ class StockMovementController extends Controller
 
     // ── Transfers ────────────────────────────────────────────────────────
 
-    public function transfers(): Response
+    private function transfersQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            StockTransfer::with('fromBranch:id,name', 'toBranch:id,name', 'lines.part:id,part_number')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['transfer_number', 'notes', 'fromBranch.name', 'toBranch.name'],
+                'sortable' => [
+                    'transfer_number' => 'transfer_number', 'created_at' => 'created_at',
+                    'status' => 'status', 'dispatched_at' => 'dispatched_at', 'received_at' => 'received_at',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered transfer list as CSV or branded PDF (same filters as the grid). */
+    public function exportTransfers(Request $request): HttpResponse
+    {
+        $rows = $this->transfersQuery($request)->limit(5000)->get()->map(fn (StockTransfer $t) => [
+            $t->transfer_number, $t->fromBranch?->name, $t->toBranch?->name,
+            ucwords(str_replace('_', ' ', $t->status)),
+            $t->created_at?->toDateString(),
+            $t->dispatched_at?->toDateString() ?? '—',
+            $t->received_at?->toDateString() ?? '—',
+            $t->lines->count(),
+        ]);
+
+        return ListExport::respond($request, 'stock-transfers', 'Stock Transfers',
+            ['Transfer No', 'From', 'To', 'Status', 'Created', 'Dispatched', 'Received', 'Lines'], $rows);
+    }
+
+    public function transfers(Request $request): Response
     {
         return Inertia::render('Inventory/Transfers/Index', [
-            'transfers' => StockTransfer::with('fromBranch:id,name', 'toBranch:id,name', 'lines.part:id,part_number')
-                ->latest()
+            'transfers' => $this->transfersQuery($request)
                 ->paginate(25)
                 ->through(fn (StockTransfer $t) => [
                     'id' => $t->id,
@@ -141,6 +215,7 @@ class StockMovementController extends Controller
                     ])->values(),
                 ]),
             'branches' => Branch::where('status', 'active')->get(['id', 'name']),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

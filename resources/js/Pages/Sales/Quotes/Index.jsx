@@ -4,11 +4,12 @@ import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
 import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
 import StatChips from '@/Components/StatChips';
 import { fmt } from '@/Components/Pos/posMath';
+import { useListFilter } from '@/lib/listFilters';
 
 const STATUSES = [
     { key: '', label: 'All' },
@@ -19,11 +20,7 @@ const STATUSES = [
 ];
 
 export default function QuotesIndex({ quotes, stats, filters }) {
-    function filter(params) {
-        router.get(route('sales.quotes.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true, replace: true });
-    }
+    const filter = useListFilter('sales.quotes.index', filters);
 
     const active = filters.status ?? '';
 
@@ -41,8 +38,14 @@ export default function QuotesIndex({ quotes, stats, filters }) {
                     { label: 'Converted', value: quotes.data.filter((q) => q.status === 'converted').length, icon: CircleCheck, tone: 'emerald', hint: 'on this page' },
                 ]} />
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <SearchInput id="q-search" value={filters.search ?? ''} onSearch={(s) => filter({ search: s })} placeholder="Quote number or customer…" className="w-72" />
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Quote number or customer…"
+                    searchClass="w-72"
+                    dateRange
+                    exportRoute="sales.quotes.export"
+                >
                     <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" role="tablist" aria-label="Status filter">
                         {STATUSES.map((s) => (
                             <button key={s.key} role="tab" aria-selected={active === s.key} onClick={() => filter({ status: s.key })}
@@ -51,19 +54,19 @@ export default function QuotesIndex({ quotes, stats, filters }) {
                             </button>
                         ))}
                     </div>
-                    <Link href={route('sales.quotes.create')} className="ml-auto inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                    <Link href={route('sales.quotes.create')} className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
                         <Plus className="w-4 h-4" />
                         New Quote
                     </Link>
-                </div>
+                </ListToolbar>
 
                 <DataTable
                     columns={[
-                        { key: 'document_number', label: 'Quote', render: (d) => <EntityLink type="quote" id={d.id} label={d.document_number} mono className="font-semibold" /> },
+                        { key: 'document_number', label: 'Quote', sortable: 'document_number', render: (d) => <EntityLink type="quote" id={d.id} label={d.document_number} mono className="font-semibold" /> },
                         { key: 'customer', label: 'Customer', render: (d) => <EntityLink type="customer" id={d.customer_id} label={d.customer} /> },
-                        { key: 'document_date', label: 'Date', render: (d) => <span className="tabular-nums text-slate-500">{d.document_date}</span> },
+                        { key: 'document_date', label: 'Date', sortable: 'document_date', render: (d) => <span className="tabular-nums text-slate-500">{d.document_date}</span> },
                         {
-                            key: 'expiry_date', label: 'Expires', render: (d) => {
+                            key: 'expiry_date', label: 'Expires', sortable: 'expiry_date', render: (d) => {
                                 if (d.status !== 'open') return <span className="tabular-nums text-slate-400">{d.expiry_date ?? '—'}</span>;
                                 const urgent = d.days_left != null && d.days_left <= 5;
                                 return (
@@ -74,11 +77,12 @@ export default function QuotesIndex({ quotes, stats, filters }) {
                                 );
                             },
                         },
-                        { key: 'total_incl', label: 'Total', align: 'right', render: (d) => <MoneyDisplay amount={d.total_incl} /> },
-                        { key: 'status', label: 'Status', render: (d) => <StatusBadge status={d.status} /> },
+                        { key: 'total_incl', label: 'Total', align: 'right', sortable: 'total_incl', render: (d) => <MoneyDisplay amount={d.total_incl} /> },
+                        { key: 'status', label: 'Status', sortable: 'status', render: (d) => <StatusBadge status={d.status} /> },
                     ]}
                     rows={quotes.data}
                     pagination={quotes}
+                    sorting={{ filters, onFilter: filter }}
                     rowHref={(d) => route('sales.quotes.show', d.id)}
                     emptyTitle="No quotations"
                     emptyMessage="Quote a customer — convert it to an order in one click."

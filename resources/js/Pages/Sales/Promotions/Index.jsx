@@ -1,10 +1,13 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import { Percent, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/sales';
+import DataTable from '@/Components/DataTable';
 import StatusBadge from '@/Components/StatusBadge';
 import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
+import ListToolbar from '@/Components/ListToolbar';
+import { useListFilter } from '@/lib/listFilters';
 import { fmt } from '@/Components/Pos/posMath';
 
 /** Lifecycle from the dates: scheduled before start, expired after end. */
@@ -18,41 +21,55 @@ function lifecycle(p) {
 
 const statusLabel = { active: 'live', pending: 'scheduled', expired: 'ended', inactive: 'disabled' };
 
-export default function PromotionsIndex({ promotions, categories }) {
+const LIFECYCLE_PILLS = [
+    { key: '', label: 'All' },
+    { key: 'live', label: 'Live' },
+    { key: 'scheduled', label: 'Scheduled' },
+    { key: 'ended', label: 'Ended' },
+    { key: 'disabled', label: 'Disabled' },
+];
+
+export default function PromotionsIndex({ promotions, categories, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({ name: '', type: 'percent', value: '', applies_to: 'all', category_id: '', starts_at: '', ends_at: '' });
+    const filter = useListFilter('sales.promotions.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
     return (
         <ModuleLayout navConfig={navConfig} title="Promotions & Discounts" breadcrumbs={[{ label: 'Sales & POS', href: route('modules.show', 'sales') }, { label: 'Promotions & Discounts' }]}>
             <Head title="Promotions & Discounts" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl">
-                <div className="lg:col-span-2 rounded-xl border border-slate-100 bg-white overflow-hidden h-fit">
-                    {promotions.length === 0 ? (
-                        <div className="py-12 text-center text-sm text-slate-400">
-                            <Tag className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                            <p className="font-medium text-slate-600">No promotions yet.</p>
-                            <p className="mt-1 text-xs">Create a percent or rand discount — for all parts or one category.</p>
-                        </div>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2.5">Promotion</th><th className="px-2 py-2.5">Discount</th><th className="px-2 py-2.5">Scope</th><th className="px-2 py-2.5">Window</th><th className="px-2 py-2.5">Status</th><th className="px-4 py-2.5 text-right"></th></tr></thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {promotions.map((p) => {
-                                    const state = lifecycle(p);
-                                    return (
-                                        <tr key={p.id}>
-                                            <td className="px-4 py-2.5 font-medium text-slate-800">{p.name}</td>
-                                            <td className="px-2 py-2.5 text-slate-600 font-semibold tabular-nums">{p.type === 'percent' ? `${p.value}%` : `R${fmt(p.value)}`}</td>
-                                            <td className="px-2 py-2.5 text-slate-500">{p.applies_to === 'all' ? 'All parts' : <EntityLink type="category" id={p.category_id} label={p.category ?? 'Category'} muted />}</td>
-                                            <td className="px-2 py-2.5 tabular-nums text-slate-400">{p.starts_at ?? '…'} → {p.ends_at ?? 'open'}</td>
-                                            <td className="px-2 py-2.5"><StatusBadge status={state} label={statusLabel[state]} /></td>
-                                            <td className="px-4 py-2.5 text-right"><button onClick={() => router.post(route('sales.promotions.toggle', p.id), {}, { preserveScroll: true })} className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">{p.is_active ? 'Disable' : 'Enable'}</button></td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    )}
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Promotion name…"
+                searchClass="w-64"
+            >
+                <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1" role="tablist" aria-label="Lifecycle filter">
+                    {LIFECYCLE_PILLS.map((s) => (
+                        <button key={s.key} role="tab" aria-selected={(filters.lifecycle ?? '') === s.key} onClick={() => filter({ lifecycle: s.key })}
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${(filters.lifecycle ?? '') === s.key ? 'bg-orange-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`}>
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
+            </ListToolbar>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mt-4">
+                <div className="lg:col-span-2 h-fit">
+                    <DataTable
+                        columns={[
+                            { key: 'name', label: 'Promotion', sortable: 'name', render: (p) => <span className="font-medium text-slate-800">{p.name}</span> },
+                            { key: 'value', label: 'Discount', sortable: 'value', render: (p) => <span className="text-slate-600 font-semibold tabular-nums">{p.type === 'percent' ? `${p.value}%` : `R${fmt(p.value)}`}</span> },
+                            { key: 'scope', label: 'Scope', render: (p) => p.applies_to === 'all' ? <span className="text-slate-500">All parts</span> : <EntityLink type="category" id={p.category_id} label={p.category ?? 'Category'} muted /> },
+                            { key: 'window', label: 'Window', sortable: 'starts_at', render: (p) => <span className="tabular-nums text-slate-400">{p.starts_at ?? '…'} → {p.ends_at ?? 'open'}</span> },
+                            { key: 'status', label: 'Status', render: (p) => { const s = lifecycle(p); return <StatusBadge status={s} label={statusLabel[s]} />; } },
+                            { key: 'actions', label: '', align: 'right', render: (p) => <button onClick={(e) => { e.stopPropagation(); router.post(route('sales.promotions.toggle', p.id), {}, { preserveScroll: true }); }} className="rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">{p.is_active ? 'Disable' : 'Enable'}</button> },
+                        ]}
+                        rows={promotions.data}
+                        pagination={promotions}
+                        sorting={{ filters, onFilter: filter }}
+                        emptyTitle="No promotions yet"
+                        emptyMessage="Create a percent or rand discount — for all parts or one category."
+                        emptyIcon={Tag}
+                    />
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); post(route('sales.promotions.store'), { onSuccess: () => reset() }); }} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">
                     <h2 className="text-sm font-semibold text-slate-700">New promotion</h2>

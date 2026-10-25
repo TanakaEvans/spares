@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { ScanBarcode, Search, X } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
+import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
 
 export default function SerialsIndex({ serials, branches, filters }) {
     const { data, setData, post, processing, reset } = useForm({ part_id: '', branch_id: branches[0]?.id ?? '', serial: '', batch: '', reference: '' });
+    const filter = useListFilter('inventory.serials.index', filters);
     const [picked, setPicked] = useState(null);
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
@@ -29,27 +32,35 @@ export default function SerialsIndex({ serials, branches, filters }) {
             <Head title="Serial & Batch Tracking" />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-4">
-                    <SearchInput id="ser-search" value={filters.search ?? ''} onSearch={(s) => router.get(route('inventory.serials.index'), s ? { search: s } : {}, { preserveState: true, replace: true })} placeholder="Serial or batch…" className="w-72" />
-                    <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-                        {serials.data.length === 0 ? (
-                            <div className="py-10 text-center text-sm text-slate-400"><ScanBarcode className="w-8 h-8 mx-auto mb-2 text-slate-300" />No serials recorded.</div>
-                        ) : (
-                            <table className="w-full text-sm">
-                                <thead><tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100"><th className="px-4 py-2">Serial</th><th className="px-2 py-2">Batch</th><th className="px-2 py-2">Part</th><th className="px-2 py-2">Branch</th><th className="px-4 py-2">Status</th></tr></thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {serials.data.map((n) => (
-                                        <tr key={n.id}>
-                                            <td className="px-4 py-2 font-mono font-semibold text-slate-800">{n.serial}</td>
-                                            <td className="px-2 py-2 text-slate-500">{n.batch ?? '—'}</td>
-                                            <td className="px-2 py-2"><EntityLink type="part" id={n.part_id} label={n.part_number} mono /></td>
-                                            <td className="px-2 py-2"><EntityLink type="branch" id={n.branch_id} label={n.branch ?? '—'} muted /></td>
-                                            <td className="px-4 py-2"><StatusBadge status={n.status === 'in_stock' ? 'active' : n.status === 'sold' ? 'complete' : 'inactive'} label={n.status.replace('_', ' ')} /></td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                    <ListToolbar
+                        filters={filters}
+                        onFilter={filter}
+                        searchPlaceholder="Serial, batch or part number…"
+                        searchClass="w-72"
+                    >
+                        <select aria-label="Filter by branch" value={filters.branch_id ?? ''} onChange={(e) => filter({ branch_id: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">All branches</option>
+                            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                        <select aria-label="Filter by status" value={filters.status ?? ''} onChange={(e) => filter({ status: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">All statuses</option>
+                            {['in_stock', 'reserved', 'sold', 'returned'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                        </select>
+                    </ListToolbar>
+                    <DataTable
+                        columns={[
+                            { key: 'serial', label: 'Serial', sortable: 'serial', render: (n) => <span className="font-mono font-semibold text-slate-800">{n.serial}</span> },
+                            { key: 'batch', label: 'Batch', sortable: 'batch', render: (n) => <span className="text-slate-500">{n.batch ?? '—'}</span> },
+                            { key: 'part', label: 'Part', render: (n) => <EntityLink type="part" id={n.part_id} label={n.part_number} mono /> },
+                            { key: 'branch', label: 'Branch', render: (n) => <EntityLink type="branch" id={n.branch_id} label={n.branch ?? '—'} muted /> },
+                            { key: 'status', label: 'Status', sortable: 'status', render: (n) => <StatusBadge status={n.status === 'in_stock' ? 'active' : n.status === 'sold' ? 'complete' : 'inactive'} label={n.status.replace('_', ' ')} /> },
+                        ]}
+                        rows={serials.data}
+                        pagination={serials}
+                        sorting={{ filters, onFilter: filter }}
+                        emptyTitle="No serials recorded"
+                        emptyIcon={ScanBarcode}
+                    />
                 </div>
                 <form onSubmit={(e) => { e.preventDefault(); post(route('inventory.serials.store'), { onSuccess: () => { reset('serial', 'batch', 'reference'); setPicked(null); } }); }} className="rounded-xl border border-slate-100 bg-white p-5 space-y-3 h-fit">
                     <h2 className="text-sm font-semibold text-slate-700">Record serial</h2>

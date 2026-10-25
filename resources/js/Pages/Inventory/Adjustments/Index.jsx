@@ -6,15 +6,19 @@ import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
 import FormField from '@/Components/FormField';
+import ListToolbar from '@/Components/ListToolbar';
 import PartLinePicker from '@/Components/PartLinePicker';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
 
-export default function AdjustmentsIndex({ adjustments, branches }) {
+export default function AdjustmentsIndex({ adjustments, branches, filters = {} }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         branch_id: branches[0]?.id ?? '', reason_code: 'correction', notes: '', lines: [],
     });
     const [lines, setLines] = useState([]);
+    const filter = useListFilter('inventory.adjustments.index', filters);
     const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+    const selectCls = 'rounded-lg border border-slate-300 px-3 py-2 text-sm';
 
     function sync(next) {
         setLines(next);
@@ -32,13 +36,36 @@ export default function AdjustmentsIndex({ adjustments, branches }) {
         >
             <Head title="Stock Adjustments" />
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+            <ListToolbar
+                filters={filters}
+                onFilter={filter}
+                searchPlaceholder="Number, reason or notes…"
+                searchClass="w-64"
+                dateRange
+                exportRoute="inventory.adjustments.export"
+            >
+                <select aria-label="Filter by branch" value={filters.branch_id ?? ''} onChange={(e) => filter({ branch_id: e.target.value })} className={selectCls}>
+                    <option value="">All branches</option>
+                    {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+                <select aria-label="Filter by reason" value={filters.reason ?? ''} onChange={(e) => filter({ reason: e.target.value })} className={selectCls}>
+                    <option value="">All reasons</option>
+                    {['correction', 'damage', 'write_off', 'found', 'theft', 'expiry'].map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                </select>
+                <select aria-label="Filter by status" value={filters.status ?? ''} onChange={(e) => filter({ status: e.target.value })} className={selectCls}>
+                    <option value="">All statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="posted">Posted</option>
+                </select>
+            </ListToolbar>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start mt-4">
                 <div className="xl:col-span-2">
                     <DataTable
                         columns={[
-                            { key: 'adjustment_number', label: 'Number', render: (a) => <EntityLink type="adjustment" id={a.id} label={a.adjustment_number} mono className="font-semibold" /> },
+                            { key: 'adjustment_number', label: 'Number', sortable: 'adjustment_number', render: (a) => <EntityLink type="adjustment" id={a.id} label={a.adjustment_number} mono className="font-semibold" /> },
                             { key: 'branch', label: 'Branch', render: (a) => <EntityLink type="branch" id={a.branch_id} label={a.branch} muted /> },
-                            { key: 'reason_code', label: 'Reason', render: (a) => <span className="capitalize text-slate-500">{a.reason_code.replace('_', ' ')}</span> },
+                            { key: 'reason_code', label: 'Reason', sortable: 'reason_code', render: (a) => <span className="capitalize text-slate-500">{a.reason_code.replace('_', ' ')}</span> },
                             {
                                 key: 'lines', label: 'Lines',
                                 render: (a) => (
@@ -52,10 +79,11 @@ export default function AdjustmentsIndex({ adjustments, branches }) {
                                     </span>
                                 ),
                             },
-                            { key: 'status', label: 'Status', render: (a) => <StatusBadge status={a.status} /> },
+                            { key: 'status', label: 'Status', sortable: 'status', render: (a) => <StatusBadge status={a.status} /> },
                         ]}
                         rows={adjustments.data}
                         pagination={adjustments}
+                        sorting={{ filters, onFilter: filter }}
                         rowHref={(a) => route('inventory.adjustments.show', a.id)}
                         emptyTitle="No adjustments yet"
                         emptyMessage="Post write-offs, corrections and found stock — each one hits the ledger and GL."

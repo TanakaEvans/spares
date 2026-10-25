@@ -1,94 +1,57 @@
-// Workshop nav — content only (styling lives in ModuleLayout).
+// Workshop nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    Wrench, KanbanSquare, ClipboardList, CarFront, Timer, HardHat,
-    LayoutList, Plus, Car, Receipt, PackageSearch, ShieldCheck, Truck,
+    CarFront, ClipboardList, HardHat, KanbanSquare, PackageSearch, PackageX, Receipt,
+    Search, ShieldCheck, Timer, Truck, Users, Wrench,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'workshop',
     moduleLabel: 'Workshop',
     moduleIcon: Wrench,
 
-    module: [
+    sections: [
         {
             section: 'Jobs',
             items: [
                 { label: 'Technician Board', route: 'workshop.board', icon: KanbanSquare },
-                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
+                {
+                    label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList,
+                    children: [{ label: 'New Job', route: 'workshop.jobs.create' }],
+                    related: [
+                        { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
+                        { label: 'Customers', route: 'customers.index', icon: Users },
+                        { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
+                    ],
+                },
+                {
+                    label: 'Warranty Claims', route: 'workshop.warranty.index', icon: ShieldCheck,
+                    related: [
+                        { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
+                        { label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX },
+                    ],
+                },
             ],
         },
         {
-            section: 'Registry',
+            section: 'Vehicles',
             items: [
-                { label: 'Vehicles', route: 'workshop.vehicles.index', icon: CarFront },
+                {
+                    label: 'Vehicle Registry', route: 'workshop.vehicles.index', icon: CarFront,
+                    children: [{ label: 'Register Vehicle', route: 'workshop.vehicles.create' }],
+                    related: [
+                        { label: 'Customers', route: 'customers.index', icon: Users },
+                        { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
+                    ],
+                },
             ],
         },
         {
             section: 'Setup',
             items: [
-                { label: 'Labour Codes', route: 'workshop.labour.index', icon: Timer },
                 { label: 'Technicians', route: 'workshop.technicians.index', icon: HardHat },
+                { label: 'Labour Codes', route: 'workshop.labour.index', icon: Timer },
             ],
         },
     ],
-
-    subModules: {
-        board: {
-            label: 'Technician Board', icon: KanbanSquare, routePrefix: 'workshop.board',
-            work: [{ label: 'Board', route: 'workshop.board', icon: KanbanSquare }],
-            quickLinks: [
-                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
-                { label: 'Technicians', route: 'workshop.technicians.index', icon: HardHat },
-            ],
-        },
-        jobs: {
-            label: 'Job Cards', icon: ClipboardList, routePrefix: 'workshop.jobs',
-            work: [
-                { label: 'All Jobs', route: 'workshop.jobs.index', icon: LayoutList },
-                { label: 'New Job', route: 'workshop.jobs.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Technician Board', route: 'workshop.board', icon: KanbanSquare },
-                { label: 'Vehicles', route: 'workshop.vehicles.index', icon: CarFront },
-                { label: 'Parts Catalogue', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-        vehicles: {
-            label: 'Vehicle Registry', icon: CarFront, routePrefix: 'workshop.vehicles',
-            work: [
-                { label: 'All Vehicles', route: 'workshop.vehicles.index', icon: LayoutList },
-                { label: 'Register Vehicle', route: 'workshop.vehicles.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
-                { label: 'Customers', route: 'customers.index', icon: Car },
-            ],
-        },
-        labour: {
-            label: 'Labour Codes', icon: Timer, routePrefix: 'workshop.labour',
-            work: [{ label: 'Labour Codes', route: 'workshop.labour.index', icon: Timer }],
-            quickLinks: [
-                { label: 'Technicians', route: 'workshop.technicians.index', icon: HardHat },
-                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
-            ],
-        },
-        technicians: {
-            label: 'Technicians', icon: HardHat, routePrefix: 'workshop.technicians',
-            work: [{ label: 'Technicians', route: 'workshop.technicians.index', icon: HardHat }],
-            quickLinks: [
-                { label: 'Technician Board', route: 'workshop.board', icon: KanbanSquare },
-                { label: 'Labour Codes', route: 'workshop.labour.index', icon: Timer },
-            ],
-        },
-        warranty: {
-            label: 'Warranty Claims', icon: ShieldCheck, routePrefix: 'workshop.warranty',
-            work: [{ label: 'All Claims', route: 'workshop.warranty.index', icon: LayoutList }],
-            quickLinks: [
-                { label: 'Job Cards', route: 'workshop.jobs.index', icon: ClipboardList },
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-            ],
-        },
-    },
 };
-
-export default navConfig;

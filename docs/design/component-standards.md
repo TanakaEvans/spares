@@ -65,6 +65,15 @@ Rules:
 - Header sort indicators, sticky header on long tables, 25/page footer pagination showing "1–25 of 312".
 - Empty/filtered-empty states per [ui-rules.md](ui-rules.md) §6; loading = skeleton rows matching column layout.
 
+### 5a. The list-toolbar contract (every list screen)
+
+One shared contract, not per-page inventions:
+
+- **Backend:** `app/Http/Controllers/Concerns/ListQuery.php`. Each index builds its query through `listApply($query, $request, [...])` declaring `searchable` (columns or `relation.column`), `sortable` (request-key → column whitelist — unknown keys fall back to `defaultSort`, never reach SQL), optional `dateColumn` (honours `date_from`/`date_to`), and `defaultSort`. The same query method feeds `->paginate()->withQueryString()` for the grid AND the `*.export` route, so the export is always the filtered list — capped at 5 000 rows. Filters echo to the page via `listFilters($request, [screen keys])` (`search`, `sort`, `dir`, `date_from`, `date_to` + the page's own params).
+- **Export:** `ListExport::respond($request, filename, title, headers, rows)` — `?format=pdf` renders the branded `print.list` PDF via `DocumentPdfService`; anything else streams `CsvExport` (UTF-8 BOM, Excel-safe). Every export route is `{prefix}/export` registered before the `{model}` wildcard.
+- **Frontend:** `useListFilter(routeName, filters)` from `lib/listFilters.js` merges params and re-requests preserving state (empty values drop off the URL); `nextSort` cycles a column asc → desc → default. `<ListToolbar filters onFilter searchPlaceholder dateRange exportRoute>` renders search + date range + CSV/PDF anchors; the page's own pills/selects go in the children slot. Sortable headers: add `sortable: 'key'` (the server's whitelist key) to the `DataTable` column and pass `sorting={{ filters, onFilter: filter }}`.
+- Adding a new list screen = the trait config + `export()` rows + `<ListToolbar>` — no new filter code.
+
 ## 6. Forms
 
 - Every control wrapped in `<FormField>` (label, required `*`, error slot) — bare inputs fail review.

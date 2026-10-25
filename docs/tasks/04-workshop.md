@@ -13,6 +13,9 @@ Skip this whole phase if the client has no workshop — nothing else depends on 
 > - **4.8 Workshop Invoicing + 4.6 Job Costing** ✅ — `WorkshopInvoiceService` converts a completed job to a tax invoice through Sales/AR: **revenue-only** GL (parts→4100, labour→4300, VAT→2210; COGS already booked at issue), warranty lines excluded, on-account/cash/card/eft, `sales_document_lines.part_id` made nullable + `line_type`; `JobCard` costing (`labourCost`/`partsCost`/`marginPct`). Tests: `JobCardFlowTest` (6). **Suite 160 green.**
 > - **Deferred to a Phase 5 follow-up:** 4.7 Warranty Claims (`warranty_claims` not yet built), workshop invoice/job-card print templates, SystemRoute permission seeds, technician efficiency reports (Phase 6).
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** Job Cards, Customer Vehicles, Warranty Claims, Labour Codes and Technicians on the shared contract — whitelisted search (job no / customer / reg / claim ref), status + business filters inside the toolbar slot, sortable headers, pagination with query-string preservation. Warranty transitions, claim form, labour-rate inline form and technician create form preserved.
+
 ## 4.5 Vehicle Registry  ·  [spec](../modules/04-workshop-management/4.5-vehicle-registry.md)
 
 ### Backend

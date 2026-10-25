@@ -86,6 +86,7 @@
 ### Tests
 - [x] Covered via full suite remaining green after layout conversion (70 passing); component render verified in browser — done 2026-09-23
 - [x] Functional pass / exit criterion: three real pages (Settings, Currencies, Sequences) run on the kit — Level-3 sidebar, breadcrumbs, quick-link jumps and rate capture all verified in browser — done 2026-09-23
+- [~] **Navigation redesign — stable menu** (user feedback 2026-10-25: "menus constantly changing") — Level-3 sidebar swap retired; `ModuleLayout` now renders one stable module menu on every page incl. landings (longest-prefix active, collapsible remembered sections, preserved scroll, module switcher, sidebar search, `[` icon rail, hover prefetch); all 10 nav configs re-organised (`sections › items › children/related`), 20+ orphan screens added; `NavigationCoverageTest` (3 tests) + suite 249 green; spec in navigation-and-layout §2. Remaining for `[x]`: user/browser functional pass with the counter staff
 - [ ] Follow-up: migrate legacy AdminLayout pages (Company, Branches, Departments, Users, Roles) onto `ModuleLayout` — tracked in [tasks/10-system-admin.md](10-system-admin.md)
 
 ## 0.7 Dashboard Module Cards

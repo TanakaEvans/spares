@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\VehicleRef;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\TechnicalBulletin;
 use App\Models\VehicleMake;
@@ -12,12 +13,23 @@ use Inertia\Response;
 
 class BulletinController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+    public function index(Request $request): Response
     {
         return Inertia::render('VehicleRef/Bulletins/Index', [
-            'bulletins' => TechnicalBulletin::with('make:id,name')->latest('id')->paginate(20)
+            'bulletins' => $this->listApply(TechnicalBulletin::with('make:id,name')
+                ->when($request->string('category')->toString(), fn ($q, $c) => $q->where('category', $c)),
+                $request,
+                [
+                    'searchable' => ['title', 'body', 'category', 'make.name'],
+                    'sortable' => ['title' => 'title', 'category' => 'category', 'created_at' => 'created_at'],
+                    'dateColumn' => 'created_at',
+                    'defaultSort' => ['id' => 'desc'],
+                ])
+                ->paginate(20)->withQueryString()
                 ->through(fn (TechnicalBulletin $b) => ['id' => $b->id, 'title' => $b->title, 'make_id' => $b->make_id, 'make' => $b->make?->name, 'category' => $b->category, 'body' => $b->body, 'is_active' => $b->is_active, 'at' => $b->created_at->toDateString()]),
             'makes' => VehicleMake::orderBy('name')->get(['id', 'name']),
+            'filters' => $this->listFilters($request, ['category']),
         ]);
     }
 

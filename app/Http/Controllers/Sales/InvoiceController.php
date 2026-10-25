@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\GlJournal;
 use App\Models\JobCard;
 use App\Models\ReceiptAllocation;
 use App\Models\SalesDocument;
 use App\Services\DocumentPdfService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,17 +18,45 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class InvoiceController extends Controller
 {
+    use ListQuery;
+
+    private function invoicesQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SalesDocument::query()
+                ->where('document_type', 'invoice')
+                ->with('customer:id,name', 'branch:id,name', 'payments:id,document_id,method'),
+            $request,
+            [
+                'searchable' => ['document_number', 'customer.name'],
+                'sortable' => [
+                    'document_number' => 'document_number', 'document_date' => 'document_date',
+                    'total_incl' => 'total_incl', 'status' => 'status',
+                ],
+                'dateColumn' => 'document_date',
+                'defaultSort' => ['document_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered invoice list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->invoicesQuery($request)->limit(5000)->get()->map(fn (SalesDocument $d) => [
+            $d->document_number, $d->customer?->name, $d->branch?->name, $d->document_date?->toDateString(),
+            ucwords(str_replace('_', ' ', $d->status)),
+            $d->payments->contains(fn ($p) => $p->method === 'account') ? 'account' : 'paid',
+            number_format((float) $d->total_incl, 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'tax-invoices', 'Tax Invoices',
+            ['Invoice No', 'Customer', 'Branch', 'Date', 'Status', 'Tender', 'Total'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Sales/Invoices/Index', [
-            'invoices' => SalesDocument::query()
-                ->where('document_type', 'invoice')
-                ->with('customer:id,name', 'branch:id,name', 'payments:id,document_id,method')
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('document_number', 'like', "%{$s}%")
-                        ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('document_date')->latest('id')
+            'invoices' => $this->invoicesQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (SalesDocument $d) => [
@@ -47,7 +78,7 @@ class InvoiceController extends Controller
                 'on_account' => (int) SalesDocument::query()->where('document_type', 'invoice')
                     ->whereHas('payments', fn ($p) => $p->where('method', 'account'))->count(),
             ],
-            'filters' => $request->only('search'),
+            'filters' => $this->listFilters($request),
         ]);
     }
 

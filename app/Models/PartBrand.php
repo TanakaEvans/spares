@@ -13,6 +13,11 @@ class PartBrand extends Model
 
     protected $casts = ['is_oem_brand' => 'boolean', 'is_active' => 'boolean'];
 
+    public function parts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Part::class, 'brand_id');
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

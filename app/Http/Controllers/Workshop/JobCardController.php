@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Workshop;
 
 use App\Exceptions\DomainException;
 use App\Exceptions\UnpricedPartException;
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
@@ -26,20 +27,24 @@ use Inertia\Response;
 
 class JobCardController extends Controller
 {
+    use ListQuery;
+
     public function __construct(private readonly JobCardService $jobs) {}
 
     public function index(Request $request): Response
     {
         return Inertia::render('Workshop/Jobs/Index', [
-            'jobs' => JobCard::with('customer:id,name', 'vehicle:id,registration', 'technician:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('job_number', 'like', "%{$s}%")
-                        ->orWhereHas('vehicle', fn ($y) => $y->where('registration', 'like', "%{$s}%"))
-                        ->orWhereHas('customer', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest('id')
-                ->paginate(20)
+            'jobs' => $this->listApply(
+                JobCard::with('customer:id,name', 'vehicle:id,registration', 'technician:id,name')
+                    ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+                $request,
+                [
+                    'searchable' => ['job_number', 'vehicle.registration', 'customer.name'],
+                    'sortable' => ['job_number' => 'job_number', 'status' => 'status', 'created_at' => 'created_at'],
+                    'dateColumn' => 'created_at',
+                    'defaultSort' => ['id' => 'desc'],
+                ]
+            )->paginate(20)
                 ->withQueryString()
                 ->through(fn (JobCard $j) => [
                     'id' => $j->id,
@@ -53,7 +58,7 @@ class JobCardController extends Controller
                     'status' => $j->status,
                     'created_at' => $j->created_at->toDateString(),
                 ]),
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

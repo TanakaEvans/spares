@@ -53,7 +53,53 @@
 
 ## Level 2 — Module workspace (module sidebar)
 
-Entering a module swaps to a module-specific layout: the `AdminLayout` pattern (fixed dark `bg-slate-900` w-64 sidebar + top bar) generalised into a `ModuleLayout` that takes a nav config. The existing `FinanceSidebar.jsx` shows the pattern — one sidebar per module, sections mirroring the sub-modules.
+Entering a module (its landing page included) renders the shared `ModuleLayout` — fixed dark `bg-slate-900` sidebar + top bar — driven by that module's nav config in `resources/js/nav/{module}.js` (registry: `resources/js/nav/index.js`).
+
+### §2 The stable-menu rule (revised 2026-10-25 after user feedback)
+
+Users reported the sidebar "constantly changing": the original Level-3 design swapped the whole module menu for a per-sub-module menu on every hop, and the module landing had no sidebar at all. Replaced by one rule — **the menu is identical on every page of a module; nothing is ever swapped in or out.**
+
+```
+┌──────────────────────────┐
+│ [▣] Inventory Mgmt   ⇅   │ ← module switcher (click → any module / Dashboard)
+│ [🔍 Search…     Ctrl K]  │ ← opens the command palette
+│ ⊞ Overview               │ ← module landing (sub-module cards)
+│ CATALOGUE              ▾ │ ← collapsible section, state remembered
+│ ▍Parts                   │ ← active = longest route-prefix match
+│     + New Part           │ ← permanent quick action (children)
+│   Categories             │
+│ STOCK                  ▾ │
+│   Stock Levels …         │
+│ ──────────────────────── │
+│ RELATED ⇄                │ ← cross-module jumps for the current item only,
+│   Fitment Lookup         │   always at the bottom so nothing above moves
+│ ──────────────────────── │
+│ ⌂ Dashboard · « Collapse · ⎋ Logout │
+└──────────────────────────┘
+```
+
+Config shape (content only):
+```js
+export default {
+  moduleKey, moduleLabel, moduleIcon,
+  sections: [{ section, items: [{
+    label, route, icon,
+    match?,     // route-name prefix that makes it active (default: route minus ".index")
+    children?,  // quick actions always shown under the item
+    related?,   // cross-module jumps, shown at the bottom while this item is active (max 4)
+  }] }],
+};
+```
+
+Behaviour:
+- **Active item** = the longest matching route-name prefix (`inventory.stock-takes.show` → Stock Takes, never Stock Levels; `customers.groups.*` beats the `customers` catch-all). A child (e.g. *New Part*) highlights instead of its parent while you are on it.
+- **Sections** collapse and remember it per module (`localStorage nav.closed.{module}`); the section holding the current page can't be collapsed.
+- **Scroll position** of the sidebar survives navigation (`sessionStorage`), and the active item is scrolled into view if needed.
+- **Icon rail**: `[` (or the Collapse button) shrinks the sidebar to icons, remembered across sessions — for POS/receiving users who want width.
+- **Hover prefetch** on every item (Inertia `prefetch="hover"`, 30 s cache) — pages arrive before the click.
+- **Cross-module screens never appear as menu items** — only under *Related ⇄*, because following them changes the menu to the other module's.
+- Permission-filtered; empty sections are omitted.
+- `NavigationCoverageTest` enforces: every menu route exists, every screen is reachable from a menu (exceptions listed with reasons), every module has a registered config.
 
 ```
 ┌────────┬─────────────────────────────────────────────────────┐
@@ -74,11 +120,11 @@ Entering a module swaps to a module-specific layout: the `AdminLayout` pattern (
 
 Rules:
 - Sidebar sections = the module's sub-modules, in doc order. Active item = accent-coloured left border + `bg-primary-light`.
-- **Level 3 context switch**: entering a sub-module swaps the sidebar to that sub-module's own menu — only its screens, insights and setup, plus a curated Quick Links section (↰ returns to the module menu). Full pattern + all 82 layouts: [sidebars/](sidebars/README.md). `ModuleLayout` resolves which sidebar to show from the current route-name prefix.
+- ~~Level 3 context switch~~ — **retired 2026-10-25** (see §2). The per-sub-module designs in [sidebars/](sidebars/README.md) remain the source for each item's quick actions (`children`) and cross-module jumps (`related`), but they no longer replace the module menu.
 - Sidebar items are permission-filtered like the cards.
-- Bottom of every sidebar: **Return Home** (dashboard) and **Logout** — as in the current `AdminLayout`.
-- Top bar: breadcrumb (`Module › Sub-module › Record`), global part-search (`F2` from anywhere in the module), notifications, profile menu, current branch badge.
-- Nav configs live per module in `Modules/{X}/resources/js/nav.js` exporting `[{ section, items: [{ label, route, icon, permission }] }]` — the sidebar component is shared, the config is not.
+- Bottom of every sidebar: **Dashboard**, **Collapse** and **Logout**.
+- Top bar: breadcrumb (`Module › Sub-module › Record`), notifications, page guide, user.
+- Nav configs live in `resources/js/nav/{module}.js` — the sidebar component is shared, the config is not.
 
 ---
 

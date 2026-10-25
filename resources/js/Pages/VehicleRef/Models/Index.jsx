@@ -1,32 +1,20 @@
-import { Head, router, useForm } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Car, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
-import FormField from '@/Components/FormField';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
+import RowActions from '@/Components/RowActions';
+import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
+import { useDeleteRecord, useRecordEditor } from '@/lib/records';
+import { BLANK_MODEL, ModelDialog, modelValues } from './ModelDialogs';
 
 export default function ModelsIndex({ models, makes, filters }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        make_id: filters.make_id ?? '', name: '', body_type: '', year_from: '', year_to: '',
-    });
-
-    function filter(params) {
-        router.get(route('vehicle-ref.models.index'), Object.fromEntries(
-            Object.entries({ ...filters, ...params }).filter(([, v]) => v)
-        ), { preserveState: true });
-    }
-
-    function add(e) {
-        e.preventDefault();
-        post(route('vehicle-ref.models.store'), {
-            preserveScroll: true,
-            onSuccess: () => reset('name', 'body_type', 'year_from', 'year_to'),
-        });
-    }
-
-    const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+    const filter = useListFilter('vehicle-ref.models.index', filters);
+    const editor = useRecordEditor({ ...BLANK_MODEL, make_id: filters.make_id ?? '' });
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
 
     return (
         <ModuleLayout
@@ -39,79 +27,55 @@ export default function ModelsIndex({ models, makes, filters }) {
         >
             <Head title="Vehicle Models" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="flex flex-wrap gap-3">
-                        <SearchInput
-                            id="models-search"
-                            value={filters.search ?? ''}
-                            onSearch={(s) => filter({ search: s })}
-                            placeholder="Search models…"
-                            className="w-64"
-                        />
-                        <select
-                            aria-label="Filter by make"
-                            value={filters.make_id ?? ''}
-                            onChange={(e) => filter({ make_id: e.target.value })}
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                        >
-                            <option value="">All makes</option>
-                            {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                        </select>
+            <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900">Models & Variants</h1>
+                        <p className="text-sm text-slate-500">Click a model to manage its variants and see every part that fits.</p>
                     </div>
-                    <DataTable
-                        columns={[
-                            { key: 'make', label: 'Make', render: (m) => <EntityLink type="make" id={m.make_id} label={m.make?.name} params={{ make_id: m.make_id }} muted /> },
-                            { key: 'name', label: 'Model', render: (m) => <EntityLink type="model" id={m.id} label={m.name} className="font-medium" /> },
-                            { key: 'body_type', label: 'Body', render: (m) => <span className="capitalize text-slate-500">{m.body_type}</span> },
-                            { key: 'years', label: 'Years', render: (m) => <span className="tabular-nums text-slate-500">{m.year_from ?? ''}–{m.year_to ?? 'now'}</span> },
-                            { key: 'variants_count', label: 'Variants', align: 'right' },
-                        ]}
-                        rows={models.data}
-                        pagination={models}
-                        rowHref={(m) => route('vehicle-ref.models.show', m.id)}
-                        emptyTitle="No models found"
-                        emptyMessage="Adjust the filters, or add a model on the right."
-                    />
+                    <button onClick={() => editor.open(null, { make_id: filters.make_id ?? '' })} className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                        <Plus className="w-4 h-4" /> New Model
+                    </button>
                 </div>
 
-                <form onSubmit={add} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 space-y-4">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Add Model</h2>
-                    <FormField label="Make" htmlFor="model-make" required error={errors.make_id}>
-                        <select id="model-make" value={data.make_id} onChange={(e) => setData('make_id', e.target.value)} className={input}>
-                            <option value="">Select make…</option>
-                            {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                        </select>
-                    </FormField>
-                    <FormField label="Model name" htmlFor="model-name" required error={errors.name}>
-                        <input id="model-name" value={data.name} onChange={(e) => setData('name', e.target.value)} className={input} />
-                    </FormField>
-                    <FormField label="Body type" htmlFor="model-body" error={errors.body_type}>
-                        <select id="model-body" value={data.body_type} onChange={(e) => setData('body_type', e.target.value)} className={input}>
-                            <option value="">—</option>
-                            {['pickup', 'sedan', 'hatchback', 'suv', 'van', 'mpv', 'wagon', 'truck', 'bus'].map((b) => (
-                                <option key={b} value={b}>{b}</option>
-                            ))}
-                        </select>
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-3">
-                        <FormField label="Year from" htmlFor="model-yf" error={errors.year_from}>
-                            <input id="model-yf" type="number" value={data.year_from} onChange={(e) => setData('year_from', e.target.value)} className={input} />
-                        </FormField>
-                        <FormField label="Year to" htmlFor="model-yt" error={errors.year_to} help="Blank = current">
-                            <input id="model-yt" type="number" value={data.year_to} onChange={(e) => setData('year_to', e.target.value)} className={input} />
-                        </FormField>
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={processing || !data.make_id || !data.name}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Model
-                    </button>
-                </form>
+                <ListToolbar filters={filters} onFilter={filter} searchPlaceholder="Model, make or engine code…" searchClass="w-72">
+                    <select aria-label="Filter by make" value={filters.make_id ?? ''} onChange={(e) => filter({ make_id: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">All makes</option>
+                        {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                </ListToolbar>
+
+                <DataTable
+                    columns={[
+                        { key: 'make', label: 'Make', render: (m) => <EntityLink type="make" id={m.make_id} label={m.make?.name} muted /> },
+                        { key: 'name', label: 'Model', sortable: 'name', render: (m) => <EntityLink type="model" id={m.id} label={m.name} className="font-semibold" /> },
+                        { key: 'body_type', label: 'Body', render: (m) => <span className="capitalize text-slate-500">{m.body_type ?? '—'}</span> },
+                        { key: 'years', label: 'Years', render: (m) => <span className="tabular-nums text-slate-500">{m.year_from ?? '?'}–{m.year_to ?? 'now'}</span> },
+                        { key: 'variants_count', label: 'Variants', align: 'right' },
+                        { key: 'is_active', label: '', render: (m) => !m.is_active && <StatusBadge status="inactive" /> },
+                        {
+                            key: 'actions', label: '', align: 'right', render: (m) => (
+                                <RowActions actions={[
+                                    { label: 'Open', icon: Eye, href: route('vehicle-ref.models.show', m.id) },
+                                    { label: 'Edit', icon: Pencil, onSelect: () => editor.open(m, modelValues(m)) },
+                                    { label: 'Parts that fit', icon: Search, href: route('vehicle-ref.fitment', { make_id: m.make_id, model_id: m.id }) },
+                                    { label: 'Delete', icon: Trash2, destructive: true, onSelect: () => confirmDelete({ url: route('vehicle-ref.models.destroy', m.id), label: `${m.make?.name ?? ''} ${m.name}`.trim(), message: 'Its variants go with it. If parts or customer vehicles still reference it, it is deactivated instead.' }) },
+                                ]} />
+                            ),
+                        },
+                    ]}
+                    rows={models.data}
+                    pagination={models}
+                    sorting={{ filters, onFilter: filter }}
+                    rowHref={(m) => route('vehicle-ref.models.show', m.id)}
+                    emptyIcon={Car}
+                    emptyTitle="No models found"
+                    emptyMessage={filters.search || filters.make_id ? 'Clear the search or make filter.' : 'Add the first model.'}
+                />
             </div>
+
+            <ModelDialog editor={editor} makes={makes} />
+            {deleteDialog}
         </ModuleLayout>
     );
 }

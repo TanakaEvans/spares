@@ -2,24 +2,64 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Layby;
 use App\Services\NumberSequenceService;
 use App\Services\SettingsService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class LaybyController extends Controller
 {
-    public function index(SettingsService $settings): Response
+    use ListQuery;
+
+    private function laybysQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            Layby::with('customer:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['layby_number', 'notes', 'customer.name'],
+                'sortable' => [
+                    'layby_number' => 'layby_number', 'created_at' => 'created_at',
+                    'total' => 'total', 'deposit_paid' => 'deposit_paid', 'status' => 'status',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered lay-by list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->laybysQuery($request)->limit(5000)->get()->map(fn (Layby $l) => [
+            $l->layby_number, $l->customer?->name, $l->created_at?->toDateString(),
+            ucwords($l->status),
+            number_format((float) $l->total, 2, '.', ''),
+            number_format((float) $l->deposit_paid, 2, '.', ''),
+            number_format($l->balance(), 2, '.', ''),
+        ]);
+
+        return ListExport::respond($request, 'laybys', 'Lay-bys',
+            ['Lay-by No', 'Customer', 'Started', 'Status', 'Total', 'Paid', 'Balance'], $rows);
+    }
+
+    public function index(Request $request, SettingsService $settings): Response
     {
         return Inertia::render('Sales/Laybys/Index', [
-            'laybys' => Layby::with('customer:id,name')->latest('id')->paginate(20)
+            'laybys' => $this->laybysQuery($request)->paginate(20)
+                ->withQueryString()
                 ->through(fn (Layby $l) => [
                     'id' => $l->id, 'layby_number' => $l->layby_number,
                     'customer' => $l->customer?->name, 'customer_id' => $l->customer_id,
@@ -32,6 +72,7 @@ class LaybyController extends Controller
                 'active' => (int) Layby::where('status', 'active')->count(),
                 'outstanding' => round((float) Layby::where('status', 'active')->selectRaw('COALESCE(SUM(total - deposit_paid), 0) outstanding')->value('outstanding'), 2),
             ],
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

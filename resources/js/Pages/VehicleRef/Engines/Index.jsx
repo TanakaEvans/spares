@@ -1,23 +1,20 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Cog, Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/vehicle-reference';
 import DataTable from '@/Components/DataTable';
 import EntityLink from '@/Components/EntityLink';
-import FormField from '@/Components/FormField';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
+import RowActions from '@/Components/RowActions';
+import { useListFilter } from '@/lib/listFilters';
+import { useDeleteRecord, useRecordEditor } from '@/lib/records';
+import EngineDialog, { BLANK_ENGINE, FUELS, engineValues } from './EngineDialog';
 
 export default function EnginesIndex({ engines, makes, filters }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        code: '', make_id: '', description: '', capacity_cc: '', fuel_type: '', aspiration: '', cylinders: '',
-    });
-
-    function add(e) {
-        e.preventDefault();
-        post(route('vehicle-ref.engines.store'), { preserveScroll: true, onSuccess: () => reset() });
-    }
-
-    const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
+    const filter = useListFilter('vehicle-ref.engines.index', filters);
+    const editor = useRecordEditor(BLANK_ENGINE);
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
+    const usage = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
     return (
         <ModuleLayout
@@ -30,82 +27,77 @@ export default function EnginesIndex({ engines, makes, filters }) {
         >
             <Head title="Engine Codes" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-2 space-y-4">
-                    <SearchInput
-                        id="engines-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => router.get(route('vehicle-ref.engines.index'), s ? { search: s } : {}, { preserveState: true })}
-                        placeholder="Search code or description… e.g. 1GD-FTV"
-                        className="max-w-sm"
-                    />
-                    <DataTable
-                        columns={[
-                            { key: 'code', label: 'Code', render: (e) => <EntityLink type="engine" number={e.code} label={e.code} mono className="font-semibold" title="Filter engine codes" /> },
-                            { key: 'make', label: 'Make', render: (e) => <EntityLink type="make" id={e.make_id} label={e.make?.name ?? '—'} params={e.make_id ? { make_id: e.make_id } : undefined} muted /> },
-                            { key: 'description', label: 'Description', render: (e) => <span className="text-slate-600">{e.description}</span> },
-                            { key: 'capacity_cc', label: 'CC', align: 'right' },
-                            { key: 'fuel_type', label: 'Fuel', render: (e) => <span className="capitalize text-slate-500">{e.fuel_type}</span> },
-                            {
-                                key: 'usage', label: 'Used by', align: 'right',
-                                render: (e) => (
-                                    <span className="text-xs text-slate-500 whitespace-nowrap">
-                                        {e.models_count > 0 ? (
-                                            <Link href={route('vehicle-ref.models.index', { search: e.code })} onClick={(ev) => ev.stopPropagation()} className="hover:text-orange-600 hover:underline">
-                                                {e.models_count} model{e.models_count === 1 ? '' : 's'}
-                                            </Link>
-                                        ) : <span className="text-slate-300">no models</span>}
-                                        {' · '}
-                                        {e.parts_count > 0 && e.make_id ? (
-                                            <Link href={route('vehicle-ref.fitment', { make_id: e.make_id })} onClick={(ev) => ev.stopPropagation()} className="hover:text-orange-600 hover:underline">
-                                                {e.parts_count} part{e.parts_count === 1 ? '' : 's'}
-                                            </Link>
-                                        ) : <span className={e.parts_count > 0 ? '' : 'text-slate-300'}>{e.parts_count > 0 ? `${e.parts_count} parts` : 'no parts'}</span>}
-                                    </span>
-                                ),
-                            },
-                        ]}
-                        rows={engines.data}
-                        pagination={engines}
-                        emptyTitle="No engine codes found"
-                    />
+            <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900">Engine Codes</h1>
+                        <p className="text-sm text-slate-500">Click an engine to see the vehicles that carry it and every part fitted to it.</p>
+                    </div>
+                    <button onClick={() => editor.open()} className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                        <Plus className="w-4 h-4" /> New Engine Code
+                    </button>
                 </div>
 
-                <form onSubmit={add} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 space-y-3">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Add Engine Code</h2>
-                    <FormField label="Code" htmlFor="eng-code" required error={errors.code} help="e.g. 1GD-FTV">
-                        <input id="eng-code" value={data.code} onChange={(e) => setData('code', e.target.value.toUpperCase())} className={`${input} font-mono`} />
-                    </FormField>
-                    <FormField label="Make" htmlFor="eng-make" error={errors.make_id}>
-                        <select id="eng-make" value={data.make_id} onChange={(e) => setData('make_id', e.target.value)} className={input}>
-                            <option value="">—</option>
-                            {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                        </select>
-                    </FormField>
-                    <FormField label="Description" htmlFor="eng-desc" error={errors.description}>
-                        <input id="eng-desc" value={data.description} onChange={(e) => setData('description', e.target.value)} className={input} />
-                    </FormField>
-                    <div className="grid grid-cols-2 gap-3">
-                        <FormField label="Capacity (cc)" htmlFor="eng-cc" error={errors.capacity_cc}>
-                            <input id="eng-cc" type="number" value={data.capacity_cc} onChange={(e) => setData('capacity_cc', e.target.value)} className={input} />
-                        </FormField>
-                        <FormField label="Fuel" htmlFor="eng-fuel" error={errors.fuel_type}>
-                            <select id="eng-fuel" value={data.fuel_type} onChange={(e) => setData('fuel_type', e.target.value)} className={input}>
-                                <option value="">—</option>
-                                {['petrol', 'diesel', 'hybrid', 'electric', 'lpg'].map((f) => <option key={f} value={f}>{f}</option>)}
-                            </select>
-                        </FormField>
+                <ListToolbar filters={filters} onFilter={filter} searchPlaceholder="Code, description or make… e.g. 1GD-FTV" searchClass="w-80">
+                    <select aria-label="Filter by make" value={filters.make_id ?? ''} onChange={(e) => filter({ make_id: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                        <option value="">All makes</option>
+                        {makes.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+                        {['', ...FUELS.slice(0, 3)].map((f) => (
+                            <button key={f} onClick={() => filter({ fuel_type: f })}
+                                className={`rounded-md px-3 py-1.5 text-xs font-semibold capitalize ${(filters.fuel_type ?? '') === f ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'}`}>
+                                {f || 'All fuels'}
+                            </button>
+                        ))}
                     </div>
-                    <button
-                        type="submit"
-                        disabled={processing || !data.code}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Engine Code
-                    </button>
-                </form>
+                </ListToolbar>
+
+                <DataTable
+                    columns={[
+                        { key: 'code', label: 'Code', sortable: 'code', render: (e) => <EntityLink type="engine" id={e.id} label={e.code} mono className="font-semibold" /> },
+                        { key: 'make', label: 'Make', render: (e) => <EntityLink type="make" id={e.make_id} label={e.make?.name ?? '—'} muted /> },
+                        { key: 'description', label: 'Description', render: (e) => <span className="text-slate-600">{e.description}</span> },
+                        { key: 'capacity_cc', label: 'CC', align: 'right', sortable: 'capacity_cc', render: (e) => <span className="tabular-nums">{e.capacity_cc?.toLocaleString() ?? '—'}</span> },
+                        { key: 'fuel_type', label: 'Fuel', sortable: 'fuel_type', render: (e) => <span className="capitalize text-slate-500">{e.fuel_type}</span> },
+                        {
+                            key: 'usage', label: 'Used by', align: 'right',
+                            render: (e) => (
+                                <span className="text-xs whitespace-nowrap">
+                                    <span className={e.models_count ? 'text-slate-600' : 'text-slate-300'}>{usage(e.models_count, 'model', 'models')}</span>
+                                    {' · '}
+                                    {e.parts_count > 0
+                                        ? <Link href={route('vehicle-ref.engines.show', e.id)} onClick={(ev) => ev.stopPropagation()} className="font-semibold text-orange-700 hover:underline">{usage(e.parts_count, 'part', 'parts')}</Link>
+                                        : <span className="text-slate-300">no parts</span>}
+                                </span>
+                            ),
+                        },
+                        {
+                            key: 'actions', label: '', align: 'right', render: (e) => (
+                                <RowActions actions={[
+                                    { label: 'Open', icon: Eye, href: route('vehicle-ref.engines.show', e.id) },
+                                    { label: 'Edit', icon: Pencil, onSelect: () => editor.open(e, engineValues(e)) },
+                                    {
+                                        label: 'Delete', icon: Trash2, destructive: true,
+                                        disabled: e.models_count || e.parts_count ? 'In use by vehicles or part fitments — rename it via Edit instead.' : false,
+                                        onSelect: () => confirmDelete({ url: route('vehicle-ref.engines.destroy', e.id), label: `engine ${e.code}`, message: 'This engine code is not used anywhere and will be removed.' }),
+                                    },
+                                ]} />
+                            ),
+                        },
+                    ]}
+                    rows={engines.data}
+                    pagination={engines}
+                    sorting={{ filters, onFilter: filter }}
+                    rowHref={(e) => route('vehicle-ref.engines.show', e.id)}
+                    emptyIcon={Cog}
+                    emptyTitle="No engine codes found"
+                    emptyMessage={filters.search || filters.make_id || filters.fuel_type ? 'Clear a filter to see more.' : 'Add the first engine code.'}
+                />
             </div>
+
+            <EngineDialog editor={editor} makes={makes} />
+            {deleteDialog}
         </ModuleLayout>
     );
 }

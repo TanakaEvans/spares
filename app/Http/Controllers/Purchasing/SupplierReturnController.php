@@ -2,29 +2,62 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Supplier;
 use App\Models\SupplierReturn;
 use App\Services\StockMovementService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class SupplierReturnController extends Controller
 {
+    use ListQuery;
+
+    private function returnsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SupplierReturn::with('supplier:id,name', 'branch:id,name')
+                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+            $request,
+            [
+                'searchable' => ['return_number', 'supplier_rma', 'credit_note_ref', 'supplier.name'],
+                'sortable' => [
+                    'return_number' => 'return_number', 'created_at' => 'created_at',
+                    'reason' => 'reason', 'status' => 'status', 'shipped_at' => 'shipped_at',
+                ],
+                'dateColumn' => 'created_at',
+                'defaultSort' => ['id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered returns list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->returnsQuery($request)->limit(5000)->get()->map(fn (SupplierReturn $r) => [
+            $r->return_number, $r->supplier?->name, $r->branch?->name,
+            ucwords(str_replace('_', ' ', $r->reason)),
+            ucwords(str_replace('_', ' ', $r->status)),
+            $r->supplier_rma ?? '—', $r->credit_note_ref ?? '—',
+            number_format($r->totalValue(), 2, '.', ''),
+            $r->credit_total !== null ? number_format((float) $r->credit_total, 2, '.', '') : '—',
+        ]);
+
+        return ListExport::respond($request, 'supplier-returns', 'Returns to Supplier',
+            ['Return No', 'Supplier', 'Branch', 'Reason', 'Status', 'RMA', 'Credit ref', 'Stock value', 'Credited'], $rows);
+    }
+
     public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/Returns/Index', [
-            'returns' => SupplierReturn::with('supplier:id,name', 'branch:id,name')
-                ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s))
-                ->when($request->string('search')->toString(), fn ($q, $s) => $q->where(
-                    fn ($x) => $x->where('return_number', 'like', "%{$s}%")
-                        ->orWhere('supplier_rma', 'like', "%{$s}%")
-                        ->orWhereHas('supplier', fn ($y) => $y->where('name', 'like', "%{$s}%"))
-                ))
-                ->latest()
+            'returns' => $this->returnsQuery($request)
                 ->paginate(25)
                 ->withQueryString()
                 ->through(fn (SupplierReturn $r) => [
@@ -46,7 +79,7 @@ class SupplierReturnController extends Controller
                 'awaiting_value' => round((float) SupplierReturn::where('status', 'shipped')
                     ->get()->sum(fn ($r) => $r->totalValue()), 2),
             ],
-            'filters' => $request->only('search', 'status'),
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

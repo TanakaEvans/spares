@@ -1,22 +1,32 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head } from '@inertiajs/react';
+import { Eye, PackageSearch, Pencil, Plus, Tags, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import DataTable from '@/Components/DataTable';
-import FormField from '@/Components/FormField';
-import SearchInput from '@/Components/SearchInput';
+import ListToolbar from '@/Components/ListToolbar';
+import RowActions from '@/Components/RowActions';
 import StatusBadge from '@/Components/StatusBadge';
+import { useListFilter } from '@/lib/listFilters';
+import { useDeleteRecord, useRecordEditor } from '@/lib/records';
+import BrandDialog, { BLANK_BRAND, brandValues } from './BrandDialog';
+
+function Pills({ value, options, onChange }) {
+    return (
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5">
+            {options.map(([v, label]) => (
+                <button key={v} onClick={() => onChange(v)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold ${(value ?? '') === v ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'}`}>
+                    {label}
+                </button>
+            ))}
+        </div>
+    );
+}
 
 export default function BrandsIndex({ brands, filters }) {
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '', code: '', country_of_origin: '', is_oem_brand: false,
-    });
-    const input = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm';
-
-    function add(e) {
-        e.preventDefault();
-        post(route('inventory.brands.store'), { preserveScroll: true, onSuccess: () => reset() });
-    }
+    const filter = useListFilter('inventory.brands.index', filters);
+    const editor = useRecordEditor(BLANK_BRAND);
+    const { confirmDelete, deleteDialog } = useDeleteRecord();
 
     return (
         <ModuleLayout
@@ -29,62 +39,53 @@ export default function BrandsIndex({ brands, filters }) {
         >
             <Head title="Part Brands" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <div className="lg:col-span-2 space-y-4">
-                    <SearchInput
-                        id="brands-search"
-                        value={filters.search ?? ''}
-                        onSearch={(s) => router.get(route('inventory.brands.index'), s ? { search: s } : {}, { preserveState: true })}
-                        placeholder="Search brands…"
-                        className="max-w-sm"
-                    />
-                    <DataTable
-                        columns={[
-                            {
-                                key: 'name', label: 'Brand',
-                                render: (b) => (
-                                    <Link href={route('inventory.parts.index', { brand_id: b.id })} onClick={(e) => e.stopPropagation()} title="Parts by this brand"
-                                        className="font-medium text-slate-800 hover:text-orange-600 hover:underline underline-offset-2 decoration-orange-300">
-                                        {b.name}
-                                    </Link>
-                                ),
-                            },
-                            { key: 'code', label: 'Code', render: (b) => <span className="font-mono text-slate-500">{b.code}</span> },
-                            { key: 'country_of_origin', label: 'Origin' },
-                            { key: 'is_oem_brand', label: 'Type', render: (b) => <StatusBadge status={b.is_oem_brand ? 'posted' : 'draft'} label={b.is_oem_brand ? 'OEM' : 'Aftermarket'} /> },
-                        ]}
-                        rows={brands.data}
-                        pagination={brands}
-                        rowHref={(b) => route('inventory.parts.index', { brand_id: b.id })}
-                        emptyTitle="No brands found"
-                    />
+            <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-xl font-bold text-slate-900">Part Brands</h1>
+                        <p className="text-sm text-slate-500">Click a brand to see every part it makes, with stock.</p>
+                    </div>
+                    <button onClick={() => editor.open()} className="inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700">
+                        <Plus className="w-4 h-4" /> New Brand
+                    </button>
                 </div>
 
-                <form onSubmit={add} className="bg-white rounded-xl shadow-sm border border-slate-100 p-5 space-y-4">
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Add Brand</h2>
-                    <FormField label="Name" htmlFor="brand-name" required error={errors.name}>
-                        <input id="brand-name" value={data.name} onChange={(e) => setData('name', e.target.value)} className={input} />
-                    </FormField>
-                    <FormField label="Code" htmlFor="brand-code" required error={errors.code}>
-                        <input id="brand-code" value={data.code} onChange={(e) => setData('code', e.target.value.toUpperCase())} className={`${input} font-mono`} maxLength={20} />
-                    </FormField>
-                    <FormField label="Country" htmlFor="brand-country" error={errors.country_of_origin}>
-                        <input id="brand-country" value={data.country_of_origin} onChange={(e) => setData('country_of_origin', e.target.value)} className={input} />
-                    </FormField>
-                    <label className="flex items-center gap-2 text-sm text-slate-700">
-                        <input type="checkbox" checked={data.is_oem_brand} onChange={(e) => setData('is_oem_brand', e.target.checked)} className="rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
-                        OEM brand (vehicle manufacturer)
-                    </label>
-                    <button
-                        type="submit"
-                        disabled={processing || !data.name || !data.code}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-700 disabled:opacity-40"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Brand
-                    </button>
-                </form>
+                <ListToolbar filters={filters} onFilter={filter} searchPlaceholder="Brand, code or country…" searchClass="w-72">
+                    <Pills value={filters.kind} onChange={(v) => filter({ kind: v })} options={[['', 'All types'], ['oem', 'OEM'], ['aftermarket', 'Aftermarket']]} />
+                    <Pills value={filters.status} onChange={(v) => filter({ status: v })} options={[['', 'All'], ['active', 'Active'], ['inactive', 'Inactive']]} />
+                </ListToolbar>
+
+                <DataTable
+                    columns={[
+                        { key: 'name', label: 'Brand', sortable: 'name', render: (b) => <span className="font-semibold text-slate-800">{b.name}</span> },
+                        { key: 'code', label: 'Code', render: (b) => <span className="font-mono text-slate-500">{b.code}</span> },
+                        { key: 'country_of_origin', label: 'Origin', render: (b) => <span className="text-slate-500">{b.country_of_origin ?? '—'}</span> },
+                        { key: 'is_oem_brand', label: 'Type', render: (b) => <StatusBadge status={b.is_oem_brand ? 'posted' : 'draft'} label={b.is_oem_brand ? 'OEM' : 'Aftermarket'} /> },
+                        { key: 'parts_count', label: 'Parts', align: 'right', sortable: 'parts_count', render: (b) => <span className={`tabular-nums ${b.parts_count ? 'font-semibold' : 'text-slate-300'}`}>{b.parts_count.toLocaleString()}</span> },
+                        { key: 'is_active', label: '', render: (b) => !b.is_active && <StatusBadge status="inactive" /> },
+                        {
+                            key: 'actions', label: '', align: 'right', render: (b) => (
+                                <RowActions actions={[
+                                    { label: 'Open', icon: Eye, href: route('inventory.brands.show', b.id) },
+                                    { label: 'Edit', icon: Pencil, onSelect: () => editor.open(b, brandValues(b)) },
+                                    { label: 'Parts list', icon: PackageSearch, href: route('inventory.parts.index', { brand_id: b.id }) },
+                                    { label: 'Delete', icon: Trash2, destructive: true, onSelect: () => confirmDelete({ url: route('inventory.brands.destroy', b.id), label: `brand ${b.name}` }) },
+                                ]} />
+                            ),
+                        },
+                    ]}
+                    rows={brands.data}
+                    pagination={brands}
+                    sorting={{ filters, onFilter: filter }}
+                    rowHref={(b) => route('inventory.brands.show', b.id)}
+                    emptyIcon={Tags}
+                    emptyTitle="No brands found"
+                    emptyMessage={filters.search || filters.kind || filters.status ? 'Clear a filter to see more.' : 'Add the first brand.'}
+                />
             </div>
+
+            <BrandDialog editor={editor} />
+            {deleteDialog}
         </ModuleLayout>
     );
 }

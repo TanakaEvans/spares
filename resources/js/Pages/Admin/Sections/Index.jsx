@@ -1,10 +1,15 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import DataTable from '@/Components/DataTable';
+import ListToolbar from '@/Components/ListToolbar';
+import { useListFilter } from '@/lib/listFilters';
+import { Layers, Pencil, Trash2 } from 'lucide-react';
 
-export default function SectionsIndex({ auth, sections, departments, employees }) {
+export default function SectionsIndex({ auth, sections, departments, employees, filters = {} }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSection, setEditingSection] = useState(null);
+    const filter = useListFilter('admin.sections.index', filters);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         name: '',
@@ -73,91 +78,47 @@ export default function SectionsIndex({ auth, sections, departments, employees }
                     </button>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-4 font-semibold text-gray-900">Section Name</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900">Department</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900">Head of Section</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-900">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {sections.data.map((section) => (
-                                    <tr key={section.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            {section.name}
-                                            {section.description && (
-                                                <div className="text-xs text-gray-500 font-normal">{section.description}</div>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {section.department?.name || <span className="text-red-500 text-xs">Unassigned</span>}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {section.head ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
-                                                        {section.head.first_name.charAt(0)}
-                                                    </div>
-                                                    <span className="text-sm text-gray-700">{section.head.first_name} {section.head.last_name}</span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-gray-400 text-sm">--</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => openEditModal(section)}
-                                                    className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    ✏️
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(section.id)}
-                                                    className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {sections.data.length === 0 && (
-                                    <tr>
-                                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                                            No sections found. Create one to get started.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    {/* Pagination */}
-                    {sections.links && sections.links.length > 3 && (
-                        <div className="p-4 border-t border-gray-100 flex justify-center">
-                            <div className="flex gap-1">
-                                {sections.links.map((link, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                        className={`px-3 py-1 rounded border ${link.active
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'} 
-                                        ${!link.url && 'opacity-50 cursor-not-allowed'}`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                        disabled={!link.url}
-                                    />
-                                ))}
+                <ListToolbar
+                    filters={filters}
+                    onFilter={filter}
+                    searchPlaceholder="Section or department…"
+                    searchClass="w-64"
+                />
+                <DataTable
+                    columns={[
+                        { key: 'name', label: 'Section Name', sortable: 'name', render: (s) => (
+                            <div className="font-medium text-gray-900">
+                                {s.name}
+                                {s.description && <div className="text-xs text-gray-500 font-normal">{s.description}</div>}
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) },
+                        { key: 'department', label: 'Department', render: (s) => s.department?.name || <span className="text-red-500 text-xs">Unassigned</span> },
+                        { key: 'head', label: 'Head of Section', render: (s) => s.head ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">
+                                    {s.head.first_name.charAt(0)}
+                                </div>
+                                <span className="text-sm text-gray-700">{s.head.first_name} {s.head.last_name}</span>
+                            </div>
+                        ) : <span className="text-gray-400 text-sm">--</span> },
+                        { key: 'actions', label: '', align: 'right', render: (s) => (
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <button onClick={() => openEditModal(s)} className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors" title="Edit">
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDelete(s.id)} className="text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Delete">
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ) },
+                    ]}
+                    rows={sections.data}
+                    pagination={sections}
+                    sorting={{ filters, onFilter: filter }}
+                    emptyTitle="No sections found"
+                    emptyMessage="Create one to get started."
+                    emptyIcon={Layers}
+                />
             </div>
 
             {/* Modal */}

@@ -3,6 +3,9 @@
 > Phases 1–3 of the [implementation plan](../implementation-plan.md) (master data in Phase 1, adjustments/transfers/reorder in Phase 2, stock takes in Phase 3). Spec: [module doc](../modules/01-inventory-management.md).
 > Legend: `[ ]` todo · `[~]` in progress · `[x]` done — a task is only `[x]` when code is written, automated tests pass, AND the feature was functionally exercised per the [testing strategy](../testing-strategy.md). Update this file in the same commit as the completed work.
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** inventory lists on the shared contract — Parts (rich part-search preserved, sortable + filters), Stock levels, Adjustments, Transfers, Stock-takes (+ `*.export` routes → CSV/PDF), and reference lists Bins / Brands / Serials (search + sort + pagination; Serials gained a full `DataTable` with branch/status filters). Categories stays a hierarchy tree and Reorder stays a service-driven action report — not record lists.
+
 ## ✅ Phase 1 delivery status — 2026-09-23
 
 Delivered (code + tests + browser functional pass; suite at 106 green):

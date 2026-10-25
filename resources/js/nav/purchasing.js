@@ -1,134 +1,71 @@
-// Purchasing module nav — content only.
+// Purchasing nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    Factory, FileInput, FileSpreadsheet, LayoutList, PackageCheck,
-    PackageX, Plus, RefreshCw, Truck, FileMinus, Ship, Scale,
+    BadgeCheck, Factory, FileInput, FileMinus, FileSpreadsheet, Layers, MapPin, PackageCheck,
+    PackageX, Play, RefreshCw, Rows3, Scale, Ship, Truck,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'purchasing',
     moduleLabel: 'Purchasing',
     moduleIcon: Factory,
 
-    module: [
+    sections: [
         {
-            section: 'Order',
+            section: 'Buy',
             items: [
-                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
+                {
+                    label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput,
+                    children: [{ label: 'New Order', route: 'purchasing.orders.create' }],
+                    related: [
+                        { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
+                        { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
+                    ],
+                },
+                {
+                    label: 'Price Comparison', route: 'purchasing.price-comparison.index', icon: Scale,
+                    related: [{ label: 'Approved Suppliers', route: 'suppliers.approved.index', icon: BadgeCheck }],
+                },
+                {
+                    label: 'Import Shipments', route: 'purchasing.imports.index', icon: Ship,
+                    related: [{ label: 'Suppliers', route: 'suppliers.index', icon: Truck }],
+                },
             ],
         },
         {
             section: 'Receive',
             items: [
-                { label: 'Goods Receiving', route: 'purchasing.grns.index', icon: PackageCheck },
+                {
+                    label: 'Goods Receiving', route: 'purchasing.grns.index', icon: PackageCheck,
+                    related: [
+                        { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                        { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+                    ],
+                },
             ],
         },
         {
             section: 'Bills',
             items: [
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+                {
+                    label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet,
+                    related: [
+                        { label: 'Supplier Payments', route: 'finance.payments.index', icon: Rows3 },
+                        { label: 'Payment Run', route: 'finance.payment-run.index', icon: Play },
+                    ],
+                },
                 { label: 'Supplier Credits', route: 'purchasing.supplier-credits.index', icon: FileMinus },
             ],
         },
         {
             section: 'Returns',
             items: [
-                { label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX },
-            ],
-        },
-        {
-            section: 'Sourcing',
-            items: [
-                { label: 'Import Management', route: 'purchasing.imports.index', icon: Ship },
-                { label: 'Price Comparison', route: 'purchasing.price-comparison.index', icon: Scale },
+                {
+                    label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX,
+                    children: [{ label: 'New Return', route: 'purchasing.returns.create' }],
+                    related: [{ label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers }],
+                },
             ],
         },
     ],
-
-    subModules: {
-        supplierCredits: {
-            label: 'Supplier Credit Notes', icon: FileMinus, routePrefix: 'purchasing.supplier-credits',
-            work: [{ label: 'All Credits', route: 'purchasing.supplier-credits.index', icon: LayoutList }],
-            quickLinks: [
-                { label: 'Returns to Supplier', route: 'purchasing.returns.index', icon: PackageX },
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
-            ],
-        },
-        orders: {
-            label: 'Purchase Orders',
-            icon: FileInput,
-            routePrefix: 'purchasing.orders',
-            work: [
-                { label: 'All Orders', route: 'purchasing.orders.index', icon: LayoutList },
-                { label: 'New Order', route: 'purchasing.orders.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Goods Receiving', route: 'purchasing.grns.index', icon: PackageCheck },
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-                { label: 'Inventory: Reorder', route: 'inventory.reorder.index', icon: RefreshCw },
-            ],
-        },
-        grns: {
-            label: 'Goods Receiving',
-            icon: PackageCheck,
-            routePrefix: 'purchasing.grns',
-            work: [
-                { label: 'All GRNs', route: 'purchasing.grns.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
-            ],
-        },
-        invoices: {
-            label: 'Supplier Invoices',
-            icon: FileSpreadsheet,
-            routePrefix: 'purchasing.invoices',
-            work: [
-                { label: 'All Invoices', route: 'purchasing.invoices.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Goods Receiving', route: 'purchasing.grns.index', icon: PackageCheck },
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-            ],
-        },
-        returns: {
-            label: 'Returns to Supplier',
-            icon: PackageX,
-            routePrefix: 'purchasing.returns',
-            work: [
-                { label: 'All Returns', route: 'purchasing.returns.index', icon: LayoutList },
-                { label: 'New Return', route: 'purchasing.returns.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
-            ],
-        },
-        imports: {
-            label: 'Import Management',
-            icon: Ship,
-            routePrefix: 'purchasing.imports',
-            work: [
-                { label: 'All Shipments', route: 'purchasing.imports.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-            ],
-        },
-        priceComparison: {
-            label: 'Price Comparison',
-            icon: Scale,
-            routePrefix: 'purchasing.price-comparison',
-            work: [
-                { label: 'Compare Prices', route: 'purchasing.price-comparison.index', icon: Scale },
-            ],
-            quickLinks: [
-                { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
-                { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
-            ],
-        },
-    },
 };
-
-export default navConfig;

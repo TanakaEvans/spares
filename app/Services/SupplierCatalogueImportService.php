@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\CatalogueSetupMissingException;
 use App\Models\ApprovedSupplier;
 use App\Models\Part;
+use App\Models\PartBrand;
 use App\Models\PartCategory;
 use App\Models\Supplier;
 use App\Models\UnitOfMeasure;
@@ -29,11 +30,15 @@ class SupplierCatalogueImportService
         'category_name' => ['label' => 'Category Desc', 'required' => false, 'keywords' => ['category desc', 'category name']],
         'specification' => ['label' => 'Specification', 'required' => false, 'keywords' => ['spec']],
         'unit' => ['label' => 'UOM', 'required' => false, 'keywords' => ['uom', 'unit']],
+        'brand' => ['label' => 'Brand', 'required' => false, 'keywords' => ['brand', 'manufacturer', 'part brand', 'make of part']],
     ];
 
-    public const EXAMPLE = ['AF213', 'SORENTO I 2.5CRDi 03-06', 'AF', 'AIR FILTER', '', 'PC'];
+    public const EXAMPLE = ['AF213', 'SORENTO I 2.5CRDi 03-06', 'AF', 'AIR FILTER', '', 'PC', ''];
 
     public const DEFAULT_SUPPLIER = 'Catalogue Supplier';
+
+    /** Brand used for unbranded aftermarket listings — honest default, filterable. */
+    private const AFTERMARKET_BRAND = 'AFM';
 
     /** Supplier UOM codes that differ from our unit abbreviations. */
     private const UNIT_ALIASES = ['PC' => 'ea', 'PCS' => 'ea', 'EA' => 'ea', 'EACH' => 'ea', 'PAC' => 'pk', 'PKT' => 'pk', 'PACK' => 'pk', 'CRD' => 'card', 'BAL' => 'bale'];
@@ -51,6 +56,11 @@ class SupplierCatalogueImportService
     /** @var array<string,int> lower-case abbreviation/name → unit id */
     private array $units = [];
 
+    /** @var array<string,int> upper-case name/code → brand id */
+    private array $brands = [];
+
+    private int $fallbackBrandId;
+
     private int $fallbackUnitId;
 
     private int $unclassifiedId;
@@ -62,6 +72,9 @@ class SupplierCatalogueImportService
     public array $unclassified = [];
 
     public int $placeholders = 0;
+
+    /** Fitment rows derived from application text this run. */
+    public int $linked = 0;
 
     public function __construct(private readonly NumberSequenceService $sequences) {}
 
@@ -99,6 +112,14 @@ class SupplierCatalogueImportService
         $this->fallbackUnitId = $this->units['ea'] ?? UnitOfMeasure::orderBy('id')->value('id');
         $this->unclassifiedId = $categories['MISC'];
 
+        foreach (PartBrand::get(['id', 'name', 'code']) as $b) {
+            $this->brands[strtoupper($b->name)] = $b->id;
+            $this->brands[strtoupper($b->code)] = $b->id;
+        }
+        $this->fallbackBrandId = $this->brands[self::AFTERMARKET_BRAND]
+            ?? PartBrand::firstOrCreate(['code' => self::AFTERMARKET_BRAND], ['name' => 'Aftermarket', 'is_oem_brand' => false])->id;
+        $this->brands[self::AFTERMARKET_BRAND] = $this->fallbackBrandId;
+
         return $this;
     }
 
@@ -121,9 +142,13 @@ class SupplierCatalogueImportService
         }
 
         $entry = $this->categoryFor($v);
+        $description = $this->describe($code, $text, $this->clean($v['specification'] ?? ''), $entry);
+        $supplierCategory = trim(($v['category_name'] ?? '') !== '' ? "{$v['category']} · {$v['category_name']}" : (string) ($v['category'] ?? ''));
         $attrs = [
-            'description' => $this->describe($code, $text, $this->clean($v['specification'] ?? ''), $entry),
+            'description' => $description,
+            'short_description' => mb_substr($description, 0, 100),
             'category_id' => $entry['category_id'] ?? $this->unclassifiedId,
+            'brand_id' => $this->brandFor($v, $text.' '.$this->clean($v['specification'] ?? '')),
             'unit_id' => $this->unitFor($v['unit'] ?? ''),
         ];
 
@@ -132,16 +157,37 @@ class SupplierCatalogueImportService
             throw new \RuntimeException("{$code}: this part was deleted in SparesPro — restore it on the Parts screen if you want the supplier listing to update it.");
         }
         if ($part) {
+            // Barcode: the part number is the scannable code — backfill only,
+            // never overwrite a captured EAN/Code128. Same for provenance notes.
+            if ($part->barcode_code128 === null) {
+                $attrs['barcode_code128'] = $code;
+            }
+            if ($part->notes === null) {
+                $attrs['notes'] = trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : ''));
+            }
             $part->fill($attrs)->save();
             $outcome = 'updated';
         } else {
-            $part = Part::create($attrs + ['part_number' => $code, 'is_active' => true]);
+            $part = Part::create($attrs + [
+                'part_number' => $code,
+                'barcode_code128' => $code,
+                'notes' => trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : '')),
+                'is_active' => true,
+            ]);
             $outcome = 'created';
         }
 
-        if (! ApprovedSupplier::where('part_id', $part->id)->where('supplier_id', $this->supplier->id)->exists()) {
+        $this->linked += app(CatalogueFitmentService::class)->sync($part, $text.' '.$this->clean($v['specification'] ?? ''));
+
+        $approved = ApprovedSupplier::where('part_id', $part->id)->where('supplier_id', $this->supplier->id)->first();
+        if ($approved) {
+            if ($approved->supplier_part_number === null) {
+                $approved->update(['supplier_part_number' => $code]);
+            }
+        } else {
             ApprovedSupplier::create([
                 'part_id' => $part->id, 'supplier_id' => $this->supplier->id,
+                'supplier_part_number' => $code,
                 'is_preferred' => ! ApprovedSupplier::where('part_id', $part->id)->where('is_preferred', true)->exists(),
             ]);
         }
@@ -213,6 +259,25 @@ class SupplierCatalogueImportService
         $this->unclassified[$name] = ($this->unclassified[$name] ?? 0) + 1;
 
         return null;
+    }
+
+    /**
+     * Brand: explicit column wins, then a named brand in the application text
+     * ("BOSCH", "DENSO"), else the honest "Aftermarket" fallback.
+     */
+    private function brandFor(array $v, string $text): int
+    {
+        $named = $this->norm($v['brand'] ?? '');
+        if ($named !== '' && isset($this->brands[$named])) {
+            return $this->brands[$named];
+        }
+        foreach ($this->brands as $name => $id) {
+            if ($name !== self::AFTERMARKET_BRAND && strlen($name) >= 3 && preg_match('/\b'.preg_quote($name, '/').'\b/', strtoupper($text))) {
+                return $id;
+            }
+        }
+
+        return $this->fallbackBrandId;
     }
 
     private function unitFor(string $raw): int

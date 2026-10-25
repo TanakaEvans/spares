@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\VatReturn;
 use App\Services\VatReturnService;
@@ -12,6 +13,7 @@ use Inertia\Response;
 
 class VatController extends Controller
 {
+    use ListQuery;
     public function index(Request $request, VatReturnService $vat): Response
     {
         $from = $request->date('from')?->toDateString() ?? now()->startOfMonth()->toDateString();
@@ -19,8 +21,16 @@ class VatController extends Controller
 
         return Inertia::render('Finance/Vat/Index', [
             'preview' => $vat->compute($from, $to),
-            'returns' => VatReturn::with('preparedBy:id,name')->orderByDesc('period_end')->limit(24)->get()
-                ->map(fn (VatReturn $r) => [
+            'returns' => $this->listApply(VatReturn::with('preparedBy:id,name'), $request, [
+                    'searchable' => ['reference'],
+                    'sortable' => [
+                        'reference' => 'reference', 'period_start' => 'period_start',
+                        'period_end' => 'period_end', 'net_payable' => 'net_payable', 'status' => 'status',
+                    ],
+                    'defaultSort' => ['period_end' => 'desc'],
+                ])
+                ->paginate(24)->withQueryString()
+                ->through(fn (VatReturn $r) => [
                     'id' => $r->id,
                     'reference' => $r->reference,
                     'period' => $r->period_start->toDateString().' → '.$r->period_end->toDateString(),
@@ -32,7 +42,7 @@ class VatController extends Controller
                     'status' => $r->status,
                     'prepared_by' => $r->preparedBy ? ['id' => $r->preparedBy->id, 'name' => $r->preparedBy->name] : null,
                 ]),
-            'filters' => ['from' => $from, 'to' => $to],
+            'filters' => array_merge(['from' => $from, 'to' => $to], $this->listFilters($request)),
         ]);
     }
 

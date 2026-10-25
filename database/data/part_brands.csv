@@ -1,4 +1,5 @@
 name,code,country_of_origin,is_oem_brand
+Aftermarket,AFM,,0
 Toyota Genuine,TOYG,Japan,1
 Nissan Genuine,NISG,Japan,1
 Ford Genuine,FORG,USA,1

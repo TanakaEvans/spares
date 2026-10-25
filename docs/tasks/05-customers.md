@@ -12,6 +12,9 @@
 > - **5.5 Statements** ✅ (2026-09-23) — `customers.statement` renders an account-statement PDF (on-account activity + running balance + current/30/60/90+ ageing) via the shared print pipeline; "Statement" action on the customer detail. Browser-verified.
 > - **Deferred (later phases):** `customer_addresses` / `customer_contacts` tables, blacklist workflow, `payment_terms` table + EOM due-date maths, group-default inheritance on create, account-manager assignment, POS reg lookup, statement email auto-send, loyalty, communication log. Per-branch active-branch switching (POS trades on the main branch until then). (5.4 Customer Vehicles is served by the Workshop vehicle registry.)
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** customer sub-lists upgraded — Groups (paginator + search + sort), Communication Log (channel filter + date range + sort + pagination on `DataTable`), Loyalty (balance search).
+
 ## 5.1 Customer Profiles  ·  [spec](../modules/05-customer-management/5.1-customer-profiles.md)  ·  Phase 3.1
 
 ### Backend

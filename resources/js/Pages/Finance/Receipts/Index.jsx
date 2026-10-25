@@ -2,8 +2,11 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus, HandCoins } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/finance';
+import DataTable from '@/Components/DataTable';
 import MoneyDisplay from '@/Components/MoneyDisplay';
 import EntityLink from '@/Components/EntityLink';
+import ListToolbar from '@/Components/ListToolbar';
+import { useListFilter } from '@/lib/listFilters';
 
 function AgeingTable({ ageing, label }) {
     const { rows, totals } = ageing;
@@ -57,6 +60,8 @@ function AgeingTable({ ageing, label }) {
 }
 
 export default function ReceiptsIndex({ receipts, ageing, filters }) {
+    const filter = useListFilter('finance.receipts.index', filters);
+
     return (
         <ModuleLayout
             navConfig={navConfig}
@@ -81,36 +86,39 @@ export default function ReceiptsIndex({ receipts, ageing, filters }) {
 
                 <AgeingTable ageing={ageing} label="Debtors" />
 
-                <div className="rounded-xl border border-slate-100 bg-white overflow-hidden">
-                    <div className="px-4 py-2.5 border-b border-slate-100"><h2 className="text-sm font-semibold text-slate-700">Recent receipts</h2></div>
-                    {receipts.data.length === 0 ? (
-                        <div className="py-10 text-center text-sm text-slate-400"><HandCoins className="w-8 h-8 mx-auto mb-2 text-slate-300" />No receipts captured yet.</div>
-                    ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="text-left text-xs uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                                    <th className="px-4 py-2">Receipt</th>
-                                    <th className="px-2 py-2">Customer</th>
-                                    <th className="px-2 py-2">Date</th>
-                                    <th className="px-2 py-2">Method</th>
-                                    <th className="px-2 py-2 text-right">Amount</th>
-                                    <th className="px-4 py-2 text-right">Unallocated</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {receipts.data.map((r) => (
-                                    <tr key={r.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => router.visit(route('finance.receipts.show', r.id))}>
-                                        <td className="px-4 py-2"><EntityLink type="receipt" id={r.id} label={r.receipt_number} mono className="font-semibold" /></td>
-                                        <td className="px-2 py-2"><EntityLink type="customer" id={r.customer_id} label={r.customer} /></td>
-                                        <td className="px-2 py-2 tabular-nums text-slate-500">{r.receipt_date}</td>
-                                        <td className="px-2 py-2 capitalize text-slate-500">{r.method}</td>
-                                        <td className="px-2 py-2 text-right tabular-nums"><MoneyDisplay amount={r.amount} /></td>
-                                        <td className={`px-4 py-2 text-right tabular-nums ${r.unallocated > 0 ? 'text-amber-600' : 'text-slate-400'}`}>{r.unallocated.toFixed(2)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                <div>
+                    <h2 className="text-sm font-semibold text-slate-700 mb-2">Receipts</h2>
+                    <ListToolbar
+                        filters={filters}
+                        onFilter={filter}
+                        searchPlaceholder="Receipt no, customer or reference…"
+                        searchClass="w-72"
+                        dateRange
+                        exportRoute="finance.receipts.export"
+                    >
+                        <select aria-label="Payment method" value={filters.method ?? ''} onChange={(e) => filter({ method: e.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="">All methods</option>
+                            {['cash', 'card', 'eft', 'bank_transfer'].map((m) => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
+                        </select>
+                    </ListToolbar>
+                    <div className="mt-3">
+                        <DataTable
+                            columns={[
+                                { key: 'receipt_number', label: 'Receipt', sortable: 'receipt_number', render: (r) => <EntityLink type="receipt" id={r.id} label={r.receipt_number} mono className="font-semibold" /> },
+                                { key: 'customer', label: 'Customer', render: (r) => <EntityLink type="customer" id={r.customer_id} label={r.customer} /> },
+                                { key: 'receipt_date', label: 'Date', sortable: 'receipt_date', render: (r) => <span className="tabular-nums text-slate-500">{r.receipt_date}</span> },
+                                { key: 'method', label: 'Method', sortable: 'method', render: (r) => <span className="capitalize text-slate-500">{r.method?.replace('_', ' ')}</span> },
+                                { key: 'amount', label: 'Amount', align: 'right', sortable: 'amount', render: (r) => <MoneyDisplay amount={r.amount} /> },
+                                { key: 'unallocated', label: 'Unallocated', align: 'right', render: (r) => <span className={`tabular-nums ${r.unallocated > 0 ? 'text-amber-600' : 'text-slate-400'}`}>{r.unallocated.toFixed(2)}</span> },
+                            ]}
+                            rows={receipts.data}
+                            pagination={receipts}
+                            sorting={{ filters, onFilter: filter }}
+                            rowHref={(r) => route('finance.receipts.show', r.id)}
+                            emptyTitle="No receipts captured yet"
+                            emptyIcon={HandCoins}
+                        />
+                    </div>
                 </div>
             </div>
         </ModuleLayout>

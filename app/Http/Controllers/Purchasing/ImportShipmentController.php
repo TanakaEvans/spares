@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Purchasing;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\ImportShipment;
 use App\Models\Supplier;
@@ -12,10 +13,25 @@ use Inertia\Response;
 
 class ImportShipmentController extends Controller
 {
-    public function index(): Response
+    use ListQuery;
+
+    public function index(Request $request): Response
     {
         return Inertia::render('Purchasing/Imports/Index', [
-            'shipments' => ImportShipment::with('supplier:id,name')->latest('id')->paginate(20)
+            'shipments' => $this->listApply(
+                ImportShipment::with('supplier:id,name')
+                    ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('status', $s)),
+                $request,
+                [
+                    'searchable' => ['shipment_ref', 'origin_country', 'supplier.name'],
+                    'sortable' => [
+                        'shipment_ref' => 'shipment_ref', 'status' => 'status',
+                        'eta' => 'eta', 'goods_value' => 'goods_value',
+                    ],
+                    'dateColumn' => 'eta',
+                    'defaultSort' => ['id' => 'desc'],
+                ]
+            )->paginate(20)->withQueryString()
                 ->through(fn (ImportShipment $s) => [
                     'id' => $s->id, 'shipment_ref' => $s->shipment_ref,
                     'supplier_id' => $s->supplier_id, 'supplier' => $s->supplier?->name,
@@ -28,6 +44,7 @@ class ImportShipmentController extends Controller
                 'in_transit_value' => round((float) ImportShipment::whereNot('status', 'received')
                     ->get()->sum(fn ($s) => $s->landedTotal()), 2),
             ],
+            'filters' => $this->listFilters($request, ['status']),
         ]);
     }
 

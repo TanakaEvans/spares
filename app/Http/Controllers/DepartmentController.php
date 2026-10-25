@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Employee;
@@ -10,15 +11,22 @@ use Inertia\Inertia;
 
 class DepartmentController extends Controller
 {
-    public function index()
+    use ListQuery;
+    public function index(Request $request)
     {
-        $departments = Department::with(['branch.company', 'head'])
-            ->withCount('employees')
-            ->orderBy('name')
-            ->paginate(10);
+        $departments = $this->listApply(
+            Department::with(['branch.company', 'head'])->withCount('employees'),
+            $request,
+            [
+                'searchable' => ['name', 'code', 'branch.name'],
+                'sortable' => ['name' => 'name', 'created_at' => 'created_at'],
+                'defaultSort' => ['name' => 'asc'],
+            ]
+        )->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/Departments/Index', [
             'departments' => $departments,
+            'filters' => $this->listFilters($request),
         ]);
     }
 

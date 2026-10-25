@@ -16,6 +16,9 @@ The posting engine (`GlPostingService`) exists from Phase 0 and has journalised 
 > - **7.6 VAT Returns** ✅ (2026-09-23) — `VatReturnService` computes Output (2210) − Input (2220) live from posted journals; `finance.vat.*` screen (period preview, generate → draft → submitted → paid). Browser-verified (Output 14.76 / Input 10.20 / Net 4.56). Tests: `VatReturnTest` (2).
 > - **Deferred to a Phase 4 follow-up:** 7.5 Bank accounts + statement import/reconciliation, 4.8 Month-end close screen, ~~4.9 System Health~~ (✅ delivered Phase 7), SystemRoute permission seeds, remittance print templates.
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** Journals, Receipts and Payments on the shared contract — recent-activity tables on `DataTable` with search (entry no / reference / counterparty), type + status filters in the toolbar slot, `date_from`/`date_to`, sortable headers, pagination and `finance.{journals,receipts,payments}.export` (CSV/PDF). Ageing panels and their `as_of` control preserved above the lists. **Route-ordering bugs fixed:** `receipts/{receipt}` and `payments/{payment}` wildcards were shadowing `…/create`, `receipts/customer-lookup` and payment lookup routes — literal routes now registered first (same bug class as the earlier `returns/create` fix). VAT returns list gained search/sort/pagination (preview period filter untouched); COA gained account search; periods/GL-enquiry/payment-run kept as workflow screens.
+
 ## 7.1 Chart of Accounts + 7.8 Period Management  ·  [spec 7.1](../modules/07-finance-accounts/7.1-chart-of-accounts.md) · [spec 7.8](../modules/07-finance-accounts/7.8-period-management.md)
 
 ### Backend

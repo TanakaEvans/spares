@@ -1,36 +1,66 @@
-// Finance & Accounts nav — content only (styling lives in ModuleLayout).
+// Finance & Accounts nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
+// Ordered by daily frequency: money in, money out, bank, then the ledger and period-end.
 import {
-    Banknote, BookOpen, ListTree, Lock, HandCoins, Rows3, Columns2,
-    PenLine, LayoutList, Plus, Landmark, Receipt, FileText, Percent,
-    Play, Calendar, TrendingUp,
+    Banknote, BookOpen, Columns2, FileSpreadsheet, HandCoins, HeartPulse, Landmark, ListTree,
+    Lock, PenLine, Percent, Play, Receipt, Rows3, TrendingUp, Truck, Users,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'finance',
     moduleLabel: 'Finance & Accounts',
     moduleIcon: Banknote,
 
-    module: [
-        {
-            section: 'General Ledger',
-            items: [
-                { label: 'Chart of Accounts', route: 'finance.coa.index', icon: ListTree },
-                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
-                { label: 'Journals', route: 'finance.journals.index', icon: PenLine },
-                { label: 'Periods', route: 'finance.periods.index', icon: Lock },
-            ],
-        },
+    sections: [
         {
             section: 'Receivables',
             items: [
-                { label: 'Customer Receipts', route: 'finance.receipts.index', icon: HandCoins },
+                {
+                    label: 'Customer Receipts', route: 'finance.receipts.index', icon: HandCoins,
+                    children: [{ label: 'New Receipt', route: 'finance.receipts.create' }],
+                    related: [
+                        { label: 'Customers', route: 'customers.index', icon: Users },
+                        { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
+                    ],
+                },
             ],
         },
         {
             section: 'Payables',
             items: [
-                { label: 'Supplier Payments', route: 'finance.payments.index', icon: Rows3 },
-                { label: 'Payment Run', route: 'finance.payment-run.index', icon: Play },
+                {
+                    label: 'Supplier Payments', route: 'finance.payments.index', icon: Rows3,
+                    children: [{ label: 'New Payment', route: 'finance.payments.create' }],
+                    related: [
+                        { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet },
+                        { label: 'Suppliers', route: 'suppliers.index', icon: Truck },
+                    ],
+                },
+                {
+                    label: 'Payment Run', route: 'finance.payment-run.index', icon: Play,
+                    related: [{ label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileSpreadsheet }],
+                },
+            ],
+        },
+        {
+            section: 'Banking',
+            items: [
+                { label: 'Bank Accounts', route: 'finance.bank.index', icon: Landmark },
+            ],
+        },
+        {
+            section: 'General Ledger',
+            items: [
+                {
+                    label: 'Journals', route: 'finance.journals.index', icon: PenLine,
+                    children: [{ label: 'New Journal', route: 'finance.journals.create' }],
+                },
+                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
+                { label: 'Chart of Accounts', route: 'finance.coa.index', icon: ListTree },
+                {
+                    label: 'Periods', route: 'finance.periods.index', icon: Lock,
+                    related: [{ label: 'System Health', route: 'admin.health', icon: HeartPulse }],
+                },
             ],
         },
         {
@@ -40,7 +70,7 @@ const navConfig = {
             ],
         },
         {
-            section: 'Reports',
+            section: 'Statements',
             items: [
                 { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: Columns2 },
                 { label: 'Income Statement', route: 'finance.reports.income-statement', icon: TrendingUp },
@@ -48,95 +78,4 @@ const navConfig = {
             ],
         },
     ],
-
-    subModules: {
-        coa: {
-            label: 'Chart of Accounts', icon: ListTree, routePrefix: 'finance.coa',
-            work: [{ label: 'All Accounts', route: 'finance.coa.index', icon: LayoutList }],
-            quickLinks: [
-                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
-                { label: 'Periods', route: 'finance.periods.index', icon: Lock },
-            ],
-        },
-        periods: {
-            label: 'Periods', icon: Lock, routePrefix: 'finance.periods',
-            work: [{ label: 'Period Control', route: 'finance.periods.index', icon: Calendar }],
-            quickLinks: [
-                { label: 'Journals', route: 'finance.journals.index', icon: PenLine },
-                { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: Columns2 },
-            ],
-        },
-        gl: {
-            label: 'GL Enquiry', icon: BookOpen, routePrefix: 'finance.gl',
-            work: [{ label: 'Account Enquiry', route: 'finance.gl.index', icon: BookOpen }],
-            quickLinks: [
-                { label: 'Journals', route: 'finance.journals.index', icon: PenLine },
-                { label: 'Chart of Accounts', route: 'finance.coa.index', icon: ListTree },
-            ],
-        },
-        journals: {
-            label: 'Journals', icon: PenLine, routePrefix: 'finance.journals',
-            work: [
-                { label: 'Journal Register', route: 'finance.journals.index', icon: LayoutList },
-                { label: 'New Journal', route: 'finance.journals.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
-                { label: 'Chart of Accounts', route: 'finance.coa.index', icon: ListTree },
-            ],
-        },
-        receipts: {
-            label: 'Customer Receipts', icon: HandCoins, routePrefix: 'finance.receipts',
-            work: [
-                { label: 'Receipts & Ageing', route: 'finance.receipts.index', icon: LayoutList },
-                { label: 'New Receipt', route: 'finance.receipts.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Customers', route: 'customers.index', icon: HandCoins },
-                { label: 'Tax Invoices', route: 'sales.invoices.index', icon: Receipt },
-            ],
-        },
-        paymentRun: {
-            label: 'Payment Run', icon: Play, routePrefix: 'finance.payment-run',
-            work: [{ label: 'Payment Run', route: 'finance.payment-run.index', icon: Play }],
-            quickLinks: [
-                { label: 'Supplier Payments', route: 'finance.payments.index', icon: Rows3 },
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileText },
-            ],
-        },
-        payments: {
-            label: 'Supplier Payments', icon: Rows3, routePrefix: 'finance.payments',
-            work: [
-                { label: 'Payments & Ageing', route: 'finance.payments.index', icon: LayoutList },
-                { label: 'New Payment', route: 'finance.payments.create', icon: Plus },
-                { label: 'Payment Run', route: 'finance.payment-run.index', icon: Play },
-            ],
-            quickLinks: [
-                { label: 'Suppliers', route: 'suppliers.index', icon: Rows3 },
-                { label: 'Supplier Invoices', route: 'purchasing.invoices.index', icon: FileText },
-            ],
-        },
-        vat: {
-            label: 'VAT Returns', icon: Percent, routePrefix: 'finance.vat',
-            work: [{ label: 'VAT Returns', route: 'finance.vat.index', icon: Percent }],
-            quickLinks: [
-                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
-                { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: Columns2 },
-            ],
-        },
-        reports: {
-            label: 'Financial Reports', icon: Columns2, routePrefix: 'finance.reports',
-            work: [
-                { label: 'Trial Balance', route: 'finance.reports.trial-balance', icon: Columns2 },
-                { label: 'Income Statement', route: 'finance.reports.income-statement', icon: TrendingUp },
-                { label: 'Balance Sheet', route: 'finance.reports.balance-sheet', icon: Landmark },
-            ],
-            quickLinks: [
-                { label: 'GL Enquiry', route: 'finance.gl.index', icon: BookOpen },
-                { label: 'VAT (2210/2220)', route: 'finance.gl.index', icon: Percent },
-            ],
-        },
-    },
 };
-
-export default navConfig;

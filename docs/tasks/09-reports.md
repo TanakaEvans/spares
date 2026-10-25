@@ -15,6 +15,9 @@ Architecture (applies to every report): Inertia controller action, server-side p
 > - Reports module card + sub-cards Active; `nav/reports.js`; 2 page guides. Tests: `ReportServiceTest` (5). **Suite 165 green.**
 > - **Deferred to a Phase 6 follow-up:** 9.4 extra financial reports (cash flow, gross-margin-by-category, sales-vs-budget), 9.8 Scheduled reports (needs `scheduled_reports` + scheduler + email), Excel/PDF export pipeline, ABC/dead-stock, and the cross-phase deferred features (bank rec, VAT-returns UI, warranty claims, promotions/lay-by/loyalty, requisitions, import shipments, serial/batch, supplier performance).
 
+
+> **Shared list-toolbar pass (2026-10-24, cont.):** Scheduled reports list gained search/sort/pagination. Report hub screens (sales/customers/inventory/suppliers/workshop indexes) remain parameter-driven report pickers, not record lists — by design.
+
 ## 9.1 Executive Dashboard  ·  [spec](../modules/09-reports-analytics/9.1-executive-dashboard.md)
 
 ### Backend

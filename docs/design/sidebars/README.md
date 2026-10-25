@@ -1,6 +1,8 @@
 # Sub-module Sidebar Layouts
 
-> **Rule: every sub-module has its OWN sidebar, showing only what concerns that sub-module** — its screens, its actions, its reports — plus a Quick Links section to related sub-modules. Entering a sub-module switches the sidebar from the module menu to the sub-module's contextual menu.
+> **Superseded 2026-10-25 — read [navigation-and-layout.md §2](../navigation-and-layout.md) first.** Users found the context-switching sidebar disorienting ("the menus keep changing"), so the module menu is now stable on every page and is never replaced. The per-sub-module designs below still define *content*: a sub-module's WORK actions become its item's permanent `children` (e.g. *+ New Part*), and its QUICK LINKS that cross modules become the item's `related` jumps shown at the bottom of the sidebar. The "context switch" mechanics described below (↰ back link, swapping the whole sidebar) are no longer built.
+>
+> Original rule, kept for history: every sub-module has its OWN sidebar, showing only what concerns that sub-module — its screens, its actions, its reports — plus a Quick Links section to related sub-modules.
 
 ---
 

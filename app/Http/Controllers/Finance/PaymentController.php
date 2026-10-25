@@ -2,27 +2,65 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Http\Controllers\Concerns\ListQuery;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Supplier;
 use App\Models\SupplierInvoice;
 use App\Models\SupplierPayment;
 use App\Services\ApPaymentService;
+use App\Support\ListExport;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class PaymentController extends Controller
 {
+    use ListQuery;
+
+    private function paymentsQuery(Request $request): Builder
+    {
+        return $this->listApply(
+            SupplierPayment::with('supplier:id,name')
+                ->when($request->string('method')->toString(), fn ($q, $m) => $q->where('method', $m)),
+            $request,
+            [
+                'searchable' => ['payment_number', 'reference', 'batch_ref', 'supplier.name'],
+                'sortable' => [
+                    'payment_number' => 'payment_number', 'payment_date' => 'payment_date',
+                    'method' => 'method', 'amount' => 'amount', 'allocated' => 'allocated',
+                ],
+                'dateColumn' => 'payment_date',
+                'defaultSort' => ['payment_date' => 'desc', 'id' => 'desc'],
+            ]
+        );
+    }
+
+    /** The filtered payment list as CSV or branded PDF (same filters as the grid). */
+    public function export(Request $request): HttpResponse
+    {
+        $rows = $this->paymentsQuery($request)->limit(5000)->get()->map(fn (SupplierPayment $p) => [
+            $p->payment_number, $p->payment_date->toDateString(), $p->supplier?->name,
+            ucwords(str_replace('_', ' ', $p->method)),
+            number_format((float) $p->amount, 2, '.', ''),
+            number_format((float) $p->allocated, 2, '.', ''),
+            $p->reference ?? '—', $p->batch_ref ?? '—',
+        ]);
+
+        return ListExport::respond($request, 'supplier-payments', 'Supplier Payments',
+            ['Payment No', 'Date', 'Supplier', 'Method', 'Amount', 'Allocated', 'Reference', 'Batch'], $rows);
+    }
+
     public function index(Request $request, ApPaymentService $ap): Response
     {
         $asOf = $request->date('as_of')?->toDateString() ?? now()->toDateString();
 
         return Inertia::render('Finance/Payments/Index', [
-            'payments' => SupplierPayment::with('supplier:id,name')
-                ->latest('payment_date')->latest('id')
+            'payments' => $this->paymentsQuery($request)
                 ->paginate(15)
                 ->through(fn (SupplierPayment $p) => [
                     'id' => $p->id,
@@ -35,7 +73,7 @@ class PaymentController extends Controller
                     'batch_ref' => $p->batch_ref,
                 ]),
             'ageing' => $ap->ageing($asOf),
-            'filters' => ['as_of' => $asOf],
+            'filters' => array_merge($this->listFilters($request, ['method']), ['as_of' => $asOf]),
         ]);
     }
 

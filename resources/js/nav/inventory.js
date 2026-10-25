@@ -1,164 +1,70 @@
 // Inventory Management nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    ArrowLeftRight, Car, ClipboardCheck, FolderTree, Layers, LayoutList, MapPin,
-    PackageSearch, Plus, RefreshCw, Search, Shuffle, SlidersHorizontal, Tags, Upload,
+    ArrowLeftRight, ClipboardCheck, FileInput, FolderTree, Layers, ListOrdered, MapPin,
+    PackageCheck, PackageSearch, RefreshCw, ScanBarcode, Search, Shuffle, SlidersHorizontal,
+    Tags, Upload, BadgeCheck,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'inventory',
     moduleLabel: 'Inventory Management',
     moduleIcon: PackageSearch,
 
-    module: [
+    sections: [
         {
             section: 'Catalogue',
             items: [
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
+                {
+                    label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch,
+                    children: [{ label: 'New Part', route: 'inventory.parts.create' }],
+                    related: [
+                        { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
+                        { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
+                        { label: 'Selling Price Lists', route: 'sales.price-lists.index', icon: ListOrdered },
+                        { label: 'Data Upload', route: 'imports.index', icon: Upload },
+                    ],
+                },
                 { label: 'Categories', route: 'inventory.categories.index', icon: FolderTree },
                 { label: 'Brands', route: 'inventory.brands.index', icon: Tags },
+                { label: 'Serial & Batch', route: 'inventory.serials.index', icon: ScanBarcode },
             ],
         },
         {
             section: 'Stock',
             items: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
+                {
+                    label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers,
+                    related: [
+                        { label: 'Goods Receiving', route: 'purchasing.grns.index', icon: PackageCheck },
+                        { label: 'Data Upload', route: 'imports.index', icon: Upload },
+                    ],
+                },
                 { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
                 { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
-                { label: 'Stock Takes', route: 'inventory.stock-takes.index', icon: ClipboardCheck },
                 { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+            ],
+        },
+        {
+            section: 'Counting',
+            items: [
+                {
+                    label: 'Stock Takes', route: 'inventory.stock-takes.index', icon: ClipboardCheck,
+                    children: [{ label: 'New Stock Take', route: 'inventory.stock-takes.create' }],
+                },
             ],
         },
         {
             section: 'Replenishment',
             items: [
-                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
+                {
+                    label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw,
+                    related: [
+                        { label: 'Purchase Orders', route: 'purchasing.orders.index', icon: FileInput },
+                        { label: 'Approved Suppliers', route: 'suppliers.approved.index', icon: BadgeCheck },
+                    ],
+                },
             ],
         },
     ],
-
-    subModules: {
-        parts: {
-            label: 'Parts Catalogue',
-            icon: PackageSearch,
-            routePrefix: 'inventory.parts',
-            work: [
-                { label: 'All Parts', route: 'inventory.parts.index', icon: LayoutList },
-                { label: 'New Part', route: 'inventory.parts.create', icon: Plus },
-            ],
-            setup: [
-                { label: 'Categories', route: 'inventory.categories.index', icon: FolderTree },
-                { label: 'Brands', route: 'inventory.brands.index', icon: Tags },
-            ],
-            quickLinks: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Data Upload', route: 'imports.index', icon: Upload },
-                { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
-                { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
-            ],
-        },
-        categories: {
-            label: 'Categories',
-            icon: FolderTree,
-            routePrefix: 'inventory.categories',
-            work: [
-                { label: 'Category Tree', route: 'inventory.categories.index', icon: FolderTree },
-            ],
-            quickLinks: [
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
-                { label: 'Brands', route: 'inventory.brands.index', icon: Tags },
-            ],
-        },
-        brands: {
-            label: 'Brands',
-            icon: Tags,
-            routePrefix: 'inventory.brands',
-            work: [
-                { label: 'All Brands', route: 'inventory.brands.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
-                { label: 'Categories', route: 'inventory.categories.index', icon: FolderTree },
-            ],
-        },
-        // NOTE: dot-terminated prefix so 'inventory.stock-takes' does not resolve here.
-        stockTakes: {
-            label: 'Stock Takes',
-            icon: ClipboardCheck,
-            routePrefix: 'inventory.stock-takes',
-            work: [
-                { label: 'All Stock Takes', route: 'inventory.stock-takes.index', icon: LayoutList },
-                { label: 'New Stock Take', route: 'inventory.stock-takes.create', icon: Plus },
-            ],
-            quickLinks: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-        stock: {
-            label: 'Stock Control',
-            icon: Layers,
-            routePrefix: 'inventory.stock.',
-            work: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
-                { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
-            ],
-            quickLinks: [
-                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
-                { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
-            ],
-        },
-        adjustments: {
-            label: 'Adjustments',
-            icon: SlidersHorizontal,
-            routePrefix: 'inventory.adjustments',
-            work: [
-                { label: 'All Adjustments', route: 'inventory.adjustments.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
-            ],
-        },
-        transfers: {
-            label: 'Transfers',
-            icon: ArrowLeftRight,
-            routePrefix: 'inventory.transfers',
-            work: [
-                { label: 'All Transfers', route: 'inventory.transfers.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
-            ],
-        },
-        reorder: {
-            label: 'Reorder Management',
-            icon: RefreshCw,
-            routePrefix: 'inventory.reorder',
-            work: [
-                { label: 'Reorder Report', route: 'inventory.reorder.index', icon: RefreshCw },
-            ],
-            quickLinks: [
-                { label: 'Purchasing: Orders', route: 'purchasing.orders.index', icon: LayoutList },
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-            ],
-        },
-        bins: {
-            label: 'Bin Locations',
-            icon: MapPin,
-            routePrefix: 'inventory.bins',
-            work: [
-                { label: 'All Bins', route: 'inventory.bins.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
-                { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-    },
 };
-
-export default navConfig;

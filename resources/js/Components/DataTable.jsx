@@ -1,26 +1,33 @@
 import { Link, router } from '@inertiajs/react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import EmptyState from '@/Components/EmptyState';
+import { nextSort } from '@/lib/listFilters';
 
 /**
  * The one table (component-standards §5).
- * columns: [{ key, label, render?, align?: 'right', className? }]
+ * columns: [{ key, label, render?, align?: 'right', className?, sortable?: 'sort-key' }]
  * rows: array of records; rowHref(row) makes the whole row a link (UI-13).
  * pagination: Laravel paginator object (data/links/from/to/total) — pass the
  *   paginator itself as `rows.data` + `pagination`.
+ * sorting: { filters, onFilter } from useListFilter — renders clickable headers
+ *   for columns carrying `sortable` (the server's sort-key whitelist).
  */
 export default function DataTable({
     columns,
     rows,
     rowHref,
+    rowClassName,
     pagination,
+    sorting,
     emptyTitle = 'Nothing here yet',
     emptyMessage,
     emptyAction,
+    emptyIcon,
 }) {
     if (!rows || rows.length === 0) {
         return (
             <div className="bg-white rounded-xl shadow-sm border border-slate-100">
-                <EmptyState title={emptyTitle} message={emptyMessage} action={emptyAction} />
+                <EmptyState title={emptyTitle} message={emptyMessage} action={emptyAction} icon={emptyIcon} />
             </div>
         );
     }
@@ -35,7 +42,20 @@ export default function DataTable({
                                 key={col.key}
                                 className={`px-4 py-3 first:pl-6 last:pr-6 ${col.align === 'right' ? 'text-right' : ''} ${col.className ?? ''}`}
                             >
-                                {col.label}
+                                {col.sortable && sorting ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => sorting.onFilter(nextSort(sorting.filters, col.sortable))}
+                                        className={`inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-600 ${
+                                            sorting.filters.sort === col.sortable ? 'text-orange-600' : ''
+                                        }`}
+                                    >
+                                        {col.label}
+                                        {sorting.filters.sort === col.sortable
+                                            ? (sorting.filters.dir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)
+                                            : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                                    </button>
+                                ) : col.label}
                             </th>
                         ))}
                     </tr>
@@ -47,7 +67,7 @@ export default function DataTable({
                             <tr
                                 key={row.id ?? i}
                                 onClick={href ? () => router.visit(href) : undefined}
-                                className={`${href ? 'cursor-pointer hover:bg-slate-50/70' : 'hover:bg-slate-50/40'}`}
+                                className={`${href ? 'cursor-pointer hover:bg-slate-50/70' : 'hover:bg-slate-50/40'} ${rowClassName?.(row) ?? ''}`}
                             >
                                 {columns.map((col) => (
                                     <td

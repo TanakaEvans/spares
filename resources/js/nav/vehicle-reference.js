@@ -1,104 +1,51 @@
 // Vehicle Reference nav — content only (component-standards §1a).
+// Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    Car, Cog, Factory, LayoutList, PackageSearch, Plus, Search, Shuffle, GitBranch,
+    AlertTriangle, Car, CarFront, Cog, Factory, GitBranch, PackageSearch, Search, Shuffle, Upload,
 } from 'lucide-react';
 
-const navConfig = {
+export default {
     moduleKey: 'vehicle-reference',
     moduleLabel: 'Vehicle Reference',
     moduleIcon: Car,
 
-    module: [
+    sections: [
         {
             section: 'Lookup',
             items: [
-                { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
-                { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
+                {
+                    label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search,
+                    related: [
+                        { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
+                        { label: 'Vehicle Registry', route: 'workshop.vehicles.index', icon: CarFront },
+                    ],
+                },
+                {
+                    label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle,
+                    related: [{ label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch }],
+                },
             ],
         },
         {
-            section: 'Data',
+            section: 'Vehicles',
             items: [
                 { label: 'Makes', route: 'vehicle-ref.makes.index', icon: Factory },
                 { label: 'Models & Variants', route: 'vehicle-ref.models.index', icon: Car },
                 { label: 'Engine Codes', route: 'vehicle-ref.engines.index', icon: Cog },
-                { label: 'Supersessions', route: 'vehicle-ref.supersessions.index', icon: GitBranch },
+            ],
+        },
+        {
+            section: 'Part Data',
+            items: [
+                {
+                    label: 'Supersessions', route: 'vehicle-ref.supersessions.index', icon: GitBranch,
+                    related: [
+                        { label: 'Parts', route: 'inventory.parts.index', icon: PackageSearch },
+                        { label: 'Catalogue Upload', route: 'imports.index', icon: Upload },
+                    ],
+                },
+                { label: 'Technical Bulletins', route: 'vehicle-ref.bulletins.index', icon: AlertTriangle },
             ],
         },
     ],
-
-    subModules: {
-        supersessions: {
-            label: 'Supersession Management', icon: GitBranch, routePrefix: 'vehicle-ref.supersessions',
-            work: [{ label: 'All Supersessions', route: 'vehicle-ref.supersessions.index', icon: LayoutList }],
-            quickLinks: [
-                { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
-                { label: 'Parts Catalogue', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-        fitment: {
-            label: 'Fitment Lookup',
-            icon: Search,
-            routePrefix: 'vehicle-ref.fitment',
-            work: [
-                { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
-            ],
-            quickLinks: [
-                { label: 'Cross-Reference', route: 'vehicle-ref.cross-ref', icon: Shuffle },
-                { label: 'Models & Variants', route: 'vehicle-ref.models.index', icon: Car },
-                { label: 'Inventory: Parts', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-        crossref: {
-            label: 'Cross-Reference',
-            icon: Shuffle,
-            routePrefix: 'vehicle-ref.cross-ref',
-            work: [
-                { label: 'Number Search', route: 'vehicle-ref.cross-ref', icon: Search },
-            ],
-            quickLinks: [
-                { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
-                { label: 'Inventory: Parts', route: 'inventory.parts.index', icon: PackageSearch },
-            ],
-        },
-        makes: {
-            label: 'Vehicle Makes',
-            icon: Factory,
-            routePrefix: 'vehicle-ref.makes',
-            work: [
-                { label: 'All Makes', route: 'vehicle-ref.makes.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Models & Variants', route: 'vehicle-ref.models.index', icon: Car },
-                { label: 'Engine Codes', route: 'vehicle-ref.engines.index', icon: Cog },
-            ],
-        },
-        models: {
-            label: 'Models & Variants',
-            icon: Car,
-            routePrefix: 'vehicle-ref.models',
-            work: [
-                { label: 'All Models', route: 'vehicle-ref.models.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Makes', route: 'vehicle-ref.makes.index', icon: Factory },
-                { label: 'Engine Codes', route: 'vehicle-ref.engines.index', icon: Cog },
-                { label: 'Fitment Lookup', route: 'vehicle-ref.fitment', icon: Search },
-            ],
-        },
-        engines: {
-            label: 'Engine Codes',
-            icon: Cog,
-            routePrefix: 'vehicle-ref.engines',
-            work: [
-                { label: 'All Engine Codes', route: 'vehicle-ref.engines.index', icon: LayoutList },
-            ],
-            quickLinks: [
-                { label: 'Models & Variants', route: 'vehicle-ref.models.index', icon: Car },
-                { label: 'Makes', route: 'vehicle-ref.makes.index', icon: Factory },
-            ],
-        },
-    },
 };
-
-export default navConfig;

@@ -12,9 +12,10 @@ use Inertia\Response;
 
 class SupplierPerformanceController extends Controller
 {
-    public function index(): Response
+    public function index(?Request $request = null): Response
     {
-        $rows = Supplier::orderBy('name')->get()->map(function (Supplier $s) {
+        $rows = Supplier::when($request?->string('search')?->toString(), fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->orderBy('name')->get()->map(function (Supplier $s) {
             $pos = PurchaseOrder::where('supplier_id', $s->id)->get(['id', 'order_date', 'expected_date', 'status']);
             $grns = GoodsReceivedNote::where('supplier_id', $s->id)->with('purchaseOrder:id,expected_date,order_date')->get();
 
@@ -44,6 +45,9 @@ class SupplierPerformanceController extends Controller
             ];
         })->filter(fn ($r) => $r['po_count'] > 0 || $r['spend'] > 0)->values();
 
-        return Inertia::render('Suppliers/Performance/Index', ['rows' => $rows]);
+        return Inertia::render('Suppliers/Performance/Index', [
+            'rows' => $rows,
+            'filters' => ['search' => $request?->string('search')?->toString() ?? ''],
+        ]);
     }
 }
