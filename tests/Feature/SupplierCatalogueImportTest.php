@@ -84,9 +84,11 @@ class SupplierCatalogueImportTest extends TestCase
 
         $import = DataImport::latest('id')->first();
         $this->assertSame('catalogue', $import->entity);
-        $this->assertSame(7, $import->created_count, json_encode($import->errors));
-        $this->assertSame(1, $import->skipped_count);
-        $this->assertStringContainsString('placeholder', $import->errors[0]['message']);
+        // Placeholder rows are imported too — marked "description pending", never skipped.
+        $this->assertSame(8, $import->created_count, json_encode($import->errors));
+        $this->assertSame(0, $import->skipped_count);
+        $this->assertStringContainsString('description pending', $this->part('AF579')->description);
+        $this->assertStringContainsString('AIR FILTER', $this->part('AF579')->description);
 
         // Application-only text gains its part type; self-describing text is left alone.
         $this->assertSame('AIR FILTER - SORENTO I 2.5CRDi 03-06', $this->part('AF213')->description);
@@ -114,7 +116,7 @@ class SupplierCatalogueImportTest extends TestCase
         // Linked to the (new) supplier as preferred.
         $supplier = Supplier::where('name', 'Mravat Wholesale')->firstOrFail();
         $this->assertSame('wholesaler', $supplier->type);
-        $this->assertSame(7, ApprovedSupplier::where('supplier_id', $supplier->id)->where('is_preferred', true)->count());
+        $this->assertSame(8, ApprovedSupplier::where('supplier_id', $supplier->id)->where('is_preferred', true)->count());
     }
 
     public function test_next_months_list_updates_in_place_and_flags_dropped_lines(): void

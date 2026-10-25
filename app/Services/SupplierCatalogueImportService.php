@@ -136,13 +136,18 @@ class SupplierCatalogueImportService
         if ($code === '') {
             throw new \RuntimeException('Item code is empty.');
         }
-        if ($text === '' || preg_match(self::PLACEHOLDER, $text)) {
+        // Supplier placeholder rows ("NEW ITEM") are still real catalogue slots:
+        // import them under the category label so the part links and searches —
+        // a later listing fills the description in place.
+        $placeholder = $text === '' || preg_match(self::PLACEHOLDER, $text);
+        if ($placeholder) {
             $this->placeholders++;
-            throw new \RuntimeException("{$code}: supplier placeholder row (\"".($text ?: 'blank')."\") — no description yet, skipped.");
         }
 
         $entry = $this->categoryFor($v);
-        $description = $this->describe($code, $text, $this->clean($v['specification'] ?? ''), $entry);
+        $description = $placeholder
+            ? mb_substr(($entry['label'] ?? 'NEW ITEM')." — {$code} (description pending)", 0, 255)
+            : $this->describe($code, $text, $this->clean($v['specification'] ?? ''), $entry);
         $supplierCategory = trim(($v['category_name'] ?? '') !== '' ? "{$v['category']} · {$v['category_name']}" : (string) ($v['category'] ?? ''));
         $attrs = [
             'description' => $description,
@@ -163,7 +168,7 @@ class SupplierCatalogueImportService
                 $attrs['barcode_code128'] = $code;
             }
             if ($part->notes === null) {
-                $attrs['notes'] = trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : ''));
+                $attrs['notes'] = trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : '').($placeholder ? ' — supplier gave no description yet' : ''));
             }
             $part->fill($attrs)->save();
             $outcome = 'updated';
@@ -171,7 +176,7 @@ class SupplierCatalogueImportService
             $part = Part::create($attrs + [
                 'part_number' => $code,
                 'barcode_code128' => $code,
-                'notes' => trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : '')),
+                'notes' => trim("Imported: {$this->supplier->name} catalogue".($supplierCategory !== '' ? " ({$supplierCategory})" : '').($placeholder ? ' — supplier gave no description yet' : '')),
                 'is_active' => true,
             ]);
             $outcome = 'created';

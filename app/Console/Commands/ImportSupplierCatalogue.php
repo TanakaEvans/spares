@@ -78,8 +78,11 @@ class ImportSupplierCatalogue extends Command
 
         $this->newLine();
         $this->info(($dry ? '[DRY RUN — rolled back] ' : '')."Supplier: {$catalogue->supplier()->name}");
-        $this->line(sprintf('Created %d · updated %d · skipped %d (%d placeholder rows) · %d vehicle fitments linked in %.1fs',
-            $result['created'], $result['updated'], $result['skipped'], $catalogue->placeholders, $catalogue->linked, microtime(true) - $started));
+        $this->line(sprintf('Created %d · updated %d · skipped %d · %d vehicle fitments linked in %.1fs',
+            $result['created'], $result['updated'], $result['skipped'], $catalogue->linked, microtime(true) - $started));
+        if ($catalogue->placeholders > 0) {
+            $this->warn("{$catalogue->placeholders} placeholder rows (\"NEW ITEM\") were imported marked \"description pending\" — edit them or they fill in on the next listing.");
+        }
         if ($discontinued) {
             $this->line("Discontinued {$discontinued[0]} no-longer-listed parts · re-listed {$discontinued[1]}");
         }

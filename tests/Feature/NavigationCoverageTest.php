@@ -21,6 +21,7 @@ class NavigationCoverageTest extends TestCase
         'settings.index' => 'legacy redirect to admin.settings.index',
         'system.settings' => 'legacy redirect to admin.settings.index',
         'verify.document' => 'public QR verification page',
+        'vehicle-ref.fitment.vehicles' => 'JSON lookup for the fitment vehicle picker, not a screen',
         'admin.branches.create' => 'primary button on Branches',
         'admin.departments.create' => 'primary button on Departments',
         'admin.employees.create' => 'primary button on Employees',
