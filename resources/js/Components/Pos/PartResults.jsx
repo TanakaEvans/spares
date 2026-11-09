@@ -10,8 +10,8 @@ function Chip({ tone = 'slate', children }) {
 function ResultRow({ part, active, onHover, onAdd, onUseReplacement, allowNegative, vatRate }) {
     const ref = useRef(null);
     const stock = stockState(part, allowNegative);
-    const blocked = stock.blocked || !part.priced;
-    const reason = !part.priced ? 'No selling price on any applicable price list.' : stock.reason;
+    const blocked = stock.blocked; // unpriced parts can still be added — a price is entered in the cart
+    const reason = stock.reason;
 
     useEffect(() => { if (active) ref.current?.scrollIntoView({ block: 'nearest' }); }, [active]);
 
@@ -47,7 +47,9 @@ function ResultRow({ part, active, onHover, onAdd, onUseReplacement, allowNegati
                 </div>
             </div>
             <div className="shrink-0 text-right space-y-1">
-                <div className="text-base font-bold tabular-nums text-slate-900">{part.priced ? fmt(inclPrice(part.price, vatRate)) : '—'}</div>
+                <div className="text-base font-bold tabular-nums text-slate-900">
+                    {part.priced ? fmt(inclPrice(part.price, vatRate)) : <span className="text-xs font-semibold text-amber-600">Enter price</span>}
+                </div>
                 <Chip tone={stock.tone}>{stock.label}</Chip>
             </div>
         </div>
@@ -99,15 +101,15 @@ export default function PartResults({
                     <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
                         {topSellers.map((p) => {
                             const stock = stockState(p, allowNegative);
-                            const blocked = stock.blocked || !p.priced;
+                            const blocked = stock.blocked;
                             return (
-                                <button key={p.id} type="button" disabled={blocked} title={blocked ? (!p.priced ? 'No selling price' : stock.reason) : 'Add to sale'}
+                                <button key={p.id} type="button" disabled={blocked} title={blocked ? stock.reason : (p.priced ? 'Add to sale' : 'Add — enter a price in the cart')}
                                     onClick={() => onAdd(p)}
                                     className="rounded-lg border border-slate-200 bg-white p-2.5 text-left hover:border-orange-400 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
                                     <div className="font-mono text-xs font-bold text-slate-900">{p.part_number}</div>
                                     <div className="mt-0.5 text-xs text-slate-500 line-clamp-2 min-h-[2rem]">{p.description}</div>
                                     <div className="mt-1 flex items-center justify-between">
-                                        <span className="text-sm font-semibold tabular-nums">{p.priced ? fmt(inclPrice(p.price, vatRate)) : '—'}</span>
+                                        <span className="text-sm font-semibold tabular-nums">{p.priced ? fmt(inclPrice(p.price, vatRate)) : <span className="text-xs text-amber-600">Enter price</span>}</span>
                                         <span className={`h-2 w-2 rounded-full ${stock.tone === 'green' ? 'bg-emerald-500' : stock.tone === 'amber' ? 'bg-amber-500' : 'bg-red-500'}`} />
                                     </div>
                                 </button>

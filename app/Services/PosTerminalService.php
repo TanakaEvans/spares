@@ -72,6 +72,7 @@ class PosTerminalService
                 'category' => $p->category?->name,
                 'price' => round($price, 2),
                 'priced' => $priced,
+                'cost' => round((float) ($level->average_cost ?? 0), 2),
                 'on_hand' => (float) ($level->qty_on_hand ?? 0),
                 'available' => $level ? round($level->qty_available, 2) : 0.0,
                 'reorder_point' => (float) ($level->reorder_point ?? 0),

@@ -14,7 +14,7 @@ import CustomerPicker from '@/Components/Pos/CustomerPicker';
 import TenderDialog, { accountBlockReason } from '@/Components/Pos/TenderDialog';
 import SaleCompleteDialog from '@/Components/Pos/SaleCompleteDialog';
 import RecallDialog from '@/Components/Pos/RecallDialog';
-import { cartTotals, fmt, getJson, parseQuery, round2, stockState, tillStore } from '@/Components/Pos/posMath';
+import { cartTotals, fmt, getJson, inclPrice, parseQuery, round2, stockState, tillStore } from '@/Components/Pos/posMath';
 
 const SHORTCUTS = [
     ['F2', 'Customer'], ['F3', 'Clear sale'], ['F4', 'Split pay'], ['F5', 'Cash'], ['F6', 'Card'], ['F7', 'Account'],
@@ -88,7 +88,6 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
     const availableText = (n) => fmt(Math.max(Number(n) || 0, 0)).replace('.00', '');
 
     function addPart(part, qty = 1) {
-        if (!part.priced) { flash(`${part.part_number} has no selling price — it can't be sold until it is priced.`, 'error'); return false; }
         const avail = Number(part.available ?? part.on_hand ?? 0);
         const i = lines.findIndex((l) => l.part_id === part.id);
         const nextQty = round2((i >= 0 ? lines[i].qty : 0) + qty);
@@ -102,12 +101,13 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
         } else {
             setLines([...lines, {
                 part_id: part.id, part_number: part.part_number, description: part.description, bin: part.bin,
-                qty: nextQty, unit_price: part.price, discount_pct: 0, priced: part.priced,
+                qty: nextQty, unit_price: part.price, discount_pct: 0, priced: part.priced, cost: part.cost ?? 0,
                 on_hand: part.on_hand, available: part.available,
             }]);
             setSelected(lines.length);
         }
         setQuery(''); setCategory(null); setResults([]); setNotice(null);
+        if (!part.priced) flash(`${part.part_number} has no selling price — enter one in the cart (not below cost).`, 'warn');
         refocus();
         return true;
     }
@@ -138,6 +138,8 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
         setLines(lines.map((l, idx) => (idx === i ? { ...l, qty: round2(Math.max(qty, 0)) } : l)));
     }
     const setDiscount = (i, pct) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, discount_pct: pct } : l)));
+    /** Cashier enters a selling price (incl. VAT) for an unpriced part → store it VAT-exclusive. */
+    const setLinePrice = (i, incl) => setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, unit_price: round2((Number(incl) || 0) / (1 + vatRate / 100)) } : l)));
     const removeLine = (i) => { setLines((prev) => prev.filter((_, idx) => idx !== i)); setSelected((s) => (s === null ? null : Math.max(0, Math.min(s, lines.length - 2)))); };
     const resetSale = () => { setLines([]); setCustomer(walkInCustomer); setSelected(null); setQuery(''); setCategory(null); };
 
@@ -149,9 +151,13 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
             try {
                 const hit = (await getJson('sales.pos.part-lookup', { q: l.part_number, exact: 1, customer_id: forCustomer.id })).parts?.[0];
                 if (hit) {
+                    // Keep a manual price the cashier already entered for an unpriced part.
+                    if (!hit.priced) {
+                        return { ...l, priced: false, cost: hit.cost ?? l.cost, on_hand: hit.on_hand, available: hit.available, bin: hit.bin };
+                    }
                     const priceChanged = Math.abs(hit.price - l.unit_price) > 0.001;
                     if (priceChanged) changed++;
-                    return { ...l, unit_price: hit.price, priced: hit.priced, on_hand: hit.on_hand, available: hit.available, bin: hit.bin, priceChanged };
+                    return { ...l, unit_price: hit.price, priced: hit.priced, cost: hit.cost ?? l.cost, on_hand: hit.on_hand, available: hit.available, bin: hit.bin, priceChanged };
                 }
             } catch { /* keep line */ }
             return l;
@@ -195,8 +201,11 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
 
     // ── Charge readiness: disabled-with-reason (ui-rules) ──
     const shortLine = !allowNegative && lines.find((l) => l.qty > Number(l.available ?? l.on_hand ?? 0));
+    const needsPrice = lines.find((l) => !l.priced && !(l.unit_price > 0));
+    const belowCost = lines.find((l) => !l.priced && l.unit_price > 0 && Number(l.cost || 0) > 0 && l.unit_price < Number(l.cost) - 0.004);
     const chargeBlock = lines.length === 0 ? 'Add a part first.'
-        : lines.some((l) => !l.priced) ? 'Remove the unpriced line(s) first.'
+        : needsPrice ? `Enter a selling price for ${needsPrice.part_number}.`
+        : belowCost ? `${belowCost.part_number}: price is below cost — raise it to at least ${fmt(inclPrice(belowCost.cost, vatRate))} incl.`
         : lines.some((l) => !(l.qty > 0)) ? 'Every line needs a quantity above 0.'
         : shortLine ? `Not enough stock for ${shortLine.part_number}.`
         : null;
@@ -330,7 +339,7 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
                         </div>
                         <div className="min-h-0 flex-1">
                             <CartPanel lines={lines} calc={totals.calc} selected={selected} onSelect={(i) => { setSelected(i); }}
-                                onQty={setQty} onDiscount={setDiscount} onRemove={removeLine}
+                                onQty={setQty} onDiscount={setDiscount} onRemove={removeLine} onPrice={setLinePrice}
                                 maxDiscount={maxDiscount} allowNegative={allowNegative} vatRate={vatRate}
                                 suspendedCount={suspended.length} onRecall={() => setRecallOpen(true)} />
                         </div>
