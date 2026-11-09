@@ -50,7 +50,7 @@ export default function TenderDialog({ open, initialMode, total, customer, lines
         setProcessing(true); setError(null);
         router.post(route('sales.pos.store'), {
             customer_id: customer.id,
-            lines: lines.map((l) => ({ part_id: l.part_id, qty: l.qty, discount_pct: l.discount_pct })),
+            lines: lines.map((l) => ({ part_id: l.part_id, qty: l.qty, discount_pct: l.discount_pct, manual_price: l.priced ? null : l.unit_price })),
             payments: tender.payments(),
             supervisor_username: needsApproval ? supervisor.username : null,
             supervisor_password: needsApproval ? supervisor.password : null,

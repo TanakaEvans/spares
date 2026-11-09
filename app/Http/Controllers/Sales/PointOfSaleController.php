@@ -3,9 +3,14 @@
 namespace App\Http\Controllers\Sales;
 
 use App\Exceptions\DomainException;
+use App\Exceptions\UnpricedPartException;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
+use App\Models\Part;
+use App\Models\StockLevel;
+use App\Models\SupplierPriceList;
+use App\Services\AuditLogService;
 use App\Services\PosTerminalService;
 use App\Services\PricingService;
 use App\Services\SalesPostingService;
@@ -95,6 +100,7 @@ class PointOfSaleController extends Controller
             'lines.*.part_id' => ['required', 'exists:parts,id'],
             'lines.*.qty' => ['required', 'numeric', 'gt:0'],
             'lines.*.discount_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'lines.*.manual_price' => ['nullable', 'numeric', 'gt:0'],
             'payments' => ['required', 'array', 'min:1'],
             'payments.*.method' => ['required', 'in:cash,card,eft,account'],
             'payments.*.amount' => ['required', 'numeric', 'gt:0'],
@@ -128,19 +134,36 @@ class PointOfSaleController extends Controller
             }
         }
 
-        // Resolve authoritative prices server-side.
+        // Resolve authoritative prices server-side. A part with no price on any
+        // applicable list may be sold at a price the cashier enters at the till
+        // (2.1) — never below cost, and recorded as a manual price.
         $lines = [];
+        $manualPrices = [];
         foreach ($data['lines'] as $line) {
             $discount = (float) ($line['discount_pct'] ?? 0);
+            $partId = (int) $line['part_id'];
 
             try {
-                $unitPrice = $pricing->priceFor((int) $line['part_id'], $customer);
+                $unitPrice = $pricing->priceFor($partId, $customer);
+            } catch (UnpricedPartException $e) {
+                $manual = (float) ($line['manual_price'] ?? 0);
+                $part = Part::find($partId);
+                if ($manual <= 0) {
+                    return back()->withErrors(['lines' => "{$part?->part_number} has no selling price — enter a price at the till before charging."]);
+                }
+                $floor = $this->costFloor($partId, $branch->id);
+                if ($floor > 0 && $manual < $floor - 0.004) {
+                    return back()->withErrors(['lines' => sprintf('%s: R%s is below cost R%s — enter a price at or above cost.',
+                        $part?->part_number, number_format($manual, 2), number_format($floor, 2))]);
+                }
+                $unitPrice = round($manual, 2);
+                $manualPrices[] = ['part' => $part?->part_number, 'price' => $unitPrice, 'cost' => $floor];
             } catch (DomainException $e) {
                 return back()->withErrors(['lines' => $e->userMessage()]);
             }
 
             $lines[] = [
-                'part_id' => (int) $line['part_id'],
+                'part_id' => $partId,
                 'qty' => (float) $line['qty'],
                 'unit_price' => $unitPrice,
                 'discount_pct' => $discount,
@@ -154,6 +177,14 @@ class PointOfSaleController extends Controller
             return back()->withErrors(['sale' => $e->userMessage()]);
         } catch (\InvalidArgumentException $e) {
             return back()->withErrors(['sale' => $e->getMessage()]);
+        }
+
+        // A manually-entered price on an unpriced part is recorded against the
+        // invoice so it can be reviewed and the part priced properly later.
+        if ($manualPrices !== []) {
+            app(AuditLogService::class)->record('sales.pos.manual_price', $invoice,
+                after: ['lines' => $manualPrices], note: 'Price(s) entered at the till for unpriced part(s)',
+                userId: $request->user()->id, branchId: $branch->id);
         }
 
         // Straight back to the till, ready for the next customer — the
@@ -179,6 +210,26 @@ class PointOfSaleController extends Controller
         }
 
         return response()->json(['ok' => true, 'approver' => $approver->name]);
+    }
+
+    /**
+     * Cost floor for a manually-priced line (VAT-exclusive): the part's average
+     * cost at this branch, falling back to the latest active supplier cost.
+     * Zero means no known cost, so no floor can be enforced.
+     */
+    private function costFloor(int $partId, int $branchId): float
+    {
+        $avco = (float) StockLevel::where('part_id', $partId)->where('branch_id', $branchId)->value('average_cost');
+        if ($avco > 0) {
+            return round($avco, 2);
+        }
+
+        $cost = SupplierPriceList::where('status', 'active')
+            ->whereHas('items', fn ($q) => $q->where('part_id', $partId))
+            ->with(['items' => fn ($q) => $q->where('part_id', $partId)])
+            ->latest('effective_date')->first()?->items->first()?->cost_price;
+
+        return $cost ? round((float) $cost, 2) : 0.0;
     }
 
     private function activeBranch(Request $request): Branch
