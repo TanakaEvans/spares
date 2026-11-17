@@ -67,7 +67,7 @@ Reviewers reject any PR containing literals for these:
 | **Tax** | VAT rates & codes, VAT-inclusive vs exclusive display, tax authority name on documents |
 | **Currency** | Base currency, display currencies, dual-currency receipt on/off, rate source, rounding rules, cash rounding step (e.g. nearest 5c) |
 | **Documents** | Every number sequence (prefix/date format/padding/reset), every print template's header/footer text, terms & conditions text, default quote validity days |
-| **Sales** | Discount approval threshold, price-override floor, credit-check rules (hold days, over-limit %), lay-by minimum deposit %, return window days, restock fee %, loyalty earn rate & expiry |
+| **Sales** | Discount approval threshold, price-override floor, **auto-price from cost on/off + default markup over cost % (per branch)**, credit-check rules (hold days, over-limit %), lay-by minimum deposit %, return window days, restock fee %, loyalty earn rate & expiry |
 | **Purchasing** | PO approval value threshold(s), GRN over-receive tolerance %, invoice match tolerance (% and absolute), auto-requisition on reorder on/off |
 | **Inventory** | Cost method (AVCO/FIFO), negative stock allowed (per branch), stock-take variance recount threshold, dead-stock definition (days), low-stock alert horizon |
 | **Workshop** | Labour rates by type, scope-growth authorisation threshold, promised-time reminder minutes, comeback window days |

@@ -8,8 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Part;
-use App\Models\StockLevel;
-use App\Models\SupplierPriceList;
 use App\Services\AuditLogService;
 use App\Services\PosTerminalService;
 use App\Services\PricingService;
@@ -144,14 +142,15 @@ class PointOfSaleController extends Controller
             $partId = (int) $line['part_id'];
 
             try {
-                $unitPrice = $pricing->priceFor($partId, $customer);
+                // Branch-aware so the cost-plus auto price uses this till's cost.
+                $unitPrice = $pricing->priceFor($partId, $customer, $branch->id);
             } catch (UnpricedPartException $e) {
                 $manual = (float) ($line['manual_price'] ?? 0);
                 $part = Part::find($partId);
                 if ($manual <= 0) {
                     return back()->withErrors(['lines' => "{$part?->part_number} has no selling price — enter a price at the till before charging."]);
                 }
-                $floor = $this->costFloor($partId, $branch->id);
+                $floor = $pricing->costFor($partId, $branch->id);
                 if ($floor > 0 && $manual < $floor - 0.004) {
                     return back()->withErrors(['lines' => sprintf('%s: R%s is below cost R%s — enter a price at or above cost.',
                         $part?->part_number, number_format($manual, 2), number_format($floor, 2))]);
@@ -210,26 +209,6 @@ class PointOfSaleController extends Controller
         }
 
         return response()->json(['ok' => true, 'approver' => $approver->name]);
-    }
-
-    /**
-     * Cost floor for a manually-priced line (VAT-exclusive): the part's average
-     * cost at this branch, falling back to the latest active supplier cost.
-     * Zero means no known cost, so no floor can be enforced.
-     */
-    private function costFloor(int $partId, int $branchId): float
-    {
-        $avco = (float) StockLevel::where('part_id', $partId)->where('branch_id', $branchId)->value('average_cost');
-        if ($avco > 0) {
-            return round($avco, 2);
-        }
-
-        $cost = SupplierPriceList::where('status', 'active')
-            ->whereHas('items', fn ($q) => $q->where('part_id', $partId))
-            ->with(['items' => fn ($q) => $q->where('part_id', $partId)])
-            ->latest('effective_date')->first()?->items->first()?->cost_price;
-
-        return $cost ? round((float) $cost, 2) : 0.0;
     }
 
     private function activeBranch(Request $request): Branch

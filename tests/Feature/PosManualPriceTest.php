@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\SalesDocument;
 use App\Models\SalesDocumentLine;
 use App\Models\User;
+use App\Services\SettingsService;
 use App\Services\StockLedgerService;
 use Database\Seeders\ChartOfAccountsSeeder;
 use Database\Seeders\FinancialPeriodSeeder;
@@ -84,8 +85,30 @@ class PosManualPriceTest extends TestCase
         ];
     }
 
+    /** Turn off cost-plus auto pricing so the manual-price path is reached. */
+    private function disableAutoPricing(): void
+    {
+        app(SettingsService::class)->set('sales.auto_price_from_cost', false);
+    }
+
+    public function test_part_with_cost_and_no_list_price_auto_prices_at_cost_plus_markup(): void
+    {
+        // Default markup 40%: cost 60 → 84.00 excl → 96.60 incl. No manual price needed.
+        $this->actingAs($this->cashier)
+            ->post(route('sales.pos.store'), $this->sale([
+                ['part_id' => $this->unpriced->id, 'qty' => 1, 'discount_pct' => 0],
+            ], 96.60))
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $line = SalesDocumentLine::firstOrFail();
+        $this->assertEquals(84.00, (float) $line->unit_price);
+        $this->assertSame(0, AuditLog::where('action', 'sales.pos.manual_price')->count());
+    }
+
     public function test_unpriced_part_sells_at_a_manual_price_and_is_audited(): void
     {
+        $this->disableAutoPricing();
         // Manual selling price 80 excl → VAT 15% → 92.00 incl.
         $this->actingAs($this->cashier)
             ->post(route('sales.pos.store'), $this->sale([
@@ -106,6 +129,7 @@ class PosManualPriceTest extends TestCase
 
     public function test_manual_price_below_cost_is_rejected(): void
     {
+        $this->disableAutoPricing();
         // Cost is 60; 50 is below it.
         $this->actingAs($this->cashier)
             ->post(route('sales.pos.store'), $this->sale([
@@ -116,11 +140,13 @@ class PosManualPriceTest extends TestCase
         $this->assertSame(0, SalesDocument::count());
     }
 
-    public function test_unpriced_part_without_a_price_is_rejected(): void
+    public function test_costless_unpriced_part_without_a_price_is_rejected(): void
     {
+        // A part with no cost at all cannot be auto-priced and needs a manual price.
+        $bare = Part::factory()->create(['part_number' => 'NOCOST-1']);
         $this->actingAs($this->cashier)
             ->post(route('sales.pos.store'), $this->sale([
-                ['part_id' => $this->unpriced->id, 'qty' => 1, 'discount_pct' => 0],
+                ['part_id' => $bare->id, 'qty' => 1, 'discount_pct' => 0],
             ], 10.00))
             ->assertSessionHasErrors('lines');
 

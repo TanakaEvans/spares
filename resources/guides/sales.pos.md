@@ -33,11 +33,15 @@ The counter till. Find the part, build the sale, take payment, hand over the rec
 ## Supervisor approval
 A line discount above the configured limit needs a **supervisor's own username and password** in the payment dialog. The approver is recorded on the invoice and in the [Audit Trail](route:admin.audit-log.index). Supervisors are users whose role holds the `sales.pos.approve-discount` permission (Manager and Admin by default).
 
-## Pricing a part at the till
-Some parts arrive with a cost but no selling price yet (for example stock loaded from a supplier invoice). When you add one, the cart shows a **No list price** badge and a **Selling price (incl.)** box with the part's **cost** beside it. Type the price you're charging and carry on — the sale won't let you charge **below cost**, and the manually-entered price is recorded against the invoice in the [Audit Trail](route:admin.audit-log.index). Set a proper price on the [default price list](route:sales.price-lists.index) (or via Data Upload) so it fills in automatically next time.
+## How a price is worked out
+For each part the till finds the price in this order:
+1. **A price list** — the customer's list, then the default retail list. An explicit price here always wins.
+2. **Automatic (cost + markup)** — if the part has no list price but a known purchase cost, the till prices it at **cost + the markup %**, then adds VAT. With the default **40%** markup, a part that cost R100 sells at **R140 excl / R161 incl** (15% VAT). These show a small **Auto** tag so you know the price follows the cost. Change the markup in **Configuration Centre › Sales › Default markup over cost**; it can be set per branch.
+3. **Enter it yourself** — only when a part has **no cost at all** (nothing bought in yet). The cart shows a **No list price** box; type the price (never below cost). It's recorded against the invoice in the [Audit Trail](route:admin.audit-log.index).
 
 ## Watch out
-- A part with **no price** can still be sold by entering a price at the till — but never below cost. For anything you sell often, set a price on the [default price list](route:sales.price-lists.index) or load prices via Data Upload.
+- Most parts price **automatically** from their cost — load the cost (a supplier invoice / Data Upload / GRN) and the selling price follows. To pin a fixed price for a part, add it to the [default price list](route:sales.price-lists.index); that overrides the automatic one.
+- A part with **no cost and no price** must be priced at the till before it can be sold, and never below cost.
 - When negative stock is off (Configuration Centre › Inventory), the till won't sell more than is on hand here.
 - **Account** payment is only for named customers within their credit limit and not on hold — walk-ins pay cash or card.
 

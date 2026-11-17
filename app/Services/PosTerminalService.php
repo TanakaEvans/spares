@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Exceptions\UnpricedPartException;
 use App\Models\Branch;
 use App\Models\Customer;
 use App\Models\Part;
@@ -54,14 +53,9 @@ class PosTerminalService
             ->where('branch_id', $branch->id)->whereIn('part_id', $parts->pluck('id'))
             ->get()->keyBy('part_id');
 
-        return $parts->map(function (Part $p) use ($levels, $customer) {
-            try {
-                $price = $this->pricing->priceFor($p, $customer);
-                $priced = true;
-            } catch (UnpricedPartException) {
-                $price = 0.0;
-                $priced = false;
-            }
+        return $parts->map(function (Part $p) use ($levels, $customer, $branch) {
+            $priceInfo = $this->pricing->resolve($p, $customer, $branch->id);
+            $priced = $priceInfo['price'] !== null;
             $level = $levels->get($p->id);
 
             return [
@@ -70,9 +64,10 @@ class PosTerminalService
                 'description' => $p->description,
                 'oem_number' => $p->oem_number,
                 'category' => $p->category?->name,
-                'price' => round($price, 2),
+                'price' => round($priceInfo['price'] ?? 0, 2),
                 'priced' => $priced,
-                'cost' => round((float) ($level->average_cost ?? 0), 2),
+                'price_source' => $priceInfo['source'], // list | auto | none
+                'cost' => round($priceInfo['cost'], 2),
                 'on_hand' => (float) ($level->qty_on_hand ?? 0),
                 'available' => $level ? round($level->qty_available, 2) : 0.0,
                 'reorder_point' => (float) ($level->reorder_point ?? 0),
