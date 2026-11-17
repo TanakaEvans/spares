@@ -102,7 +102,7 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
             setLines([...lines, {
                 part_id: part.id, part_number: part.part_number, description: part.description, bin: part.bin,
                 qty: nextQty, unit_price: part.price, discount_pct: 0, priced: part.priced, cost: part.cost ?? 0,
-                on_hand: part.on_hand, available: part.available,
+                price_source: part.price_source, on_hand: part.on_hand, available: part.available,
             }]);
             setSelected(lines.length);
         }
@@ -157,7 +157,7 @@ export default function PosTerminal({ branch, walkIn, maxDiscount, vatRate, allo
                     }
                     const priceChanged = Math.abs(hit.price - l.unit_price) > 0.001;
                     if (priceChanged) changed++;
-                    return { ...l, unit_price: hit.price, priced: hit.priced, cost: hit.cost ?? l.cost, on_hand: hit.on_hand, available: hit.available, bin: hit.bin, priceChanged };
+                    return { ...l, unit_price: hit.price, priced: hit.priced, price_source: hit.price_source, cost: hit.cost ?? l.cost, on_hand: hit.on_hand, available: hit.available, bin: hit.bin, priceChanged };
                 }
             } catch { /* keep line */ }
             return l;

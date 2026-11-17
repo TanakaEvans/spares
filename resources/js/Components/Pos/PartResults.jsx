@@ -50,6 +50,7 @@ function ResultRow({ part, active, onHover, onAdd, onUseReplacement, allowNegati
                 <div className="text-base font-bold tabular-nums text-slate-900">
                     {part.priced ? fmt(inclPrice(part.price, vatRate)) : <span className="text-xs font-semibold text-amber-600">Enter price</span>}
                 </div>
+                {part.price_source === 'auto' && <div className="text-[10px] font-medium uppercase tracking-wide text-sky-600" title="Price calculated from cost + markup">Auto</div>}
                 <Chip tone={stock.tone}>{stock.label}</Chip>
             </div>
         </div>

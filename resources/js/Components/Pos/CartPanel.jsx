@@ -40,6 +40,7 @@ function LineRow({ line, calc, index, selected, onSelect, onQty, onDiscount, onR
                     {!line.priced && belowCost && <div className="text-xs font-medium text-red-600">Below cost — must be at least {fmt(costIncl)} incl.</div>}
                     {!line.priced && !manualSet && <div className="text-xs font-medium text-amber-700">Enter a price to sell this part.</div>}
                     {short && <div className="text-xs font-medium text-red-600">Only {fmt(line.available ?? line.on_hand).replace('.00', '')} available here.</div>}
+                    {line.price_source === 'auto' && line.cost > 0 && <div className="text-[11px] text-sky-600">Auto price from cost {fmt(inclPrice(line.cost, vatRate))}</div>}
                     {line.priceChanged && <div className="text-xs font-medium text-amber-600">Price updated for this customer.</div>}
                 </div>
                 <div className="text-right">
