@@ -26,6 +26,7 @@ class RolePermissionSeeder extends Seeder
         'Admin' => [
             'admin.*', 'auth.*', 'imports.*', 'system.*', 'reports.*',
             '*.index', '*.show', '*.print', '*.export', 'sales.pos.approve-discount',
+            'inventory.labels.*',
         ],
         'Manager' => [
             'inventory.*', 'sales.*', 'purchasing.*', 'workshop.*', 'customers.*',
@@ -48,6 +49,7 @@ class RolePermissionSeeder extends Seeder
             'inventory.stock.index', 'inventory.stock.export', 'inventory.stock.reorder-levels',
             'inventory.categories.index', 'inventory.brands.index', 'inventory.serials.*',
             'reports.suppliers.index', 'reports.inventory.index', 'imports.*',
+            'inventory.labels.*',
         ],
         'Accountant' => [
             'finance.*', 'reports.*', 'customers.index', 'customers.show', 'customers.statement',

@@ -363,6 +363,9 @@ Route::middleware(['auth', EnsurePasswordIsChanged::class, EnsureHasRole::class]
         Route::patch('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'update'])->name('bins.update');
         Route::delete('bins/{bin}', [\App\Http\Controllers\Inventory\BinLocationController::class, 'destroy'])->name('bins.destroy');
 
+        Route::get('labels', [\App\Http\Controllers\Inventory\LabelController::class, 'index'])->name('labels.index')->defaults('description', 'Print barcode labels');
+        Route::get('labels/lookup', [\App\Http\Controllers\Inventory\LabelController::class, 'lookup'])->name('labels.lookup')->defaults('description', 'Find parts to label');
+        Route::get('labels/print', [\App\Http\Controllers\Inventory\LabelController::class, 'print'])->name('labels.print')->defaults('description', 'Barcode labels PDF');
         Route::get('stock', [\App\Http\Controllers\Inventory\StockLevelController::class, 'index'])->name('stock.index');
         Route::get('stock/export', [\App\Http\Controllers\Inventory\StockLevelController::class, 'export'])->name('stock.export')->defaults('description', 'Export stock on hand to CSV');
         Route::patch('stock/{level}/reorder-levels', [\App\Http\Controllers\Inventory\StockMovementController::class, 'updateReorderLevels'])->name('stock.reorder-levels');

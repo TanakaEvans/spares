@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { FileSpreadsheet } from 'lucide-react';
+import { Barcode, FileSpreadsheet } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/purchasing';
 import EntityLink from '@/Components/EntityLink';
@@ -68,6 +68,16 @@ export default function GrnShow({ grn }) {
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2">
+                            {grn.lines.some((l) => l.qty_received > 0) && (
+                                <Link
+                                    href={route('inventory.labels.index', { grn: grn.id })}
+                                    title="Barcode labels for everything received — one per unit"
+                                    className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                >
+                                    <Barcode className="w-4 h-4" />
+                                    Print labels
+                                </Link>
+                            )}
                             {grn.can_invoice && (
                                 <Link
                                     href={route('purchasing.invoices.create', grn.id)}

@@ -4,11 +4,12 @@ import { parseQuery, fmt } from '@/Components/Pos/posMath';
 
 /**
  * Shared part search → pick for document lines (PO, returns, adjustments,
- * transfers). Debounced lookup against purchasing.orders.part-lookup;
+ * transfers, labels). Debounced lookup against `lookupRoute` (default
+ * purchasing.orders.part-lookup);
  * Enter picks the highlighted result (scanner-friendly, ui-rules §2) and
  * `qty*CODE` sets quantity on pick. `branchId` adds on-hand/bin per row.
  */
-export default function PartLinePicker({ supplierId = null, branchId = null, onPick, placeholder = 'Search part to add…' }) {
+export default function PartLinePicker({ supplierId = null, branchId = null, onPick, placeholder = 'Search part to add…', lookupRoute = 'purchasing.orders.part-lookup' }) {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [highlight, setHighlight] = useState(0);
@@ -29,7 +30,7 @@ export default function PartLinePicker({ supplierId = null, branchId = null, onP
                 const params = new URLSearchParams({ q: query });
                 if (supplierId) params.set('supplier_id', supplierId);
                 if (branchId) params.set('branch_id', branchId);
-                const res = await fetch(route('purchasing.orders.part-lookup') + '?' + params, {
+                const res = await fetch(route(lookupRoute) + '?' + params, {
                     headers: { Accept: 'application/json' },
                 });
                 const json = await res.json();
@@ -41,7 +42,7 @@ export default function PartLinePicker({ supplierId = null, branchId = null, onP
             setLoading(false);
         }, 200);
         return () => clearTimeout(timer.current);
-    }, [query, supplierId, branchId]);
+    }, [query, supplierId, branchId, lookupRoute]);
 
     function pick(part) {
         const { qty } = parseQuery(query);
@@ -101,9 +102,11 @@ export default function PartLinePicker({ supplierId = null, branchId = null, onP
                                         {fmt(p.on_hand)} on hand
                                     </span>
                                 )}
-                                <span className="text-xs text-slate-400 tabular-nums shrink-0">
-                                    {Number(p.suggested_cost).toFixed(2)} <span className="text-slate-300">({p.cost_source})</span>
-                                </span>
+                                {p.suggested_cost != null && (
+                                    <span className="text-xs text-slate-400 tabular-nums shrink-0">
+                                        {Number(p.suggested_cost).toFixed(2)} <span className="text-slate-300">({p.cost_source})</span>
+                                    </span>
+                                )}
                             </button>
                         </li>
                     ))}

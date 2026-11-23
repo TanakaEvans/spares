@@ -23,6 +23,12 @@ Delivered (code + tests + browser functional pass; suite at 106 green):
 - [x] 1.2 Inter-branch transfers — draft→dispatch (TRANSFER_OUT at source AVCO)→receive (TRANSFER_IN at captured cost), UI with one-click dispatch/receive
 - [x] 1.5 Reorder management — inline reorder-point editing on Stock Levels, below-reorder report with suggested qty + preferred supplier, one-click draft PO per supplier (browser-verified PO-20260923-0002)
 
+**Barcode labels — 2026-11-23:**
+- [x] 1.1 Print Label (part detail) + **Inventory › Print Labels** (`inventory.labels.*`) — barcode labels from a part (one per unit on hand), a GRN (one per unit received), everything in stock (optionally one category) or scan/search; A4 sheet (start-position picker for part-used sheets), thermal label printer, or 80mm receipt roll. `BarcodeService` (self-contained Code 128 with B/C switching + EAN-13, vector SVG; encodings verified with an independent decoder) + `LabelService` (encodes valid EAN-13 → stored Code 128 → part number, all matched by the till's exact scan; till price incl. VAT; bars snapped to whole printer dots with a "too long for this label" warning; batching). Settings group `labels.*`. Tests: `BarcodeLabelsTest` — done 2026-11-23
+- [ ] 1.3 Bin labels — print bin-code barcodes (Code 128 of `bin_locations.code`) from Bins, reusing `BarcodeService` + the labels print template
+- [ ] 1.7 Serial labels — bulk "print serial labels" from the Serial register, reusing `BarcodeService`
+- [ ] Barcode capture at receiving — scan a supplier's existing EAN onto `parts.barcode_ean` while receiving, so labels/till use the manufacturer code
+
 Granular checklists below remain for the deferred items.
 
 ## 1.8 Category Management (+ brands, units of measure)  ·  [spec](../modules/01-inventory-management/1.8-category-management.md)

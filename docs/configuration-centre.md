@@ -70,6 +70,7 @@ Reviewers reject any PR containing literals for these:
 | **Sales** | Discount approval threshold, price-override floor, **auto-price from cost on/off + default markup over cost % (per branch)**, credit-check rules (hold days, over-limit %), lay-by minimum deposit %, return window days, restock fee %, loyalty earn rate & expiry |
 | **Purchasing** | PO approval value threshold(s), GRN over-receive tolerance %, invoice match tolerance (% and absolute), auto-requisition on reorder on/off |
 | **Inventory** | Cost method (AVCO/FIFO), negative stock allowed (per branch), stock-take variance recount threshold, dead-stock definition (days), low-stock alert horizon |
+| **Labels** | Default label format (A4 sheet / label printer / 80mm roll), label-printer size (mm) and resolution (dpi), A4 sheet columns × rows + margin, print price on labels, labels per print batch — all per branch except batch size |
 | **Workshop** | Labour rates by type, scope-growth authorisation threshold, promised-time reminder minutes, comeback window days |
 | **Finance** | Payment terms list, ageing bucket boundaries, statement day, FX variance account mapping, period lock behaviour |
 | **Communication** | SMTP settings, SMS gateway settings, every email/SMS template, statement/report schedules and recipients |

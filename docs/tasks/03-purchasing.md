@@ -106,4 +106,5 @@ Tracked in [tasks/01-inventory.md](01-inventory.md) — meaningful only now that
 - [ ] 3.1 Purchase requisitions: `purchase_requisitions` + lines, auto-generation from reorder, approval workflow, split-across-suppliers conversion  ·  [spec](../modules/03-purchasing-procurement/3.1-purchase-requisitions.md)
 - [ ] 3.7 Import management: `import_shipments`, customs/BL tracking, import document chain  ·  [spec](../modules/03-purchasing-procurement/3.7-import-management.md)
 - [ ] 3.8 Price comparison tool across suppliers (last price, lead time, MOQ)  ·  [spec](../modules/03-purchasing-procurement/3.8-price-comparison.md)
-- [ ] Blanket/standing orders; blind receiving mode; barcode label print at receiving
+- [ ] Blanket/standing orders; blind receiving mode
+- [x] Barcode label print at receiving — GRN detail › Print labels (one per unit received) via Inventory › Print Labels — done 2026-11-23
