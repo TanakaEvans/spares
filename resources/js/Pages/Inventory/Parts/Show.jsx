@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowRight, Barcode, Pencil, Plus, Trash2 } from 'lucide-react';
 import ModuleLayout from '@/Layouts/ModuleLayout';
 import navConfig from '@/nav/inventory';
 import EntityLink from '@/Components/EntityLink';
@@ -59,6 +59,14 @@ export default function PartShow({ part, options }) {
                             </p>
                         </div>
                         <div className="flex gap-2">
+                            <Link
+                                href={route('inventory.labels.index', { part: part.id })}
+                                title="Barcode labels for this part — one per unit on hand"
+                                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                                <Barcode className="w-4 h-4" />
+                                Print labels
+                            </Link>
                             <Link
                                 href={route('inventory.parts.edit', part.id)}
                                 className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

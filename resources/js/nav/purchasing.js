@@ -1,6 +1,7 @@
 // Purchasing nav — content only (component-standards §1a).
 // Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
+    Barcode,
     BadgeCheck, Factory, FileInput, FileMinus, FileSpreadsheet, Layers, MapPin, PackageCheck,
     PackageX, Play, RefreshCw, Rows3, Scale, Ship, Truck,
 } from 'lucide-react';
@@ -40,6 +41,7 @@ export default {
                     related: [
                         { label: 'Stock Levels', route: 'inventory.stock.index', icon: Layers },
                         { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
+                        { label: 'Print Labels', route: 'inventory.labels.index', icon: Barcode },
                     ],
                 },
             ],

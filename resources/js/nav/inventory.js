@@ -1,7 +1,7 @@
 // Inventory Management nav — content only (component-standards §1a).
 // Shape + rules: docs/design/navigation-and-layout.md §2.
 import {
-    ArrowLeftRight, ClipboardCheck, FileInput, FolderTree, Layers, ListOrdered, MapPin,
+    ArrowLeftRight, Barcode, ClipboardCheck, FileInput, FolderTree, Layers, ListOrdered, MapPin,
     PackageCheck, PackageSearch, RefreshCw, ScanBarcode, Search, Shuffle, SlidersHorizontal,
     Tags, Upload, BadgeCheck,
 } from 'lucide-react';
@@ -40,6 +40,7 @@ export default {
                         { label: 'Data Upload', route: 'imports.index', icon: Upload },
                     ],
                 },
+                { label: 'Print Labels', route: 'inventory.labels.index', icon: Barcode },
                 { label: 'Adjustments', route: 'inventory.adjustments.index', icon: SlidersHorizontal },
                 { label: 'Transfers', route: 'inventory.transfers.index', icon: ArrowLeftRight },
                 { label: 'Bin Locations', route: 'inventory.bins.index', icon: MapPin },
